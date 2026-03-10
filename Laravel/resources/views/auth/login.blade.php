@@ -1,77 +1,51 @@
-@extends('layouts.app')
+<x-guest-layout>
+    <!-- Session Status -->
+    <x-auth-session-status class="mb-4" :status="session('status')" />
 
-@section('title', 'Login')
-
-@section('content')
-
-<div class="auth-container">
-    <h1>Masuk</h1>
-
-    {{-- Error validasi global --}}
-    @if ($errors->any())
-        <div class="alert alert-error">
-            <ul>
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-
-    <form method="POST" action="{{ route('login') }}" novalidate>
+    <form method="POST" action="{{ route('login') }}">
         @csrf
 
-        {{-- Email --}}
-        <div class="form-group">
-            <label for="email">Email</label>
-            <input
-                type="email"
-                id="email"
-                name="email"
-                value="{{ old('email') }}"
-                autocomplete="email"
-                autofocus
-                class="{{ $errors->has('email') ? 'is-invalid' : '' }}"
-                required
-            />
-            @error('email')
-                <span class="invalid-feedback">{{ $message }}</span>
-            @enderror
+        <!-- Email Address -->
+        <div>
+            <x-input-label for="email" :value="__('Email')" />
+            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" />
+            <x-input-error :messages="$errors->get('email')" class="mt-2" />
         </div>
 
-        {{-- Password --}}
-        <div class="form-group">
-            <label for="password">Password</label>
-            <input
-                type="password"
-                id="password"
-                name="password"
-                autocomplete="current-password"
-                class="{{ $errors->has('password') ? 'is-invalid' : '' }}"
-                required
-            />
-            @error('password')
-                <span class="invalid-feedback">{{ $message }}</span>
-            @enderror
+        <!-- Password -->
+        <div class="mt-4">
+            <x-input-label for="password" :value="__('Password')" />
+
+            <x-text-input id="password" class="block mt-1 w-full" type="password" name="password" required autocomplete="current-password" />
+
+            <x-input-error :messages="$errors->get('password')" class="mt-2" />
         </div>
 
-        {{-- Remember Me --}}
-        <div class="form-group form-check">
-            <input
-                type="checkbox"
-                id="remember"
-                name="remember"
-                {{ old('remember') ? 'checked' : '' }}
-            />
-            <label for="remember">Ingat saya</label>
+        <!-- Remember Me -->
+        <div class="flex items-center justify-between mt-4">
+            <label for="remember_me" class="inline-flex items-center cursor-pointer">
+                <input id="remember_me" type="checkbox" class="rounded border-gray-300 text-[#E91E63] shadow-sm focus:ring-[#E91E63] focus:ring-offset-0 transition duration-150 ease-in-out cursor-pointer" name="remember">
+                <span class="ms-2 text-sm text-gray-700">{{ __('Remember me') }}</span>
+            </label>
+
+            @if (Route::has('password.request'))
+            <a class="text-sm text-gray-600 hover:text-[#E91E63] hover:underline transition ease-in-out duration-150" href="{{ route('password.request') }}">
+                {{ __('Forgot your password?') }}
+            </a>
+            @endif
         </div>
 
-        {{-- Submit --}}
-        <button type="submit">Masuk</button>
+        <div class="mt-6">
+            <x-primary-button class="w-full">
+                {{ __('LOG IN') }}
+            </x-primary-button>
+        </div>
 
-        {{-- Link ke Register --}}
-        <p>Belum punya akun? <a href="{{ route('register') }}">Daftar sekarang</a></p>
+        <div class="mt-6 text-center text-sm text-gray-700">
+            Belum punya akun?
+            <a href="{{ route('register') }}" class="font-bold text-[#E91E63] hover:text-[#c2185b] hover:underline transition ease-in-out duration-150">
+                Daftar di sini
+            </a>
+        </div>
     </form>
-</div>
-
-@endsection
+</x-guest-layout>

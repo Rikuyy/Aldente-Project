@@ -1,96 +1,42 @@
-@extends('layouts.app')
-
-@section('title', 'Daftar')
-
-@section('content')
-
-<div class="auth-container">
-    <h1>Buat Akun</h1>
-
-    {{-- Error validasi global --}}
-    @if ($errors->any())
-        <div class="alert alert-error">
-            <ul>
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-
-    <form method="POST" action="{{ route('register') }}" novalidate>
+<x-guest-layout>
+    <form method="POST" action="{{ route('register') }}">
         @csrf
 
-        {{-- Nama --}}
-        <div class="form-group">
-            <label for="name">Nama Lengkap</label>
-            <input
-                type="text"
-                id="name"
-                name="name"
-                value="{{ old('name') }}"
-                autocomplete="name"
-                autofocus
-                class="{{ $errors->has('name') ? 'is-invalid' : '' }}"
-                required
-            />
-            @error('name')
-                <span class="invalid-feedback">{{ $message }}</span>
-            @enderror
+        <div>
+            <x-input-label for="name" :value="__('Name')" />
+            <x-text-input id="name" class="block mt-1 w-full" type="text" name="name" :value="old('name')" required autofocus autocomplete="name" />
+            <x-input-error :messages="$errors->get('name')" class="mt-2" />
         </div>
 
-        {{-- Email --}}
-        <div class="form-group">
-            <label for="email">Email</label>
-            <input
-                type="email"
-                id="email"
-                name="email"
-                value="{{ old('email') }}"
-                autocomplete="email"
-                class="{{ $errors->has('email') ? 'is-invalid' : '' }}"
-                required
-            />
-            @error('email')
-                <span class="invalid-feedback">{{ $message }}</span>
-            @enderror
+        <div class="mt-4">
+            <x-input-label for="email" :value="__('Email')" />
+            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autocomplete="username" />
+            <x-input-error :messages="$errors->get('email')" class="mt-2" />
         </div>
 
-        {{-- Password --}}
-        <div class="form-group">
-            <label for="password">Password</label>
-            <input
-                type="password"
-                id="password"
-                name="password"
-                autocomplete="new-password"
-                class="{{ $errors->has('password') ? 'is-invalid' : '' }}"
-                required
-            />
-            <small>Minimal 8 karakter, mengandung huruf dan angka.</small>
-            @error('password')
-                <span class="invalid-feedback">{{ $message }}</span>
-            @enderror
+        <div class="mt-4">
+            <x-input-label for="password" :value="__('Password')" />
+            <x-text-input id="password" class="block mt-1 w-full" type="password" name="password" required autocomplete="new-password" />
+            <x-input-error :messages="$errors->get('password')" class="mt-2" />
         </div>
 
-        {{-- Konfirmasi Password --}}
-        <div class="form-group">
-            <label for="password_confirmation">Konfirmasi Password</label>
-            <input
-                type="password"
-                id="password_confirmation"
-                name="password_confirmation"
-                autocomplete="new-password"
-                required
-            />
+        <div class="mt-4">
+            <x-input-label for="password_confirmation" :value="__('Confirm Password')" />
+            <x-text-input id="password_confirmation" class="block mt-1 w-full" type="password" name="password_confirmation" required autocomplete="new-password" />
+            <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
         </div>
 
-        {{-- Submit --}}
-        <button type="submit">Daftar</button>
+        <div class="mt-8">
+            <x-primary-button class="w-full">
+                {{ __('REGISTER') }}
+            </x-primary-button>
+        </div>
 
-        {{-- Link ke Login --}}
-        <p>Sudah punya akun? <a href="{{ route('login') }}">Masuk di sini</a></p>
+        <div class="mt-6 text-center text-sm text-gray-600">
+            Sudah punya akun? 
+            <a href="{{ route('login') }}" class="font-bold text-[#E91E63] hover:text-[#c2185b] hover:underline transition ease-in-out duration-150">
+                Masuk di sini
+            </a>
+        </div>
     </form>
-</div>
-
-@endsection
+</x-guest-layout>
