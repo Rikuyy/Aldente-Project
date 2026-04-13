@@ -20,6 +20,14 @@ Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
+Route::get('/bahan', function () {
+    return view('bahan'); // Memanggil file resources/views/bahan.blade.php
+})->middleware(['auth', 'verified'])->name('bahan.index');
+
+Route::get('/resep', function () {
+    return view('resep'); // Panggil fail resep.blade.php secara terus
+})->name('resep.index');
+
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

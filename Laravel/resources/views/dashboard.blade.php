@@ -1,86 +1,50 @@
 <x-app-layout>
-    <x-slot name="header">
-        <span class="font-extrabold text-3xl text-gray-900">
-            {{ __('Analytics') }}
-        </span>
-    </x-slot>
-
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        
-        <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-5 hover:shadow-md transition">
-            <div class="w-16 h-16 rounded-2xl bg-pink-100 text-[#E91E63] flex items-center justify-center text-3xl shadow-inner">
-                💰
-            </div>
+    <div class="max-w-7xl mx-auto">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
             <div>
-                <p class="text-sm font-bold text-gray-400 uppercase tracking-wider">Total Revenue</p>
-                <p class="text-2xl font-extrabold text-gray-800">$872,335</p>
-            </div>
-        </div>
-
-        <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-5 hover:shadow-md transition">
-            <div class="w-16 h-16 rounded-2xl bg-pink-100 text-[#E91E63] flex items-center justify-center text-3xl shadow-inner">
-                📦
-            </div>
-            <div>
-                <p class="text-sm font-bold text-gray-400 uppercase tracking-wider">Total Orders</p>
-                <p class="text-2xl font-extrabold text-gray-800">63,876</p>
-            </div>
-        </div>
-
-        <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-5 hover:shadow-md transition">
-            <div class="w-16 h-16 rounded-2xl bg-pink-100 text-[#E91E63] flex items-center justify-center text-3xl shadow-inner">
-                👥
-            </div>
-            <div>
-                <p class="text-sm font-bold text-gray-400 uppercase tracking-wider">Customers</p>
-                <p class="text-2xl font-extrabold text-gray-800">1,245</p>
-            </div>
-        </div>
-
-    </div>
-
-    <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
-        <div class="flex justify-between items-center mb-6">
-            <h3 class="text-xl font-extrabold text-gray-800">Most Favorites Items</h3>
-            <button class="px-5 py-2 bg-gray-100 text-gray-600 rounded-full text-sm font-bold hover:bg-[#E91E63] hover:text-white transition">
-                View All
+                <h1 class="text-3xl font-bold text-white">Overview Admin</h1>
+                <p class="text-gray-400 mt-1">Pantau perkembangan resep dan user anak kos kamu.</p>
+            <!-- </div>
+            <button class="bg-[#FF6B35] hover:bg-[#e85a20] text-white px-6 py-3 rounded-xl font-semibold shadow-lg shadow-[#FF6B35]/20 transition-all whitespace-nowrap">
+                + Tambah Resep Baru
             </button>
-        </div>
-        
-        <div class="space-y-4">
+        </div> -->
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             
-            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-2xl hover:bg-pink-50 transition cursor-pointer">
-                <div class="flex items-center gap-4">
-                    <div class="w-14 h-14 bg-white rounded-xl shadow-sm flex items-center justify-center text-2xl border border-gray-100">
-                        🍕
-                    </div>
-                    <div>
-                        <h4 class="font-bold text-gray-800 text-lg">Medium Spicy Pizza</h4>
-                        <p class="text-sm text-gray-400 font-semibold">❤️ 256k Liked</p>
-                    </div>
-                </div>
-                <div class="text-right">
-                    <p class="font-extrabold text-gray-800 text-lg">45%</p>
-                    <p class="text-xs font-bold text-gray-400 uppercase">Interest</p>
-                </div>
+            <div class="bg-[#1A1A1A] p-6 rounded-2xl border border-white/5">
+                <p class="text-gray-400 text-sm mb-1">Total Resep Aktif</p>
+                <h3 class="text-3xl font-bold text-white">1,248</h3>
+                <span class="text-green-500 text-xs font-medium">+12 minggu ini</span>
+            </div>
+            
+            <div class="bg-[#1A1A1A] p-6 rounded-2xl border border-white/5">
+                <p class="text-gray-400 text-sm mb-1">User Terdaftar</p>
+                <h3 class="text-3xl font-bold text-white">8,590</h3>
+                <span class="text-orange-500 text-xs font-medium">Anak kos aktif</span>
+            </div>
+            
+            <div class="bg-[#1A1A1A] p-6 rounded-2xl border border-white/5 border-l-4 border-l-[#FF6B35]">
+                <p class="text-gray-400 text-sm mb-1">Menunggu Review</p>
+                <h3 class="text-3xl font-bold text-white">14</h3>
+                <span class="text-gray-500 text-xs font-medium italic text-orange-400">Butuh persetujuan admin</span>
+            </div>
+            
+            <div class="bg-[#1A1A1A] p-6 rounded-2xl border border-white/5">
+                <p class="text-gray-400 text-sm mb-1">Total Master Bahan</p>
+                <h3 class="text-3xl font-bold text-white">128</h3>
+                <span class="text-red-500 text-xs font-medium">5 Bahan Naik Harga</span>
             </div>
 
-            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-2xl hover:bg-pink-50 transition cursor-pointer">
-                <div class="flex items-center gap-4">
-                    <div class="w-14 h-14 bg-white rounded-xl shadow-sm flex items-center justify-center text-2xl border border-gray-100">
-                        🍉
-                    </div>
-                    <div>
-                        <h4 class="font-bold text-gray-800 text-lg">Watermelon Juice with Ice</h4>
-                        <p class="text-sm text-gray-400 font-semibold">❤️ 189k Liked</p>
-                    </div>
-                </div>
-                <div class="text-right">
-                    <p class="font-extrabold text-gray-800 text-lg">26%</p>
-                    <p class="text-xs font-bold text-gray-400 uppercase">Interest</p>
-                </div>
-            </div>
+        </div>
 
+        <div class="bg-[#1A1A1A] rounded-2xl border border-white/5 overflow-hidden">
+            <div class="p-6 border-b border-white/5">
+                <h2 class="text-xl font-bold text-white">Resep Terbaru Masuk</h2>
+            </div>
+            <div class="p-6 text-center text-gray-500"> 
+                Belum ada data resep baru untuk ditampilkan.
+            </div>
         </div>
     </div>
 </x-app-layout>
