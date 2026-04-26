@@ -1,6 +1,5 @@
 name: cookcase_plus
-description: CookCase+ - Meal planning & budget tracker for Indonesian students
-publish_to: 'none'
+description: CookCash Aplikasi Rekomendasi Resep Masakan
 version: 1.0.0+1
 
 environment:
@@ -13,6 +12,7 @@ dependencies:
   fl_chart: ^0.68.0
   cached_network_image: ^3.3.1
   cupertino_icons: ^1.0.6
+  font_awesome_flutter: ^11.0.0
 
 dev_dependencies:
   flutter_test:

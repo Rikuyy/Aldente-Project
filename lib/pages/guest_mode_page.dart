@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../theme/app_theme.dart';
 
 class GuestModePage extends StatelessWidget {
@@ -20,12 +21,12 @@ class GuestModePage extends StatelessWidget {
               right: 24,
               bottom: 16,
             ),
-            child: Column(
+            child: const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    const Text(
+                    Text(
                       'CookCase+',
                       style: TextStyle(
                         fontSize: 20,
@@ -34,12 +35,12 @@ class GuestModePage extends StatelessWidget {
                         letterSpacing: -0.5,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     Icon(Icons.auto_awesome, color: AppTheme.orange500, size: 20),
                   ],
                 ),
-                const SizedBox(height: 4),
-                const Text(
+                SizedBox(height: 4),
+                Text(
                   'Ruang Konsultasi Cerdas',
                   style: TextStyle(
                     fontSize: 13,
@@ -58,11 +59,11 @@ class GuestModePage extends StatelessWidget {
               padding: const EdgeInsets.all(24),
               children: [
                 // Bot message 1
-                _ChatBubble(
+                const _ChatBubble(
                   isBot: true,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
+                    children: [
                       Text(
                         'Halo!',
                         style: TextStyle(fontWeight: FontWeight.w700, color: AppTheme.slate900),
@@ -99,6 +100,7 @@ class GuestModePage extends StatelessWidget {
                       ),
                       boxShadow: [
                         BoxShadow(
+                          // ignore: deprecated_member_use
                           color: AppTheme.orange600.withOpacity(0.2),
                           blurRadius: 15,
                           offset: const Offset(0, 4),
@@ -124,11 +126,11 @@ class GuestModePage extends StatelessWidget {
                         style: TextStyle(color: AppTheme.slate700, height: 1.5),
                       ),
                       const SizedBox(height: 12),
-                      _MenuOption(emoji: '🍳', title: 'Nasi Telur Pontianak + Es Teh', subtitle: '(Masak di kos)'),
+                      _MenuOption(icon: FontAwesomeIcons.utensils, title: 'Nasi Telur Pontianak + Es Teh', subtitle: '(Masak di kos)'),
                       const SizedBox(height: 6),
-                      _MenuOption(emoji: '🍜', title: 'Mie Dok-Dok Ala Warkop'),
+                      _MenuOption(icon: FontAwesomeIcons.bowlRice, title: 'Mie Dok-Dok Ala Warkop'),
                       const SizedBox(height: 6),
-                      _MenuOption(emoji: '🍛', title: 'Beli Nasi Warteg', subtitle: '(Sayur 2 macem, Telur, dan Tempe Orek)'),
+                      _MenuOption(icon: FontAwesomeIcons.bowlFood, title: 'Beli Nasi Warteg', subtitle: '(Sayur 2 macem, Telur, dan Tempe Orek)'),
                       const SizedBox(height: 16),
 
                       // CTA Card
@@ -220,9 +222,9 @@ class GuestModePage extends StatelessWidget {
                 borderRadius: BorderRadius.circular(50),
                 border: Border.all(color: AppTheme.slate200),
               ),
-              child: Row(
+              child: const Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: TextField(
                       decoration: InputDecoration(
                         hintText: 'Ketik pertanyaanmu di sini...',
@@ -265,6 +267,7 @@ class _ChatBubble extends StatelessWidget {
           border: Border.all(color: AppTheme.slate100),
           boxShadow: [
             BoxShadow(
+              // ignore: deprecated_member_use
               color: Colors.black.withOpacity(0.04),
               blurRadius: 10,
               offset: const Offset(0, 2),
@@ -278,17 +281,17 @@ class _ChatBubble extends StatelessWidget {
 }
 
 class _MenuOption extends StatelessWidget {
-  final String emoji;
+  final IconData icon;
   final String title;
   final String? subtitle;
-  const _MenuOption({required this.emoji, required this.title, this.subtitle});
+  const _MenuOption({required this.icon, required this.title, this.subtitle});
 
   @override
   Widget build(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(emoji, style: const TextStyle(fontSize: 16)),
+        FaIcon(icon as FaIconData?, size: 16, color: AppTheme.slate600),
         const SizedBox(width: 8),
         Expanded(
           child: Column(

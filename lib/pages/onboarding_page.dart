@@ -1,6 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../theme/app_theme.dart';
+
+class Tag {
+  final String text;
+  final IconData icon;
+
+  const Tag(this.text, this.icon);
+}
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -13,6 +21,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   int _step = 1;
   final int _totalSteps = 6;
 
+  // State for steps
   final TextEditingController _nameController = TextEditingController();
   List<String> _favFoods = [];
   List<String> _allergies = [];
@@ -51,6 +60,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       backgroundColor: AppTheme.slate50,
       body: Column(
         children: [
+          // Header
           Container(
             color: Colors.white,
             padding: EdgeInsets.only(
@@ -82,6 +92,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             ),
           ),
 
+          // Progress bar
           Container(
             height: 6,
             color: AppTheme.slate100,
@@ -109,6 +120,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             ),
           ),
 
+          // Step content
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
@@ -122,6 +134,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             ),
           ),
 
+          // Next button
           Container(
             color: Colors.white,
             padding: EdgeInsets.only(
@@ -190,6 +203,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 }
 
+// Step 1: Identity
 class _StepIdentity extends StatelessWidget {
   final TextEditingController controller;
   const _StepIdentity({required this.controller});
@@ -199,7 +213,14 @@ class _StepIdentity extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Kenalan Dulu Yuk! 👋', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppTheme.slate900, letterSpacing: -0.5)),
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Kenalan Dulu Yuk!', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppTheme.slate900, letterSpacing: -0.5)),
+            SizedBox(width: 8),
+            Icon(Icons.waving_hand, size: 24, color: AppTheme.slate900),
+          ],
+        ),
         const SizedBox(height: 8),
         const Text('Isi namamu agar CookCase+ bisa menyapamu dengan akrab.', style: TextStyle(fontSize: 14, color: AppTheme.slate500, fontWeight: FontWeight.w500, height: 1.5)),
         const SizedBox(height: 24),
@@ -224,6 +245,7 @@ class _StepIdentity extends StatelessWidget {
   }
 }
 
+// Step 2: Food Preferences
 class _StepFoodPreferences extends StatelessWidget {
   final List<String> selected;
   final Function(String) onToggle;
@@ -231,11 +253,18 @@ class _StepFoodPreferences extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const tags = ['Pedas 🌶️', 'Manis 🍬', 'Gurih 🥘', 'Asin 🧂', 'Ayam 🍗', 'Sapi 🥩', 'Seafood 🦐', 'Sayuran 🥦'];
+    const tags = [Tag('Pedas', FontAwesomeIcons.pepperHot as IconData), Tag('Manis', FontAwesomeIcons.candyCane as IconData), Tag('Gurih', FontAwesomeIcons.utensils as IconData), Tag('Asin', FontAwesomeIcons.mortarPestle as IconData), Tag('Ayam', FontAwesomeIcons.drumstickBite as IconData), Tag('Sapi', FontAwesomeIcons.cow as IconData), Tag('Seafood', FontAwesomeIcons.fish as IconData), Tag('Sayuran', FontAwesomeIcons.carrot as IconData)];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Makanan Favoritmu? 😋', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppTheme.slate900, letterSpacing: -0.5)),
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Makanan Favoritmu?', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppTheme.slate900, letterSpacing: -0.5)),
+            SizedBox(width: 8),
+            Icon(Icons.sentiment_satisfied, size: 24, color: AppTheme.slate900),
+          ],
+        ),
         const SizedBox(height: 8),
         const Text('Pilih beberapa rasa dan bahan makanan yang kamu sukai.', style: TextStyle(fontSize: 14, color: AppTheme.slate500, fontWeight: FontWeight.w500, height: 1.5)),
         const SizedBox(height: 24),
@@ -243,9 +272,9 @@ class _StepFoodPreferences extends StatelessWidget {
           spacing: 10,
           runSpacing: 10,
           children: tags.map((tag) {
-            final isSelected = selected.contains(tag);
+            final isSelected = selected.contains(tag.text);
             return GestureDetector(
-              onTap: () => onToggle(tag),
+              onTap: () => onToggle(tag.text),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
@@ -258,7 +287,14 @@ class _StepFoodPreferences extends StatelessWidget {
                   ),
                   boxShadow: isSelected ? [BoxShadow(color: AppTheme.orange500.withOpacity(0.2), blurRadius: 8, offset: const Offset(0, 2))] : null,
                 ),
-                child: Text(tag, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: isSelected ? AppTheme.orange700 : AppTheme.slate600)),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    FaIcon(tag.icon as FaIconData?, size: 14, color: isSelected ? AppTheme.orange700 : AppTheme.slate600),
+                    const SizedBox(width: 8),
+                    Text(tag.text, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: isSelected ? AppTheme.orange700 : AppTheme.slate600)),
+                  ],
+                ),
               ),
             );
           }).toList(),
@@ -268,6 +304,7 @@ class _StepFoodPreferences extends StatelessWidget {
   }
 }
 
+// Step 3: Allergies
 class _StepAllergies extends StatelessWidget {
   final List<String> selected;
   final Function(String) onToggle;
@@ -275,11 +312,31 @@ class _StepAllergies extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const tags = ['Kacang 🥜', 'Susu 🥛', 'Telur 🥚', 'Seafood 🦐', 'Gluten 🍞', 'Kedelai 🌱'];
+    const tags = [Tag('Kacang', FontAwesomeIcons.seedling as IconData), Tag('Susu', FontAwesomeIcons.glassWhiskey as IconData), Tag('Telur', FontAwesomeIcons.egg as IconData), Tag('Seafood', FontAwesomeIcons.fish as IconData), Tag('Gluten', FontAwesomeIcons.breadSlice as IconData), Tag('Kedelai', FontAwesomeIcons.seedling as IconData)];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Ada Alergi Bahan Makanan? 🚫', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppTheme.slate900, letterSpacing: -0.5)),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(color: AppTheme.red50, borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0xFFFECDD3))),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.error_outline, color: AppTheme.red500, size: 18),
+              SizedBox(width: 6),
+              Text('PENTING', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: AppTheme.red600, letterSpacing: 1)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Ada Alergi Bahan Makanan?', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppTheme.slate900, letterSpacing: -0.5)),
+            SizedBox(width: 8),
+            Icon(Icons.warning, size: 24, color: AppTheme.slate900),
+          ],
+        ),
         const SizedBox(height: 8),
         const Text('Bantu kami menghindari bahan yang berbahaya untukmu.', style: TextStyle(fontSize: 14, color: AppTheme.slate500, fontWeight: FontWeight.w500, height: 1.5)),
         const SizedBox(height: 24),
@@ -287,9 +344,9 @@ class _StepAllergies extends StatelessWidget {
           spacing: 10,
           runSpacing: 10,
           children: tags.map((tag) {
-            final isSelected = selected.contains(tag);
+            final isSelected = selected.contains(tag.text);
             return GestureDetector(
-              onTap: () => onToggle(tag),
+              onTap: () => onToggle(tag.text),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
@@ -298,7 +355,14 @@ class _StepAllergies extends StatelessWidget {
                   borderRadius: BorderRadius.circular(50),
                   border: Border.all(color: isSelected ? AppTheme.red500 : AppTheme.slate200, width: 2),
                 ),
-                child: Text(tag, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: isSelected ? AppTheme.red600 : AppTheme.slate600)),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    FaIcon(tag.icon as FaIconData?, size: 14, color: isSelected ? AppTheme.red600 : AppTheme.slate600),
+                    const SizedBox(width: 8),
+                    Text(tag.text, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: isSelected ? AppTheme.red600 : AppTheme.slate600)),
+                  ],
+                ),
               ),
             );
           }).toList(),
@@ -308,6 +372,7 @@ class _StepAllergies extends StatelessWidget {
   }
 }
 
+// Step 4: Budget Cycle
 class _StepBudgetCycle extends StatelessWidget {
   final String cycle;
   final Function(String) onCycleChanged;
@@ -320,7 +385,52 @@ class _StepBudgetCycle extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Atur Budget Makan 💰', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppTheme.slate900, letterSpacing: -0.5)),
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Atur Budget Makan', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppTheme.slate900, letterSpacing: -0.5)),
+            SizedBox(width: 8),
+            Icon(Icons.attach_money, size: 24, color: AppTheme.slate900),
+          ],
+        ),
+        const SizedBox(height: 8),
+        const Text('Pilih siklus pengaturan uang makanmu.', style: TextStyle(fontSize: 14, color: AppTheme.slate500, fontWeight: FontWeight.w500, height: 1.5)),
+        const SizedBox(height: 24),
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppTheme.slate200, width: 2),
+            // ignore: deprecated_member_use
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
+          ),
+          child: Row(
+            children: options.map((opt) {
+              final isSelected = cycle == opt;
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => onCycleChanged(opt),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: isSelected ? AppTheme.orange500 : Colors.transparent,
+                      borderRadius: BorderRadius.circular(14),
+                      // ignore: deprecated_member_use
+                      boxShadow: isSelected ? [BoxShadow(color: AppTheme.orange500.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 3))] : null,
+                    ),
+                    child: Text(
+                      opt,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: isSelected ? Colors.white : AppTheme.slate500),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
         const SizedBox(height: 24),
         Text('Budget $cycle', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.slate700)),
         const SizedBox(height: 8),
@@ -329,10 +439,14 @@ class _StepBudgetCycle extends StatelessWidget {
           keyboardType: TextInputType.number,
           decoration: InputDecoration(
             prefixText: 'Rp  ',
+            prefixStyle: const TextStyle(color: AppTheme.slate400, fontWeight: FontWeight.w700, fontSize: 17),
             hintText: '0',
+            hintStyle: const TextStyle(color: AppTheme.slate300, fontWeight: FontWeight.w700),
             filled: true,
             fillColor: Colors.white,
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppTheme.slate200, width: 2)),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppTheme.slate200, width: 2)),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppTheme.orange500, width: 2)),
             contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
           ),
           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.slate800),
@@ -342,6 +456,7 @@ class _StepBudgetCycle extends StatelessWidget {
   }
 }
 
+// Step 5: Kitchen Tools
 class _StepKitchenTools extends StatelessWidget {
   final List<String> selected;
   final Function(String) onToggle;
@@ -350,17 +465,35 @@ class _StepKitchenTools extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const tools = [
-      {'id': 'Kompor 🔥', 'label': 'Kompor', 'icon': '🔥'},
-      {'id': 'Oven 🎛️', 'label': 'Oven', 'icon': '🎛️'},
-      {'id': 'Microwave 🍱', 'label': 'Microwave', 'icon': '🍱'},
-      {'id': 'Blender 🌪️', 'label': 'Blender', 'icon': '🌪️'},
-      {'id': 'Rice Cooker 🍚', 'label': 'Rice Cooker', 'icon': '🍚'},
-      {'id': 'Kulkas ❄️', 'label': 'Kulkas', 'icon': '❄️'},
+      Tag('Kompor', FontAwesomeIcons.fire as IconData),
+      Tag('Oven', FontAwesomeIcons.fire as IconData),
+      Tag('Microwave', FontAwesomeIcons.radiation as IconData),
+      Tag('Blender', FontAwesomeIcons.blender as IconData),
+      Tag('Rice Cooker', FontAwesomeIcons.bowlRice as IconData),
+      Tag('Kulkas', FontAwesomeIcons.snowflake as IconData),
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Alat Masak yang TIDAK Kamu Miliki? 🍳', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppTheme.slate900, letterSpacing: -0.5)),
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Alat Masak yang TIDAK Kamu Miliki?', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppTheme.slate900, letterSpacing: -0.5)),
+            SizedBox(width: 8),
+            FaIcon(FontAwesomeIcons.utensils, size: 24, color: AppTheme.slate900),
+          ],
+        ),
+        const SizedBox(height: 8),
+        RichText(
+          text: const TextSpan(
+            style: TextStyle(fontSize: 14, color: AppTheme.slate500, fontWeight: FontWeight.w500, height: 1.5),
+            children: [
+              TextSpan(text: 'Centang alat yang '),
+              TextSpan(text: 'tidak ada', style: TextStyle(fontWeight: FontWeight.w900, decoration: TextDecoration.underline, color: AppTheme.slate700)),
+              TextSpan(text: ' di dapur atau kosmu.'),
+            ],
+          ),
+        ),
         const SizedBox(height: 24),
         GridView.count(
           crossAxisCount: 2,
@@ -370,24 +503,25 @@ class _StepKitchenTools extends StatelessWidget {
           mainAxisSpacing: 12,
           childAspectRatio: 1.4,
           children: tools.map((tool) {
-            final id = tool['id']!;
-            final isSelected = selected.contains(id);
+            final isSelected = selected.contains(tool.text);
             return GestureDetector(
-              onTap: () => onToggle(id),
+              onTap: () => onToggle(tool.text),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 decoration: BoxDecoration(
                   color: isSelected ? AppTheme.slate100 : Colors.white,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: isSelected ? AppTheme.slate300 : AppTheme.slate200, width: 2),
+                  // ignore: deprecated_member_use
+                  boxShadow: isSelected ? null : [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6, offset: const Offset(0, 2))],
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(tool['icon']!, style: const TextStyle(fontSize: 28)),
+                    FaIcon(tool.icon as FaIconData?, size: 28, color: isSelected ? AppTheme.slate500 : AppTheme.slate700),
                     const SizedBox(height: 8),
                     Text(
-                      tool['label']!,
+                      tool.text,
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 13,
@@ -406,6 +540,7 @@ class _StepKitchenTools extends StatelessWidget {
   }
 }
 
+// Step 6: Meal Frequency
 class _StepMealFrequency extends StatelessWidget {
   final int freq;
   final Function(int) onChanged;
@@ -416,7 +551,16 @@ class _StepMealFrequency extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Seberapa Sering Kamu Makan? 🍽️', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppTheme.slate900, letterSpacing: -0.5)),
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Seberapa Sering Kamu Makan?', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppTheme.slate900, letterSpacing: -0.5)),
+            SizedBox(width: 8),
+            Icon(Icons.restaurant, size: 24, color: AppTheme.slate900),
+          ],
+        ),
+        const SizedBox(height: 8),
+        const Text('Termasuk sarapan, makan siang, dan makan malam.', style: TextStyle(fontSize: 14, color: AppTheme.slate500, fontWeight: FontWeight.w500, height: 1.5)),
         const SizedBox(height: 24),
         Container(
           width: double.infinity,
@@ -425,6 +569,8 @@ class _StepMealFrequency extends StatelessWidget {
             color: Colors.white,
             borderRadius: BorderRadius.circular(28),
             border: Border.all(color: AppTheme.slate100, width: 2),
+            // ignore: deprecated_member_use
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
           ),
           child: Column(
             children: [
@@ -432,7 +578,7 @@ class _StepMealFrequency extends StatelessWidget {
                 '$freq',
                 style: const TextStyle(fontSize: 64, fontWeight: FontWeight.w900, color: AppTheme.orange500, letterSpacing: -2),
               ),
-              const Text('kali sehari', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.slate600)),
+              const Text('kali sehari', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.slate600, letterSpacing: 0.5)),
               const SizedBox(height: 32),
               Container(
                 padding: const EdgeInsets.all(8),
@@ -485,6 +631,8 @@ class _CounterButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: color,
           shape: BoxShape.circle,
+          // ignore: deprecated_member_use
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 4, offset: const Offset(0, 2))],
           border: Border.all(color: AppTheme.slate200),
         ),
         child: Center(

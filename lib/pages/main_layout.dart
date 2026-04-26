@@ -25,6 +25,7 @@ class MainLayout extends StatelessWidget {
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           boxShadow: [
             BoxShadow(
+              // ignore: deprecated_member_use
               color: Colors.black.withOpacity(0.05),
               blurRadius: 20,
               offset: const Offset(0, -4),
