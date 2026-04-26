@@ -2,6 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../theme/app_theme.dart';
 
+class _Notification {
+  final String id;
+  final String type;
+  final String title;
+  final String message;
+  final String time;
+  final String date;
+  bool isRead;
+
+  _Notification({
+    required this.id,
+    required this.type,
+    required this.title,
+    required this.message,
+    required this.time,
+    required this.date,
+    required this.isRead,
+  });
+}
+
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
 
@@ -10,21 +30,17 @@ class NotificationsPage extends StatefulWidget {
 }
 
 class _NotificationsPageState extends State<NotificationsPage> {
-  final List<Map<String, String>> _notifications = [
-    {'title': 'Reminder Memasak', 'message': 'Waktunya masak Mie Nyemek Telur Pedas!', 'time': '10 menit lalu', 'type': 'recipe'},
-    {'title': 'Stok Hampir Habis', 'message': 'Telur tersisa 2 butir. Jangan lupa belanja!', 'time': '1 jam lalu', 'type': 'shopping'},
-    {'title': 'Peringatan Budget', 'message': 'Budget mingguan tersisa Rp50.000', 'time': '3 jam lalu', 'type': 'budget'},
-    {'title': 'Tips dari CookBot', 'message': 'Simpan sisa sayuran di wadah kedap udara!', 'time': '5 jam lalu', 'type': 'tip'},
-  ];
+  String _filter = 'all';
 
-  Color _getColor(String type) {
-    switch (type) {
-      case 'recipe': return AppTheme.orange500;
-      case 'shopping': return AppTheme.blue500;
-      case 'budget': return AppTheme.red500;
-      default: return AppTheme.purple600;
-    }
-  }
+  final List<_Notification> _notifications = [
+    _Notification(id: '1', type: 'recipe', title: 'Reminder Memasak', message: 'Waktunya masak Mie Nyemek Telur Pedas untuk makan siang! Semua bahan sudah tersedia di dapurmu.', time: '10 menit lalu', date: 'Hari ini', isRead: false),
+    _Notification(id: '2', type: 'shopping', title: 'Stok Hampir Habis', message: 'Telur tersisa 2 butir. Jangan lupa belanja besok agar tidak kehabisan bahan masakan favoritmu!', time: '1 jam lalu', date: 'Hari ini', isRead: false),
+    _Notification(id: '3', type: 'budget', title: 'Peringatan Budget', message: 'Budget mingguan tersisa Rp50.000 dari total Rp200.000. Pertimbangkan masak sendiri untuk hemat.', time: '3 jam lalu', date: 'Hari ini', isRead: false),
+    _Notification(id: '4', type: 'tip', title: 'Tips dari CookBot', message: 'Simpan sisa sayuran di wadah kedap udara agar tahan lebih lama hingga 5 hari!', time: '5 jam lalu', date: 'Hari ini', isRead: true),
+    _Notification(id: '5', type: 'recipe', title: 'Resep Baru Untukmu', message: 'Berdasarkan DNA rasa kamu, kami merekomendasikan Nasi Goreng Pedas Manis. Cek sekarang!', time: '1 hari lalu', date: 'Kemarin', isRead: true),
+    _Notification(id: '6', type: 'budget', title: 'Laporan Minggu Lalu', message: 'Kamu berhasil menghemat Rp75.000 minggu lalu dengan masak sendiri. Pertahankan!', time: '2 hari lalu', date: '28 Maret', isRead: true),
+    _Notification(id: '7', type: 'shopping', title: 'Reminder Belanja', message: 'Bawang merah dan cabai sudah habis. Tambahkan ke daftar belanja minggu ini.', time: '3 hari lalu', date: '27 Maret', isRead: true),
+  ];
 
   IconData _getIcon(String type) {
     switch (type) {
@@ -35,97 +51,220 @@ class _NotificationsPageState extends State<NotificationsPage> {
     }
   }
 
+  Color _getColor(String type) {
+    switch (type) {
+      case 'recipe': return AppTheme.orange500;
+      case 'shopping': return AppTheme.blue500;
+      case 'budget': return AppTheme.red500;
+      default: return AppTheme.purple600;
+    }
+  }
+
+  int get _unreadCount => _notifications.where((n) => !n.isRead).length;
+
+  List<_Notification> get _filtered =>
+      _filter == 'unread' ? _notifications.where((n) => !n.isRead).toList() : _notifications;
+
+  Map<String, List<_Notification>> get _grouped {
+    final map = <String, List<_Notification>>{};
+    for (final n in _filtered) {
+      map.putIfAbsent(n.date, () => []).add(n);
+    }
+    return map;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.slate50,
       body: Column(
         children: [
+          // Header
           Container(
             color: Colors.white,
             padding: EdgeInsets.only(
               top: MediaQuery.of(context).padding.top + 8,
               left: 20, right: 20, bottom: 12,
             ),
-            child: Row(
+            child: Column(
               children: [
-                GestureDetector(
-                  onTap: () => context.pop(),
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(color: AppTheme.slate50, borderRadius: BorderRadius.circular(50)),
-                    child: const Icon(Icons.chevron_left, size: 24, color: AppTheme.slate800),
-                  ),
+                Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => context.pop(),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(color: AppTheme.slate50, borderRadius: BorderRadius.circular(50)),
+                        child: const Icon(Icons.chevron_left, size: 24, color: AppTheme.slate800),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Notifikasi', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppTheme.slate800, letterSpacing: -0.5)),
+                          if (_unreadCount > 0)
+                            Text('$_unreadCount belum dibaca', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.slate500)),
+                        ],
+                      ),
+                    ),
+                    if (_unreadCount > 0)
+                      GestureDetector(
+                        onTap: () => setState(() {
+                          for (final n in _notifications) { n.isRead = true; }
+                        }),
+                        child: const Text('Tandai Semua', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.orange600)),
+                      ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text('Notifikasi', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppTheme.slate800, letterSpacing: -0.5)),
-                    ],
-                  ),
+                const SizedBox(height: 12),
+                Row(
+                  children: ['all', 'unread'].map((f) {
+                    final label = f == 'all' ? 'Semua' : 'Belum Dibaca${_unreadCount > 0 ? ' ($_unreadCount)' : ''}';
+                    final isSelected = _filter == f;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: GestureDetector(
+                        onTap: () => setState(() => _filter = f),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isSelected ? AppTheme.orange500 : AppTheme.slate100,
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: isSelected ? Colors.white : AppTheme.slate600)),
+                        ),
+                      ),
+                    );
+                  }).toList(),
                 ),
               ],
             ),
           ),
           const Divider(height: 1, color: AppTheme.slate100),
 
+          // Content
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.only(bottom: 24),
-              itemCount: _notifications.length,
-              itemBuilder: (context, index) {
-                final notif = _notifications[index];
-                return Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppTheme.slate100),
-                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6, offset: const Offset(0, 2))],
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+            child: _filtered.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(color: _getColor(notif['type']!), borderRadius: BorderRadius.circular(14)),
-                          child: Icon(_getIcon(notif['type']!), color: Colors.white, size: 18),
+                          padding: const EdgeInsets.all(24),
+                          decoration: const BoxDecoration(color: AppTheme.slate100, shape: BoxShape.circle),
+                          child: const Icon(Icons.check_circle_outline_rounded, size: 48, color: AppTheme.slate400),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                notif['title']!,
-                                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: AppTheme.slate900),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                notif['message']!,
-                                style: const TextStyle(fontSize: 12, color: AppTheme.slate700, fontWeight: FontWeight.w500, height: 1.5),
-                              ),
-                              const SizedBox(height: 6),
-                              Row(
-                                children: [
-                                  const Icon(Icons.access_time_rounded, size: 11, color: AppTheme.slate400),
-                                  const SizedBox(width: 4),
-                                  Text(notif['time']!, style: const TextStyle(fontSize: 11, color: AppTheme.slate400, fontWeight: FontWeight.w700)),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
+                        const SizedBox(height: 16),
+                        const Text('Semua Sudah Dibaca!', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18, color: AppTheme.slate700)),
+                        const SizedBox(height: 8),
+                        const Text('Tidak ada notifikasi yang belum dibaca.', style: TextStyle(fontSize: 13, color: AppTheme.slate500, fontWeight: FontWeight.w500)),
                       ],
                     ),
+                  )
+                : ListView(
+                    padding: const EdgeInsets.only(bottom: 24),
+                    children: _grouped.entries.map((entry) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                            child: Text(
+                              entry.key.toUpperCase(),
+                              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: AppTheme.slate500, letterSpacing: 1),
+                            ),
+                          ),
+                          ...entry.value.map((notif) => Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                            child: Dismissible(
+                              key: Key(notif.id),
+                              direction: DismissDirection.endToStart,
+                              background: Container(
+                                margin: const EdgeInsets.symmetric(vertical: 2),
+                                decoration: BoxDecoration(color: AppTheme.red50, borderRadius: BorderRadius.circular(20)),
+                                alignment: Alignment.centerRight,
+                                padding: const EdgeInsets.only(right: 20),
+                                child: const Icon(Icons.delete_outline_rounded, color: AppTheme.red500),
+                              ),
+                              onDismissed: (_) => setState(() => _notifications.removeWhere((n) => n.id == notif.id)),
+                              child: GestureDetector(
+                                onTap: () => setState(() => notif.isRead = true),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: notif.isRead ? Colors.white : const Color(0xFFFFF7ED),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(color: notif.isRead ? AppTheme.slate100 : AppTheme.orange200),
+                                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6, offset: const Offset(0, 2))],
+                                  ),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(10),
+                                        decoration: BoxDecoration(color: _getColor(notif.type), borderRadius: BorderRadius.circular(14)),
+                                        child: Icon(_getIcon(notif.type), color: Colors.white, size: 18),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Expanded(
+                                                  child: Text(
+                                                    notif.title,
+                                                    style: TextStyle(
+                                                      fontWeight: FontWeight.w900,
+                                                      fontSize: 13,
+                                                      color: notif.isRead ? AppTheme.slate700 : AppTheme.slate900,
+                                                    ),
+                                                  ),
+                                                ),
+                                                if (!notif.isRead)
+                                                  Container(
+                                                    width: 8, height: 8,
+                                                    margin: const EdgeInsets.only(top: 4),
+                                                    decoration: const BoxDecoration(color: AppTheme.orange500, shape: BoxShape.circle),
+                                                  ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              notif.message,
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w500,
+                                                color: notif.isRead ? AppTheme.slate500 : AppTheme.slate700,
+                                                height: 1.5,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Row(
+                                              children: [
+                                                const Icon(Icons.access_time_rounded, size: 11, color: AppTheme.slate400),
+                                                const SizedBox(width: 4),
+                                                Text(notif.time, style: const TextStyle(fontSize: 11, color: AppTheme.slate400, fontWeight: FontWeight.w700)),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          )).toList(),
+                        ],
+                      );
+                    }).toList(),
                   ),
-                );
-              },
-            ),
           ),
         ],
       ),

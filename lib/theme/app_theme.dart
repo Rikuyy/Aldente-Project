@@ -47,7 +47,6 @@ class AppTheme {
         primary: orange600,
         secondary: orange500,
         surface: Colors.white,
-        background: slate50,
       ),
       fontFamily: 'SF Pro Display',
       scaffoldBackgroundColor: slate50,

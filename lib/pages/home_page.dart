@@ -7,7 +7,6 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const isWarning = true;
     const unreadCount = 3;
 
     return Scaffold(
@@ -27,10 +26,10 @@ class HomePage extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
+                    const Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
+                      children: [
                         Text(
                           'CookCase+',
                           style: TextStyle(
@@ -40,13 +39,19 @@ class HomePage extends StatelessWidget {
                             letterSpacing: -0.5,
                           ),
                         ),
-                        Text(
-                          'Hai, Budi! 👋',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.slate500,
-                          ),
+                        Row(
+                          children: [
+                            Text(
+                              'Hai, Budi!',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: AppTheme.slate500,
+                              ),
+                            ),
+                            SizedBox(width: 4),
+                            Icon(Icons.waving_hand, size: 12, color: AppTheme.slate500),
+                          ],
                         ),
                       ],
                     ),
@@ -76,9 +81,9 @@ class HomePage extends StatelessWidget {
                                         borderRadius: BorderRadius.circular(50),
                                         border: Border.all(color: Colors.white, width: 1.5),
                                       ),
-                                      child: Text(
+                                      child: const Text(
                                         '$unreadCount',
-                                        style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w900),
+                                        style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w900),
                                       ),
                                     ),
                                   ),
@@ -131,13 +136,14 @@ class HomePage extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: isWarning ? const Color(0xFFFFF7ED) : AppTheme.green50,
+                    color: const Color(0xFFFFF7ED),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: isWarning ? AppTheme.orange200 : const Color(0xFFBBF7D0),
+                      color: AppTheme.orange200,
                     ),
                     boxShadow: [
                       BoxShadow(
+                        // ignore: deprecated_member_use
                         color: Colors.black.withOpacity(0.04),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
@@ -154,15 +160,16 @@ class HomePage extends StatelessWidget {
                           borderRadius: BorderRadius.circular(50),
                           boxShadow: [
                             BoxShadow(
+                              // ignore: deprecated_member_use
                               color: Colors.black.withOpacity(0.08),
                               blurRadius: 4,
                               offset: const Offset(0, 1),
                             ),
                           ],
                         ),
-                        child: Icon(
+                        child: const Icon(
                           Icons.warning_amber_rounded,
-                          color: isWarning ? AppTheme.orange600 : AppTheme.green600,
+                          color: AppTheme.orange600,
                           size: 20,
                         ),
                       ),
@@ -213,6 +220,7 @@ class HomePage extends StatelessWidget {
                       borderRadius: BorderRadius.circular(28),
                       boxShadow: [
                         BoxShadow(
+                          // ignore: deprecated_member_use
                           color: AppTheme.slate900.withOpacity(0.3),
                           blurRadius: 20,
                           offset: const Offset(0, 8),
@@ -229,6 +237,7 @@ class HomePage extends StatelessWidget {
                             width: 120,
                             height: 120,
                             decoration: BoxDecoration(
+                              // ignore: deprecated_member_use
                               color: Colors.white.withOpacity(0.05),
                               shape: BoxShape.circle,
                             ),
@@ -240,8 +249,8 @@ class HomePage extends StatelessWidget {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Row(
-                                  children: const [
+                                const Row(
+                                  children: [
                                     Icon(Icons.account_balance_wallet_rounded, color: Color(0xFFCBD5E1), size: 16),
                                     SizedBox(width: 8),
                                     Text(
@@ -258,8 +267,10 @@ class HomePage extends StatelessWidget {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                                   decoration: BoxDecoration(
+                                    // ignore: deprecated_member_use
                                     color: Colors.white.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(50),
+                                    // ignore: deprecated_member_use
                                     border: Border.all(color: Colors.white.withOpacity(0.1)),
                                   ),
                                   child: const Text(
@@ -296,6 +307,7 @@ class HomePage extends StatelessWidget {
                             const SizedBox(height: 20),
                             Container(
                               height: 1,
+                              // ignore: deprecated_member_use
                               color: Colors.white.withOpacity(0.1),
                             ),
                             const SizedBox(height: 20),
@@ -303,11 +315,11 @@ class HomePage extends StatelessWidget {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                Column(
+                                const Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Row(
-                                      children: const [
+                                      children: [
                                         Icon(Icons.calendar_month_rounded, color: Color(0xFF94A3B8), size: 12),
                                         SizedBox(width: 4),
                                         Text(
@@ -321,8 +333,8 @@ class HomePage extends StatelessWidget {
                                         ),
                                       ],
                                     ),
-                                    const SizedBox(height: 6),
-                                    const Text(
+                                    SizedBox(height: 6),
+                                    Text(
                                       'Rp 450.000',
                                       style: TextStyle(
                                         color: Color(0xFFE2E8F0),
@@ -368,8 +380,8 @@ class HomePage extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
-                        child: Row(
-                          children: const [
+                        child: const Row(
+                          children: [
                             Icon(Icons.add_circle_outline, color: AppTheme.orange600, size: 16),
                             SizedBox(width: 4),
                             Text(
@@ -390,19 +402,19 @@ class HomePage extends StatelessWidget {
                 const SizedBox(height: 12),
 
                 // Todo items
-                _TodoItem(
+                const _TodoItem(
                   title: 'Rencana Makan Malam',
                   subtitle: 'Nasi Goreng Sosis (Budget sisa: Rp 15.000)',
                   isDone: false,
                 ),
                 const SizedBox(height: 10),
-                _TodoItem(
+                const _TodoItem(
                   title: 'Beli Telur di Warung',
                   subtitle: 'Stok menipis, sisa 1 butir',
                   isDone: false,
                 ),
                 const SizedBox(height: 10),
-                _TodoItem(
+                const _TodoItem(
                   title: 'Makan Siang',
                   subtitle: 'Soto Ayam (Rp 12.000)',
                   isDone: true,
@@ -433,6 +445,7 @@ class _TodoItem extends StatelessWidget {
         border: Border.all(color: AppTheme.slate100),
         boxShadow: isDone ? null : [
           BoxShadow(
+            // ignore: deprecated_member_use
             color: Colors.black.withOpacity(0.04),
             blurRadius: 6,
             offset: const Offset(0, 2),

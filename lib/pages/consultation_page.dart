@@ -11,6 +11,7 @@ class ConsultationPage extends StatelessWidget {
       backgroundColor: AppTheme.slate50,
       body: Column(
         children: [
+          // Header
           Container(
             color: Colors.white,
             padding: EdgeInsets.only(
@@ -55,17 +56,58 @@ class ConsultationPage extends StatelessWidget {
           ),
           const Divider(height: 1, color: AppTheme.slate100),
 
+          // Chat messages
           Expanded(
             child: ListView(
               padding: const EdgeInsets.all(20),
               children: [
                 _BotMessage(
-                  child: const Column(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Halo Budi! 👋', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: AppTheme.slate900, letterSpacing: -0.3)),
-                      SizedBox(height: 6),
-                      Text('Hari ini kamu punya stok telur dan mie. Mau masak atau cari saran jajan?', style: TextStyle(color: AppTheme.slate600, fontSize: 13, height: 1.5)),
+                      const Row(
+                        children: [
+                          Text('Halo Budi!', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: AppTheme.slate900, letterSpacing: -0.3)),
+                          SizedBox(width: 4),
+                          Icon(Icons.waving_hand, size: 14, color: AppTheme.slate900),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      RichText(
+                        text: const TextSpan(
+                          style: TextStyle(color: AppTheme.slate600, fontWeight: FontWeight.w500, fontSize: 13, height: 1.5),
+                          children: [
+                            TextSpan(text: 'Hari ini kamu punya stok '),
+                            TextSpan(text: 'telur', style: TextStyle(fontWeight: FontWeight.w700, color: AppTheme.orange600, backgroundColor: Color(0xFFFFF7ED))),
+                            TextSpan(text: ' dan '),
+                            TextSpan(text: 'mie', style: TextStyle(fontWeight: FontWeight.w700, color: AppTheme.orange600, backgroundColor: Color(0xFFFFF7ED))),
+                            TextSpan(text: '. Mau masak atau cari saran jajan?'),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          // ignore: deprecated_member_use
+                          color: AppTheme.blue50.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppTheme.blue100),
+                        ),
+                        child: const Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(Icons.article_outlined, color: AppTheme.blue500, size: 18),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Berdasarkan budget sisa (30%), saya sarankan kamu Masak saja hari ini untuk berhemat.',
+                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF1E40AF), height: 1.5),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -76,7 +118,20 @@ class ConsultationPage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Sip! Dengan bahan Telur dan Mie, kamu bisa bikin Mie Nyemek Telur Pedas.', style: TextStyle(color: AppTheme.slate600, fontSize: 13, height: 1.5)),
+                      RichText(
+                        text: const TextSpan(
+                          style: TextStyle(color: AppTheme.slate600, fontWeight: FontWeight.w500, fontSize: 13, height: 1.5),
+                          children: [
+                            TextSpan(text: 'Sip! Dengan bahan '),
+                            TextSpan(text: 'Telur', style: TextStyle(fontWeight: FontWeight.w700, color: AppTheme.slate800)),
+                            TextSpan(text: ' dan '),
+                            TextSpan(text: 'Mie', style: TextStyle(fontWeight: FontWeight.w700, color: AppTheme.slate800)),
+                            TextSpan(text: ', kamu bisa bikin '),
+                            TextSpan(text: 'Mie Nyemek Telur Pedas', style: TextStyle(fontWeight: FontWeight.w700, color: AppTheme.orange600)),
+                            TextSpan(text: '.'),
+                          ],
+                        ),
+                      ),
                       const SizedBox(height: 12),
                       Container(
                         padding: const EdgeInsets.all(14),
@@ -88,8 +143,8 @@ class ConsultationPage extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              children: const [
+                            const Row(
+                              children: [
                                 Icon(Icons.check_circle_rounded, color: AppTheme.green500, size: 16),
                                 SizedBox(width: 6),
                                 Text('Estimasi Biaya: Rp 0', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: AppTheme.slate800)),
@@ -118,6 +173,25 @@ class ConsultationPage extends StatelessWidget {
             ),
           ),
 
+          // Quick action chips
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.only(left: 16, right: 16, top: 12),
+            child: const SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _QuickChip(label: 'Lihat Rekomendasi Masak', color: AppTheme.orange50, textColor: Color(0xFF9A3412), borderColor: AppTheme.orange200),
+                  SizedBox(width: 8),
+                  _QuickChip(label: 'Cek Budget Hari Ini', color: AppTheme.blue50, textColor: AppTheme.blue700, borderColor: AppTheme.blue100),
+                  SizedBox(width: 8),
+                  _QuickChip(label: 'Tambah Stok', color: AppTheme.green50, textColor: AppTheme.green600, borderColor: Color(0xFFBBF7D0)),
+                ],
+              ),
+            ),
+          ),
+
+          // Text input
           Container(
             color: Colors.white,
             padding: EdgeInsets.only(
@@ -127,6 +201,7 @@ class ConsultationPage extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.only(left: 20, right: 6, top: 4, bottom: 4),
               decoration: BoxDecoration(
+                // ignore: deprecated_member_use
                 color: AppTheme.slate100.withOpacity(0.8),
                 borderRadius: BorderRadius.circular(50),
                 border: Border.all(color: AppTheme.slate200, width: 2),
@@ -147,6 +222,8 @@ class ConsultationPage extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: AppTheme.orange500,
                       shape: BoxShape.circle,
+                      // ignore: deprecated_member_use
+                      boxShadow: [BoxShadow(color: AppTheme.orange500.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 2))],
                     ),
                     child: const Icon(Icons.send_rounded, color: Colors.white, size: 18),
                   ),
@@ -180,6 +257,7 @@ class _BotMessage extends StatelessWidget {
             bottomRight: Radius.circular(24),
           ),
           border: Border.all(color: AppTheme.slate100),
+          // ignore: deprecated_member_use
           boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 2))],
         ),
         child: child,
@@ -211,9 +289,32 @@ class _UserMessage extends StatelessWidget {
             bottomLeft: Radius.circular(24),
             bottomRight: Radius.circular(24),
           ),
+          // ignore: deprecated_member_use
+          boxShadow: [BoxShadow(color: AppTheme.orange600.withOpacity(0.2), blurRadius: 12, offset: const Offset(0, 4))],
         ),
         child: Text(text, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500, fontSize: 14, height: 1.5)),
       ),
+    );
+  }
+}
+
+class _QuickChip extends StatelessWidget {
+  final String label;
+  final Color color;
+  final Color textColor;
+  final Color borderColor;
+  const _QuickChip({required this.label, required this.color, required this.textColor, required this.borderColor});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor),
+      ),
+      child: Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textColor)),
     );
   }
 }
