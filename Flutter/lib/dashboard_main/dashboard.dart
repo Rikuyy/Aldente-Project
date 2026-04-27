@@ -48,44 +48,44 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
           BottomNavigationBarItem(
             icon: SvgPicture.string(
               homeIcon,
-              color: inActiveIconColor,
+              colorFilter: const ColorFilter.mode(inActiveIconColor, BlendMode.srcIn),
             ),
             activeIcon: SvgPicture.string(
               homeIcon,
-              color: const Color(0xFFFF7643),
+              colorFilter: const ColorFilter.mode(Color(0xFFFF7643), BlendMode.srcIn),
             ),
             label: "Home",
           ),
           BottomNavigationBarItem(
             icon: SvgPicture.string(
               heartIcon,
-              color: inActiveIconColor,
+              colorFilter: const ColorFilter.mode(inActiveIconColor, BlendMode.srcIn),
             ),
             activeIcon: SvgPicture.string(
               heartIcon,
-              color: const Color(0xFFFF7643),
+              colorFilter: const ColorFilter.mode(Color(0xFFFF7643), BlendMode.srcIn),
             ),
             label: "Fav",
           ),
           BottomNavigationBarItem(
             icon: SvgPicture.string(
               chatIcon,
-              color: inActiveIconColor,
+              colorFilter: const ColorFilter.mode(inActiveIconColor, BlendMode.srcIn),
             ),
             activeIcon: SvgPicture.string(
               chatIcon,
-              color: const Color(0xFFFF7643),
+              colorFilter: const ColorFilter.mode(Color(0xFFFF7643), BlendMode.srcIn),
             ),
             label: "Chat",
           ),
           BottomNavigationBarItem(
             icon: SvgPicture.string(
               userIcon,
-              color: inActiveIconColor,
+              colorFilter: const ColorFilter.mode(inActiveIconColor, BlendMode.srcIn),
             ),
             activeIcon: SvgPicture.string(
               userIcon,
-              color: const Color(0xFFFF7643),
+              colorFilter: const ColorFilter.mode(Color(0xFFFF7643), BlendMode.srcIn),
             ),
             label: "Profile",
           ),

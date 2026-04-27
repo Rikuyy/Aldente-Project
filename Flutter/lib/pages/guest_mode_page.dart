@@ -100,8 +100,7 @@ class GuestModePage extends StatelessWidget {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          // ignore: deprecated_member_use
-                          color: AppTheme.orange600.withOpacity(0.2),
+                          color: AppTheme.orange600.withValues(alpha: 51),
                           blurRadius: 15,
                           offset: const Offset(0, 4),
                         ),
@@ -126,11 +125,11 @@ class GuestModePage extends StatelessWidget {
                         style: TextStyle(color: AppTheme.slate700, height: 1.5),
                       ),
                       const SizedBox(height: 12),
-                      _MenuOption(icon: FontAwesomeIcons.utensils, title: 'Nasi Telur Pontianak + Es Teh', subtitle: '(Masak di kos)'),
+                      const _MenuOption(icon: FontAwesomeIcons.utensils, title: 'Nasi Telur Pontianak + Es Teh', subtitle: '(Masak di kos)'),
                       const SizedBox(height: 6),
-                      _MenuOption(icon: FontAwesomeIcons.bowlRice, title: 'Mie Dok-Dok Ala Warkop'),
+                      const _MenuOption(icon: FontAwesomeIcons.bowlRice, title: 'Mie Dok-Dok Ala Warkop'),
                       const SizedBox(height: 6),
-                      _MenuOption(icon: FontAwesomeIcons.bowlFood, title: 'Beli Nasi Warteg', subtitle: '(Sayur 2 macem, Telur, dan Tempe Orek)'),
+                      const _MenuOption(icon: FontAwesomeIcons.bowlFood, title: 'Beli Nasi Warteg', subtitle: '(Sayur 2 macem, Telur, dan Tempe Orek)'),
                       const SizedBox(height: 16),
 
                       // CTA Card
@@ -173,15 +172,15 @@ class GuestModePage extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(50),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: AppTheme.orange600.withOpacity(0.3),
+                                      color: AppTheme.orange600.withValues(alpha: 76.5),
                                       blurRadius: 8,
                                       offset: const Offset(0, 3),
                                     ),
                                   ],
                                 ),
-                                child: Row(
+                                child: const Row(
                                   mainAxisSize: MainAxisSize.min,
-                                  children: const [
+                                  children: [
                                     Text(
                                       'Yuk, Login!',
                                       style: TextStyle(
@@ -267,8 +266,7 @@ class _ChatBubble extends StatelessWidget {
           border: Border.all(color: AppTheme.slate100),
           boxShadow: [
             BoxShadow(
-              // ignore: deprecated_member_use
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 10.2),
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -281,7 +279,7 @@ class _ChatBubble extends StatelessWidget {
 }
 
 class _MenuOption extends StatelessWidget {
-  final IconData icon;
+  final FaIconData icon;
   final String title;
   final String? subtitle;
   const _MenuOption({required this.icon, required this.title, this.subtitle});
@@ -291,7 +289,7 @@ class _MenuOption extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        FaIcon(icon as FaIconData?, size: 16, color: AppTheme.slate600),
+        FaIcon(icon, size: 16, color: AppTheme.slate600),
         const SizedBox(width: 8),
         Expanded(
           child: Column(
