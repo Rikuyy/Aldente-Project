@@ -5,7 +5,7 @@ import '../theme/app_theme.dart';
 
 class Tag {
   final String text;
-  final IconData icon;
+  final FaIconData icon;
 
   const Tag(this.text, this.icon);
 }
@@ -110,7 +110,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppTheme.orange500.withOpacity(0.5),
+                      color: AppTheme.orange500.withValues(alpha: 127.5),
                       blurRadius: 8,
                       spreadRadius: 0,
                     ),
@@ -253,7 +253,7 @@ class _StepFoodPreferences extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const tags = [Tag('Pedas', FontAwesomeIcons.pepperHot as IconData), Tag('Manis', FontAwesomeIcons.candyCane as IconData), Tag('Gurih', FontAwesomeIcons.utensils as IconData), Tag('Asin', FontAwesomeIcons.mortarPestle as IconData), Tag('Ayam', FontAwesomeIcons.drumstickBite as IconData), Tag('Sapi', FontAwesomeIcons.cow as IconData), Tag('Seafood', FontAwesomeIcons.fish as IconData), Tag('Sayuran', FontAwesomeIcons.carrot as IconData)];
+    const tags = [Tag('Pedas', FontAwesomeIcons.pepperHot), Tag('Manis', FontAwesomeIcons.candyCane), Tag('Gurih', FontAwesomeIcons.utensils), Tag('Asin', FontAwesomeIcons.mortarPestle), Tag('Ayam', FontAwesomeIcons.drumstickBite), Tag('Sapi', FontAwesomeIcons.cow), Tag('Seafood', FontAwesomeIcons.fish), Tag('Sayuran', FontAwesomeIcons.carrot)];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -285,12 +285,12 @@ class _StepFoodPreferences extends StatelessWidget {
                     color: isSelected ? AppTheme.orange500 : AppTheme.slate200,
                     width: 2,
                   ),
-                  boxShadow: isSelected ? [BoxShadow(color: AppTheme.orange500.withOpacity(0.2), blurRadius: 8, offset: const Offset(0, 2))] : null,
+                  boxShadow: isSelected ? [BoxShadow(color: AppTheme.orange500.withValues(alpha: 51), blurRadius: 8, offset: const Offset(0, 2))] : null,
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    FaIcon(tag.icon as FaIconData?, size: 14, color: isSelected ? AppTheme.orange700 : AppTheme.slate600),
+                    FaIcon(tag.icon, size: 14, color: isSelected ? AppTheme.orange700 : AppTheme.slate600),
                     const SizedBox(width: 8),
                     Text(tag.text, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: isSelected ? AppTheme.orange700 : AppTheme.slate600)),
                   ],
@@ -312,7 +312,7 @@ class _StepAllergies extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const tags = [Tag('Kacang', FontAwesomeIcons.seedling as IconData), Tag('Susu', FontAwesomeIcons.glassWhiskey as IconData), Tag('Telur', FontAwesomeIcons.egg as IconData), Tag('Seafood', FontAwesomeIcons.fish as IconData), Tag('Gluten', FontAwesomeIcons.breadSlice as IconData), Tag('Kedelai', FontAwesomeIcons.seedling as IconData)];
+    const tags = [Tag('Kacang', FontAwesomeIcons.seedling), Tag('Susu', FontAwesomeIcons.whiskeyGlass), Tag('Telur', FontAwesomeIcons.egg), Tag('Seafood', FontAwesomeIcons.fish), Tag('Gluten', FontAwesomeIcons.breadSlice), Tag('Kedelai', FontAwesomeIcons.seedling)];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -402,8 +402,7 @@ class _StepBudgetCycle extends StatelessWidget {
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: AppTheme.slate200, width: 2),
-            // ignore: deprecated_member_use
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 10.2), blurRadius: 8, offset: const Offset(0, 2))],
           ),
           child: Row(
             children: options.map((opt) {
@@ -417,8 +416,7 @@ class _StepBudgetCycle extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: isSelected ? AppTheme.orange500 : Colors.transparent,
                       borderRadius: BorderRadius.circular(14),
-                      // ignore: deprecated_member_use
-                      boxShadow: isSelected ? [BoxShadow(color: AppTheme.orange500.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 3))] : null,
+                      boxShadow: isSelected ? [BoxShadow(color: AppTheme.orange500.withValues(alpha: 76.5), blurRadius: 8, offset: const Offset(0, 3))] : null,
                     ),
                     child: Text(
                       opt,
@@ -465,12 +463,12 @@ class _StepKitchenTools extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const tools = [
-      Tag('Kompor', FontAwesomeIcons.fire as IconData),
-      Tag('Oven', FontAwesomeIcons.fire as IconData),
-      Tag('Microwave', FontAwesomeIcons.radiation as IconData),
-      Tag('Blender', FontAwesomeIcons.blender as IconData),
-      Tag('Rice Cooker', FontAwesomeIcons.bowlRice as IconData),
-      Tag('Kulkas', FontAwesomeIcons.snowflake as IconData),
+      Tag('Kompor', FontAwesomeIcons.fire),
+      Tag('Oven', FontAwesomeIcons.fire),
+      Tag('Microwave', FontAwesomeIcons.radiation),
+      Tag('Blender', FontAwesomeIcons.blender),
+      Tag('Rice Cooker', FontAwesomeIcons.bowlRice),
+      Tag('Kulkas', FontAwesomeIcons.snowflake),
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -512,8 +510,7 @@ class _StepKitchenTools extends StatelessWidget {
                   color: isSelected ? AppTheme.slate100 : Colors.white,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: isSelected ? AppTheme.slate300 : AppTheme.slate200, width: 2),
-                  // ignore: deprecated_member_use
-                  boxShadow: isSelected ? null : [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6, offset: const Offset(0, 2))],
+                  boxShadow: isSelected ? null : [BoxShadow(color: Colors.black.withValues(alpha: 10.2), blurRadius: 6, offset: const Offset(0, 2))],
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -570,7 +567,7 @@ class _StepMealFrequency extends StatelessWidget {
             borderRadius: BorderRadius.circular(28),
             border: Border.all(color: AppTheme.slate100, width: 2),
             // ignore: deprecated_member_use
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 10.2), blurRadius: 10, offset: const Offset(0, 4))],
           ),
           child: Column(
             children: [
@@ -631,8 +628,7 @@ class _CounterButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: color,
           shape: BoxShape.circle,
-          // ignore: deprecated_member_use
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 4, offset: const Offset(0, 2))],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 20.4), blurRadius: 4, offset: const Offset(0, 2))],
           border: Border.all(color: AppTheme.slate200),
         ),
         child: Center(

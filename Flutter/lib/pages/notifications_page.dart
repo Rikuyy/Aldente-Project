@@ -199,7 +199,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                     color: notif.isRead ? Colors.white : const Color(0xFFFFF7ED),
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(color: notif.isRead ? AppTheme.slate100 : AppTheme.orange200),
-                                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6, offset: const Offset(0, 2))],
+                                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 10.2), blurRadius: 6, offset: const Offset(0, 2))],
                                   ),
                                   child: Row(
                                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -260,7 +260,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                 ),
                               ),
                             ),
-                          )).toList(),
+                          )),
                         ],
                       );
                     }).toList(),

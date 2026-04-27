@@ -5,7 +5,7 @@ import '../theme/app_theme.dart';
 
 class Tag {
   final String text;
-  final IconData icon;
+  final FaIconData icon;
 
   const Tag(this.text, this.icon);
 }
@@ -20,15 +20,15 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   bool _isEditing = false;
   String _name = 'Budi';
-  List<Tag> _favFoods = [const Tag('Pedas', FontAwesomeIcons.pepperHot as IconData), const Tag('Ayam', FontAwesomeIcons.drumstickBite as IconData), const Tag('Gurih', FontAwesomeIcons.utensils as IconData)];
-  List<Tag> _allergies = [const Tag('Kacang', FontAwesomeIcons.seedling as IconData)];
+  List<Tag> _favFoods = [const Tag('Pedas', FontAwesomeIcons.pepperHot), const Tag('Ayam', FontAwesomeIcons.drumstickBite), const Tag('Gurih', FontAwesomeIcons.utensils)];
+  List<Tag> _allergies = [const Tag('Kacang', FontAwesomeIcons.seedling)];
   String _budgetCycle = 'Mingguan';
-  List<Tag> _missingTools = [const Tag('Oven', FontAwesomeIcons.fire as IconData), const Tag('Blender', FontAwesomeIcons.blender as IconData)];
+  List<Tag> _missingTools = [const Tag('Oven', FontAwesomeIcons.fire), const Tag('Blender', FontAwesomeIcons.blender)];
   int _eatFrequency = 3;
 
-  final _allFavFoods = [const Tag('Pedas', FontAwesomeIcons.pepperHot as IconData), const Tag('Manis', FontAwesomeIcons.candyCane as IconData), const Tag('Gurih', FontAwesomeIcons.utensils as IconData), const Tag('Asin', FontAwesomeIcons.mortarPestle as IconData), const Tag('Ayam', FontAwesomeIcons.drumstickBite as IconData), const Tag('Sapi', FontAwesomeIcons.cow as IconData), const Tag('Seafood', FontAwesomeIcons.fish as IconData), const Tag('Sayuran', FontAwesomeIcons.carrot as IconData)];
-  final _allAllergies = [const Tag('Kacang', FontAwesomeIcons.seedling as IconData), const Tag('Susu', FontAwesomeIcons.glassWhiskey as IconData), const Tag('Telur', FontAwesomeIcons.egg as IconData), const Tag('Seafood', FontAwesomeIcons.fish as IconData), const Tag('Gluten', FontAwesomeIcons.breadSlice as IconData), const Tag('Kedelai', FontAwesomeIcons.seedling as IconData)];
-  final _allTools = [const Tag('Kompor', FontAwesomeIcons.fire as IconData), const Tag('Oven', FontAwesomeIcons.fire as IconData), const Tag('Microwave', FontAwesomeIcons.radiation as IconData), const Tag('Blender', FontAwesomeIcons.blender as IconData), const Tag('Rice Cooker', FontAwesomeIcons.bowlRice as IconData), const Tag('Kulkas', FontAwesomeIcons.snowflake as IconData)];
+  final _allFavFoods = [const Tag('Pedas', FontAwesomeIcons.pepperHot), const Tag('Manis', FontAwesomeIcons.candyCane), const Tag('Gurih', FontAwesomeIcons.utensils), const Tag('Asin', FontAwesomeIcons.mortarPestle), const Tag('Ayam', FontAwesomeIcons.drumstickBite), const Tag('Sapi', FontAwesomeIcons.cow), const Tag('Seafood', FontAwesomeIcons.fish), const Tag('Sayuran', FontAwesomeIcons.carrot)];
+  final _allAllergies = [const Tag('Kacang', FontAwesomeIcons.seedling), const Tag('Susu', FontAwesomeIcons.whiskeyGlass), const Tag('Telur', FontAwesomeIcons.egg), const Tag('Seafood', FontAwesomeIcons.fish), const Tag('Gluten', FontAwesomeIcons.breadSlice), const Tag('Kedelai', FontAwesomeIcons.seedling)];
+  final _allTools = [const Tag('Kompor', FontAwesomeIcons.fire), const Tag('Oven', FontAwesomeIcons.fire), const Tag('Microwave', FontAwesomeIcons.radiation), const Tag('Blender', FontAwesomeIcons.blender), const Tag('Rice Cooker', FontAwesomeIcons.bowlRice), const Tag('Kulkas', FontAwesomeIcons.snowflake)];
 
   void _toggleItem(Tag item, List<Tag> list, Function(List<Tag>) setter) {
     setState(() {
@@ -106,7 +106,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         shape: BoxShape.circle,
                         color: AppTheme.orange100,
                         border: Border.all(color: Colors.white, width: 4),
-                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 12, offset: const Offset(0, 4))],
+                        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 30.6), blurRadius: 12, offset: const Offset(0, 4))],
                       ),
                       child: Center(
                         child: Text(
@@ -206,8 +206,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                   decoration: BoxDecoration(
                                     color: isSelected ? Colors.white : Colors.transparent,
                                     borderRadius: BorderRadius.circular(10),
-                                    // ignore: deprecated_member_use
-                                    boxShadow: isSelected ? [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 4)] : null,
+                                    boxShadow: isSelected ? [BoxShadow(color: Colors.black.withValues(alpha: 15.3), blurRadius: 4)] : null,
                                   ),
                                   child: Text(opt, textAlign: TextAlign.center, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: isSelected ? AppTheme.blue500 : AppTheme.slate500)),
                                 ),
@@ -349,8 +348,7 @@ class _ProfileSection extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(28),
         border: Border.all(color: AppTheme.slate100),
-        // ignore: deprecated_member_use
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 10.2), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -434,7 +432,7 @@ class _TagGroup extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      FaIcon(tag.icon as FaIconData?, size: 12, color: isSelected ? selectedTextColor : AppTheme.slate500),
+                      FaIcon(tag.icon, size: 12, color: isSelected ? selectedTextColor : AppTheme.slate500),
                       const SizedBox(width: 6),
                       Text(
                         tag.text,
