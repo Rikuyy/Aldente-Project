@@ -28,6 +28,10 @@ Route::get('/resep', function () {
     return view('resep'); // Panggil fail resep.blade.php secara terus
 })->name('resep.index');
 
+Route::get('/testing', function () {
+    return view('testing');
+});
+
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
