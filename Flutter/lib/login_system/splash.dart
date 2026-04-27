@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:cook_mate/login_system/sign_in.dart';
+import 'sign_in.dart';
 
 class SplashScreen extends StatefulWidget {
   static const String routeName = '/splash';
