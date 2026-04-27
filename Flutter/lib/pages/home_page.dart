@@ -143,8 +143,7 @@ class HomePage extends StatelessWidget {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        // ignore: deprecated_member_use
-                        color: Colors.black.withOpacity(0.04),
+                        color: Colors.black.withValues(alpha: 10.2),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -160,8 +159,7 @@ class HomePage extends StatelessWidget {
                           borderRadius: BorderRadius.circular(50),
                           boxShadow: [
                             BoxShadow(
-                              // ignore: deprecated_member_use
-                              color: Colors.black.withOpacity(0.08),
+                              color: Colors.black.withValues(alpha: 20.4),
                               blurRadius: 4,
                               offset: const Offset(0, 1),
                             ),
@@ -220,8 +218,7 @@ class HomePage extends StatelessWidget {
                       borderRadius: BorderRadius.circular(28),
                       boxShadow: [
                         BoxShadow(
-                          // ignore: deprecated_member_use
-                          color: AppTheme.slate900.withOpacity(0.3),
+                          color: AppTheme.slate900.withValues(alpha: 76.5),
                           blurRadius: 20,
                           offset: const Offset(0, 8),
                         ),
@@ -237,8 +234,7 @@ class HomePage extends StatelessWidget {
                             width: 120,
                             height: 120,
                             decoration: BoxDecoration(
-                              // ignore: deprecated_member_use
-                              color: Colors.white.withOpacity(0.05),
+                              color: Colors.white.withValues(alpha: 12.75),
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -267,11 +263,9 @@ class HomePage extends StatelessWidget {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                                   decoration: BoxDecoration(
-                                    // ignore: deprecated_member_use
-                                    color: Colors.white.withOpacity(0.1),
+                                    color: Colors.white.withValues(alpha: 25.5),
                                     borderRadius: BorderRadius.circular(50),
-                                    // ignore: deprecated_member_use
-                                    border: Border.all(color: Colors.white.withOpacity(0.1)),
+                                    border: Border.all(color: Colors.white.withValues(alpha: 25.5)),
                                   ),
                                   child: const Text(
                                     'Minggu Ini',
@@ -307,8 +301,7 @@ class HomePage extends StatelessWidget {
                             const SizedBox(height: 20),
                             Container(
                               height: 1,
-                              // ignore: deprecated_member_use
-                              color: Colors.white.withOpacity(0.1),
+                              color: Colors.white.withValues(alpha: 25.5),
                             ),
                             const SizedBox(height: 20),
                             Row(
@@ -347,7 +340,7 @@ class HomePage extends StatelessWidget {
                                 Container(
                                   padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.1),
+                                    color: Colors.white.withValues(alpha: 25.5),
                                     borderRadius: BorderRadius.circular(14),
                                   ),
                                   child: const Icon(Icons.arrow_forward, color: Colors.white, size: 20),
@@ -445,8 +438,7 @@ class _TodoItem extends StatelessWidget {
         border: Border.all(color: AppTheme.slate100),
         boxShadow: isDone ? null : [
           BoxShadow(
-            // ignore: deprecated_member_use
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 10.2),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
