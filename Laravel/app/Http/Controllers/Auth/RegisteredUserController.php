@@ -16,20 +16,29 @@ use Illuminate\View\View;
 class RegisteredUserController extends Controller
 {
     /**
-     * Display the registration view.
+     * Menampilkan halaman Setup (Hanya jika belum ada akun).
      */
-    public function create(): View
+    public function create(): View|RedirectResponse
     {
+        // Jika sudah ada akun di database, kunci akses dan lempar ke login
+        // Serta kirimkan pesan 'info' untuk ditampilkan di halaman login
+        if (User::exists()) {
+            return redirect()->route('login')->with('info', 'Registrasi ditutup karena sistem sudah dikonfigurasi (Admin sudah terdaftar).');
+        }
+
         return view('auth.register');
     }
 
     /**
-     * Handle an incoming registration request.
-     *
-     * @throws \Illuminate\Validation\ValidationException
+     * Proses pendaftaran Admin Pertama.
      */
     public function store(Request $request): RedirectResponse
     {
+        // Keamanan ekstra: Jika ditembak via API/Postman tetap ditolak kalau user sudah ada
+        if (User::exists()) {
+            abort(403, 'Sistem sudah dikonfigurasi. Registrasi ditutup.');
+        }
+
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
