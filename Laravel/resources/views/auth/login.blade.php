@@ -6,13 +6,37 @@
 
     <x-auth-session-status class="mb-6" :status="session('status')" />
 
+    @if (session('info'))
+        <div x-data="{ show: true }" 
+             x-show="show" 
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0 -translate-y-2"
+             x-transition:enter-end="opacity-100 translate-y-0"
+             class="mb-6 flex items-center p-4 bg-blue-900/20 border border-blue-800/50 rounded-2xl text-blue-400 shadow-lg">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 shrink-0">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+            </svg>
+
+            <div class="ml-3 text-sm font-medium">
+                {{ session('info') }}
+            </div>
+
+            <button @click="show = false" type="button" class="ml-auto p-1 hover:bg-blue-800/30 rounded-lg transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l18 18" />
+                </svg>
+            </button>
+        </div>
+    @endif
+
     <form method="POST" action="{{ route('login') }}" class="space-y-6">
         @csrf
 
         <div class="space-y-2">
             <x-input-label for="email" :value="__('Email')" class="text-neutral-300 font-semibold ml-1" />
             <div class="relative">
-                <input id="email" class="block w-full px-6 py-4 bg-neutral-800 border border-neutral-700 text-white rounded-full text-lg shadow-inner focus:border-neutral-600 focus:ring-0 placeholder-neutral-500 focus:placeholder-transparent transition-all duration-200" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" placeholder="Enter your email" />
+                <input id="email" class="block w-full px-6 py-4 bg-neutral-800 border border-neutral-700 text-white rounded-full text-lg shadow-inner focus:border-[#FF723A] focus:ring-0 placeholder-neutral-500 focus:placeholder-transparent transition-all duration-200" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" placeholder="Enter your email" />
                 
                 <div class="absolute right-6 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
@@ -24,7 +48,7 @@
         <div class="space-y-2">
             <x-input-label for="password" :value="__('Password')" class="text-neutral-300 font-semibold ml-1" />
             <div class="relative">
-                <input id="password" class="block w-full px-6 py-4 pr-14 bg-neutral-800 border border-neutral-700 text-white rounded-full text-lg shadow-inner focus:border-neutral-600 focus:ring-0 placeholder-neutral-500 focus:placeholder-transparent transition-all duration-200" type="password" name="password" required autocomplete="current-password" placeholder="Enter your password" />
+                <input id="password" class="block w-full px-6 py-4 pr-14 bg-neutral-800 border border-neutral-700 text-white rounded-full text-lg shadow-inner focus:border-[#FF723A] focus:ring-0 placeholder-neutral-500 focus:placeholder-transparent transition-all duration-200" type="password" name="password" required autocomplete="current-password" placeholder="Enter your password" />
                 
                 <button type="button" onclick="togglePassword()" class="absolute right-6 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-[#FF723A] focus:outline-none transition-colors">
                     
@@ -55,17 +79,23 @@
         </div>
 
         <div>
-            <x-primary-button>
+            <x-primary-button class="w-full justify-center py-4 text-lg rounded-full">
                 Continue
             </x-primary-button>
         </div>
 
-        <div class="mt-12 text-center text-sm text-neutral-400">
-            Don't have an account? 
-            <a href="{{ route('register') }}" class="font-bold text-[#FF723A] hover:text-[#ff8c5a] hover:underline transition ease-in-out duration-150">
-                Sign Up
-            </a>
-        </div>
+        @if (\App\Models\User::count() === 0)
+            <div class="mt-12 text-center text-sm text-neutral-400">
+                Don't have an account? 
+                <a href="{{ route('register') }}" class="font-bold text-[#FF723A] hover:text-[#ff8c5a] hover:underline transition ease-in-out duration-150">
+                    Sign Up
+                </a>
+            </div>
+        @else
+            <div class="mt-12 text-center text-xs text-neutral-500 italic">
+                Sistem dikunci khusus untuk Admin terdaftar.
+            </div>
+        @endif
         
     </form>
 </x-guest-layout>

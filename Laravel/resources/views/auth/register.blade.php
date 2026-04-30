@@ -1,32 +1,40 @@
 <x-guest-layout>
     <div class="text-center mb-10">
-        <h1 class="text-3xl font-extrabold text-white tracking-tight">Register Account</h1>
-        <p class="mt-3 text-lg text-neutral-400">Create an account to get started</p>
+        <div class="mb-4 inline-flex items-center gap-2 bg-[#FF723A]/10 border border-[#FF723A]/30 px-3 py-1 rounded-full text-[#FF723A] text-xs font-bold uppercase tracking-widest">
+            <span class="relative flex h-2 w-2">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FF723A] opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-[#FF723A]"></span>
+            </span>
+            First-Time Setup
+        </div>
+        
+        <h1 class="text-3xl font-extrabold text-white tracking-tight">Buat Akun Admin</h1>
+        <p class="mt-3 text-lg text-neutral-400">Silakan buat akun super admin utama Anda</p>
     </div>
 
     <form method="POST" action="{{ route('register') }}" class="space-y-6">
         @csrf
 
         <div class="space-y-2">
-            <x-input-label for="name" :value="__('Name')" class="text-neutral-300 font-semibold ml-1" />
+            <x-input-label for="name" :value="__('Nama Lengkap Admin')" class="text-neutral-300 font-semibold ml-1" />
             <div class="relative">
-                <input id="name" class="block w-full px-6 py-4 bg-neutral-800 border border-neutral-700 text-white rounded-full text-lg shadow-inner focus:border-neutral-600 focus:ring-0 placeholder-neutral-500 focus:placeholder-transparent transition-all duration-200" type="text" name="name" :value="old('name')" required autofocus autocomplete="name" placeholder="Enter your name" />
+                <input id="name" class="block w-full px-6 py-4 bg-neutral-800 border border-neutral-700 text-white rounded-full text-lg shadow-inner focus:border-[#FF723A] focus:ring-0 placeholder-neutral-500 focus:placeholder-transparent transition-all duration-200" type="text" name="name" :value="old('name')" required autofocus autocomplete="name" placeholder="Contoh: Admin CookCash" />
             </div>
             <x-input-error :messages="$errors->get('name')" class="mt-2 ml-5" />
         </div>
 
         <div class="space-y-2">
-            <x-input-label for="email" :value="__('Email')" class="text-neutral-300 font-semibold ml-1" />
+            <x-input-label for="email" :value="__('Email Sistem')" class="text-neutral-300 font-semibold ml-1" />
             <div class="relative">
-                <input id="email" class="block w-full px-6 py-4 bg-neutral-800 border border-neutral-700 text-white rounded-full text-lg shadow-inner focus:border-neutral-600 focus:ring-0 placeholder-neutral-500 focus:placeholder-transparent transition-all duration-200" type="email" name="email" :value="old('email')" required autocomplete="username" placeholder="Enter your email" />
+                <input id="email" class="block w-full px-6 py-4 bg-neutral-800 border border-neutral-700 text-white rounded-full text-lg shadow-inner focus:border-[#FF723A] focus:ring-0 placeholder-neutral-500 focus:placeholder-transparent transition-all duration-200" type="email" name="email" :value="old('email')" required autocomplete="username" placeholder="admin@cookcash.com" />
             </div>
             <x-input-error :messages="$errors->get('email')" class="mt-2 ml-5" />
         </div>
 
         <div class="space-y-2">
-            <x-input-label for="password" :value="__('Password')" class="text-neutral-300 font-semibold ml-1" />
+            <x-input-label for="password" :value="__('Password Keamanan')" class="text-neutral-300 font-semibold ml-1" />
             <div class="relative">
-                <input id="password" class="block w-full px-6 py-4 pr-14 bg-neutral-800 border border-neutral-700 text-white rounded-full text-lg shadow-inner focus:border-neutral-600 focus:ring-0 placeholder-neutral-500 focus:placeholder-transparent transition-all duration-200" type="password" name="password" required autocomplete="new-password" placeholder="Enter your password" />
+                <input id="password" class="block w-full px-6 py-4 pr-14 bg-neutral-800 border border-neutral-700 text-white rounded-full text-lg shadow-inner focus:border-[#FF723A] focus:ring-0 placeholder-neutral-500 focus:placeholder-transparent transition-all duration-200" type="password" name="password" required autocomplete="new-password" placeholder="Masukkan password Anda" />
                 
                 <button type="button" onclick="togglePassword('password', 'eye-icon-1', 'eye-slash-icon-1')" class="absolute right-6 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-[#FF723A] focus:outline-none transition-colors">
                     <svg id="eye-icon-1" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -42,9 +50,9 @@
         </div>
 
         <div class="space-y-2">
-            <x-input-label for="password_confirmation" :value="__('Confirm Password')" class="text-neutral-300 font-semibold ml-1" />
+            <x-input-label for="password_confirmation" :value="__('Konfirmasi Password')" class="text-neutral-300 font-semibold ml-1" />
             <div class="relative">
-                <input id="password_confirmation" class="block w-full px-6 py-4 pr-14 bg-neutral-800 border border-neutral-700 text-white rounded-full text-lg shadow-inner focus:border-neutral-600 focus:ring-0 placeholder-neutral-500 focus:placeholder-transparent transition-all duration-200" type="password" name="password_confirmation" required autocomplete="new-password" placeholder="Confirm your password" />
+                <input id="password_confirmation" class="block w-full px-6 py-4 pr-14 bg-neutral-800 border border-neutral-700 text-white rounded-full text-lg shadow-inner focus:border-[#FF723A] focus:ring-0 placeholder-neutral-500 focus:placeholder-transparent transition-all duration-200" type="password" name="password_confirmation" required autocomplete="new-password" placeholder="Konfirmasi password Anda" />
                 
                 <button type="button" onclick="togglePassword('password_confirmation', 'eye-icon-2', 'eye-slash-icon-2')" class="absolute right-6 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-[#FF723A] focus:outline-none transition-colors">
                     <svg id="eye-icon-2" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -60,16 +68,13 @@
         </div>
 
         <div class="mt-8">
-            <button type="submit" class="w-full py-4 px-6 bg-[#FF723A] hover:bg-[#ff8c5a] text-white rounded-full text-lg font-bold tracking-wider transition-colors duration-200">
-                REGISTER
+            <button type="submit" class="w-full py-4 px-6 bg-[#FF723A] hover:bg-[#ff8c5a] text-white rounded-full text-lg font-bold tracking-wider transition-colors duration-200 uppercase">
+                SELESAIKAN SETUP
             </button>
         </div>
 
-        <div class="mt-6 text-center text-sm text-neutral-400">
-            Sudah punya akun? 
-            <a href="{{ route('login') }}" class="font-bold text-[#FF723A] hover:text-[#ff8c5a] hover:underline transition ease-in-out duration-150">
-                Masuk di sini
-            </a>
+        <div class="mt-6 text-center text-sm text-neutral-500 italic">
+            *Halaman ini hanya muncul untuk konfigurasi sistem pertama kali.
         </div>
         
     </form>
