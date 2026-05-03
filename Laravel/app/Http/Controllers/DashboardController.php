@@ -10,111 +10,110 @@ use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
-    /**
-     * GET /api/dashboard/summary
-     * Ambil ringkasan dashboard user hari ini
-     */
     public function summary(Request $request)
     {
         $userId = $request->user()->id;
         $today = Carbon::today();
+        $startOfWeek = Carbon::now()->startOfWeek();
+        $endOfWeek = Carbon::now()->endOfWeek();
 
-        // Ambil budget hari ini
-        $budget = Budget::where('user_id', $userId)
-            ->whereDate('tanggal', $today)
-            ->first();
+        $budget = Budget::where('user_id', $userId)->whereDate('tanggal', $today)->first();
+        $pengeluaranHariIni = Expense::where('user_id', $userId)->whereDate('tanggal', $today)->sum('jumlah');
+        $sisaBudgetHariIni = $budget ? max(0, $budget->total_budget_harian - $pengeluaranHariIni) : 0;
+        $pengeluaranMingguIni = Expense::where('user_id', $userId)->whereBetween('tanggal', [$startOfWeek, $endOfWeek])->sum('jumlah');
+        $budgetMingguIni = $budget ? $budget->total_budget_harian * 7 : 0;
+        $sisaBudgetMingguIni = max(0, $budgetMingguIni - $pengeluaranMingguIni);
+        $persenSisa = $budgetMingguIni > 0 ? ($sisaBudgetMingguIni / $budgetMingguIni) * 100 : 0;
 
-        // Ambil total pengeluaran hari ini
-        $totalPengeluaranHariIni = Expense::where('user_id', $userId)
-            ->whereDate('tanggal', $today)
-            ->sum('jumlah');
-
-        // Ambil pengeluaran 7 hari terakhir untuk grafik
-        $pengeluaranHarian = Expense::where('user_id', $userId)
-            ->whereBetween('tanggal', [Carbon::today()->subDays(6), $today])
-            ->selectRaw('DATE(tanggal) as tanggal, SUM(jumlah) as total')
-            ->groupBy('tanggal')
-            ->orderBy('tanggal')
-            ->get();
-
-        // Ambil bahan yang hampir habis atau habis
-        $bahanHabis = Inventory::where('user_id', $userId)
-            ->whereIn('status', ['hampir_habis', 'habis'])
-            ->get(['nama_bahan', 'jumlah', 'satuan', 'status']);
-
-        // Hitung sisa budget hari ini
-        $sisaBudget = $budget ? $budget->total_budget_harian - $totalPengeluaranHariIni : 0;
-
-        // Tentukan status budget
-        $status = 'aman';
-        if ($budget) {
-            $persenTerpakai = ($totalPengeluaranHariIni / $budget->total_budget_harian) * 100;
-            if ($persenTerpakai >= 100) {
-                $status = 'bahaya';
-            } elseif ($persenTerpakai >= 75) {
-                $status = 'hemat';
-            }
+        $statusBudget = 'aman';
+        $pesanStatus = 'Budget kamu masih aman hari ini!';
+        if ($persenSisa <= 20) {
+            $statusBudget = 'bahaya';
+            $pesanStatus = 'Sisa uang makan tinggal ' . round($persenSisa) . '% dari jatah minggu ini. Hati-hati defisit!';
+        } elseif ($persenSisa <= 50) {
+            $statusBudget = 'waspada';
+            $pesanStatus = 'Sisa uang makan tinggal ' . round($persenSisa) . '% dari jatah minggu ini. Mulai hemat!';
         }
+
+        $bahanHabis = Inventory::where('user_id', $userId)->whereIn('status', ['hampir_habis', 'habis'])->get(['nama_bahan', 'jumlah', 'satuan', 'status']);
 
         return response()->json([
             'success' => true,
-            'data' => [
-                'nama_user'             => $request->user()->name,
-                'tanggal'               => $today->format('Y-m-d'),
-                'total_budget_harian'   => $budget ? $budget->total_budget_harian : 0,
-                'total_pengeluaran'     => $totalPengeluaranHariIni,
-                'sisa_budget'           => $sisaBudget,
-                'status_budget'         => $status,
-                'pengeluaran_harian'    => $pengeluaranHarian,
-                'bahan_habis'           => $bahanHabis,
+            'data'    => [
+                'nama_user'              => $request->user()->name,
+                'tanggal'                => $today->format('Y-m-d'),
+                'budget_harian'          => $budget ? $budget->total_budget_harian : 0,
+                'pengeluaran_hari_ini'   => $pengeluaranHariIni,
+                'sisa_budget_hari_ini'   => $sisaBudgetHariIni,
+                'sisa_budget_minggu_ini' => $sisaBudgetMingguIni,
+                'status_budget'          => $statusBudget,
+                'pesan_status'           => $pesanStatus,
+                'persen_sisa'            => round($persenSisa, 1),
+                'bahan_habis'            => $bahanHabis,
             ]
         ]);
     }
 
-    /**
-     * GET /api/dashboard/pengeluaran-harian
-     * Ambil pengeluaran harian untuk grafik laporan
-     */
-    public function pengeluaranHarian(Request $request)
+    public function laporan(Request $request)
     {
         $userId = $request->user()->id;
+        $today = Carbon::today();
+        $periode = $request->query('periode', 'minggu');
 
-        // Default 30 hari terakhir
-        $hari = $request->query('hari', 30);
+        if ($periode === 'bulan') {
+            $startDate = Carbon::now()->startOfMonth();
+            $endDate = Carbon::now()->endOfMonth();
+        } else {
+            $startDate = Carbon::now()->startOfWeek();
+            $endDate = Carbon::now()->endOfWeek();
+        }
 
-        $pengeluaran = Expense::where('user_id', $userId)
-            ->whereBetween('tanggal', [Carbon::today()->subDays($hari - 1), Carbon::today()])
-            ->selectRaw('DATE(tanggal) as tanggal, SUM(jumlah) as total, kategori')
-            ->groupBy('tanggal', 'kategori')
-            ->orderBy('tanggal')
-            ->get();
+        $totalPengeluaran = Expense::where('user_id', $userId)->whereBetween('tanggal', [$startDate, $endDate])->sum('jumlah');
+        $jumlahHari = $startDate->diffInDays($today) + 1;
+        $rataRataPerHari = $jumlahHari > 0 ? $totalPengeluaran / $jumlahHari : 0;
 
-        // Hitung total per kategori
-        $totalMasakSendiri = Expense::where('user_id', $userId)
-            ->where('kategori', 'masak_sendiri')
-            ->whereBetween('tanggal', [Carbon::today()->subDays($hari - 1), Carbon::today()])
-            ->sum('jumlah');
+        $periodePanjang = $startDate->diffInDays($endDate) + 1;
+        $prevStart = $startDate->copy()->subDays($periodePanjang);
+        $prevEnd = $startDate->copy()->subDay();
+        $totalSebelumnya = Expense::where('user_id', $userId)->whereBetween('tanggal', [$prevStart, $prevEnd])->sum('jumlah');
+        $persenPerubahan = $totalSebelumnya > 0 ? (($totalPengeluaran - $totalSebelumnya) / $totalSebelumnya) * 100 : 0;
 
-        $totalJajan = Expense::where('user_id', $userId)
-            ->where('kategori', 'jajan')
-            ->whereBetween('tanggal', [Carbon::today()->subDays($hari - 1), Carbon::today()])
-            ->sum('jumlah');
+        $grafikHarian = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $tanggal = Carbon::today()->subDays($i);
+            $total = Expense::where('user_id', $userId)->whereDate('tanggal', $tanggal)->sum('jumlah');
+            $grafikHarian[] = ['hari' => $tanggal->locale('id')->isoFormat('ddd'), 'tanggal' => $tanggal->format('Y-m-d'), 'total' => (float) $total];
+        }
 
+        $totalMasakSendiri = Expense::where('user_id', $userId)->where('kategori', 'masak_sendiri')->whereBetween('tanggal', [$startDate, $endDate])->sum('jumlah');
+        $totalJajan = Expense::where('user_id', $userId)->where('kategori', 'jajan')->whereBetween('tanggal', [$startDate, $endDate])->sum('jumlah');
         $totalKeseluruhan = $totalMasakSendiri + $totalJajan;
+        $persenMasakSendiri = $totalKeseluruhan > 0 ? round(($totalMasakSendiri / $totalKeseluruhan) * 100) : 0;
+
+        $hariDalamBulan = Carbon::now()->daysInMonth;
+        $hariTerlewat = Carbon::now()->day;
+        $prediksiAkhirBulan = $hariTerlewat > 0 ? ($totalPengeluaran / $hariTerlewat) * $hariDalamBulan : 0;
+        $budget = Budget::where('user_id', $userId)->whereDate('tanggal', $today)->first();
+        $budgetBulanan = $budget ? $budget->total_budget_harian * $hariDalamBulan : 0;
 
         return response()->json([
             'success' => true,
-            'data' => [
-                'pengeluaran_harian'    => $pengeluaran,
-                'total_masak_sendiri'   => $totalMasakSendiri,
-                'total_jajan'           => $totalJajan,
-                'total_keseluruhan'     => $totalKeseluruhan,
-                'persen_masak_sendiri'  => $totalKeseluruhan > 0
-                    ? round(($totalMasakSendiri / $totalKeseluruhan) * 100, 1)
-                    : 0,
-                'persen_jajan'          => $totalKeseluruhan > 0
-                    ? round(($totalJajan / $totalKeseluruhan) * 100, 1)
-                    : 0,
+            'data'    => [
+                'periode'              => $periode,
+                'total_pengeluaran'    => (float) $totalPengeluaran,
+                'rata_rata_per_hari'   => round($rataRataPerHari),
+                'persen_perubahan'     => round(abs($persenPerubahan), 1),
+                'trend_naik'           => $persenPerubahan > 0,
+                'grafik_harian'        => $grafikHarian,
+                'komposisi'            => [
+                    'masak_sendiri'        => (float) $totalMasakSendiri,
+                    'jajan'                => (float) $totalJajan,
+                    'persen_masak_sendiri' => $persenMasakSendiri,
+                    'persen_jajan'         => 100 - $persenMasakSendiri,
+                ],
+                'prediksi_akhir_bulan' => round($prediksiAkhirBulan),
+                'budget_bulanan'       => (float) $budgetBulanan,
+                'is_defisit'           => $prediksiAkhirBulan > $budgetBulanan,
             ]
         ]);
     }
