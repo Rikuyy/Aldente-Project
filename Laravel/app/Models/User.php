@@ -2,31 +2,39 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
+// Pastikan kamu sudah menginstall library mongodb/laravel-mongodb
+use MongoDB\Laravel\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Notifications\Notifiable; // 1. Harus di-import di sini
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, Notifiable; // 2. WAJIB DITULIS DI SINI JUGA!
+    protected $connection = 'mongodb';
+    protected $collection = 'admin'; 
+
+    // Tambahkan ini untuk memaksa Laravel tahu nama koleksinya
+    public function getTable()
+    {
+        return 'admin';
+    }
+    
+    // ... isi lainnya
 
     /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
+     * Field yang boleh diisi secara massal
      */
     protected $fillable = [
-        'name',
-        'email',
-        'password',
+        'name', 
+        'email', 
+        'password', 
+        'username', 
+        'role', 
+        'is_setup_done'
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
+     * Field yang disembunyikan saat data diubah jadi JSON
      */
     protected $hidden = [
         'password',
@@ -34,9 +42,7 @@ class User extends Authenticatable
     ];
 
     /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
+     * Casting data agar formatnya sesuai
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
