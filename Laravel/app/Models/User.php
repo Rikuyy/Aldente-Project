@@ -2,8 +2,14 @@
 
 namespace App\Models;
 
+<<<<<<< HEAD
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+=======
 // Pastikan kamu sudah menginstall library mongodb/laravel-mongodb
 use MongoDB\Laravel\Auth\User as Authenticatable;
+>>>>>>> 6e0998e2e85b3d5cd7cc289d45055d4409ca031d
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Notifications\Notifiable; // 1. Harus di-import di sini
 
@@ -21,6 +27,15 @@ class User extends Authenticatable
     
     // ... isi lainnya
 
+<<<<<<< HEAD
+    protected $fillable = ['username', 'name', 'email', 'password'];
+    protected $hidden = ['password', 'remember_token'];
+    protected $casts = ['email_verified_at' => 'datetime', 'password' => 'hashed'];
+
+    public function budgets() { return $this->hasMany(Budget::class); }
+    public function expenses() { return $this->hasMany(Expense::class); }
+    public function inventories() { return $this->hasMany(Inventory::class); }
+=======
     /**
      * Field yang boleh diisi secara massal
      */
@@ -48,4 +63,5 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+>>>>>>> 6e0998e2e85b3d5cd7cc289d45055d4409ca031d
 }
