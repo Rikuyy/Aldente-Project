@@ -1,30 +1,35 @@
 <x-guest-layout>
-    <div class="mb-4 text-sm text-gray-600 dark:text-gray-400">
-        {{ __('Thanks for signing up! Before getting started, could you verify your email address by clicking on the link we just emailed to you? If you didn\'t receive the email, we will gladly send you another.') }}
+    <div class="text-center mb-10">
+        <div class="h-20 w-20 bg-[#FF723A]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+            <i class="fas fa-envelope-open-text text-4xl text-[#FF723A]"></i>
+        </div>
+        <h1 class="text-3xl font-extrabold text-white tracking-tight">Verifikasi Email</h1>
+        <p class="mt-4 text-neutral-400 leading-relaxed">
+            Hampir selesai! Kami sudah mengirimkan link verifikasi ke email Anda. Silakan klik link tersebut untuk mengaktifkan akun.
+        </p>
     </div>
 
     @if (session('status') == 'verification-link-sent')
-        <div class="mb-4 font-medium text-sm text-green-600 dark:text-green-400">
-            {{ __('A new verification link has been sent to the email address you provided during registration.') }}
+        <div class="mb-6 p-4 bg-green-500/10 border border-green-500/50 text-green-400 text-sm rounded-2xl text-center font-bold animate-pulse">
+            Link baru berhasil dikirim ke alamat email Anda.
         </div>
     @endif
 
-    <div class="mt-4 flex items-center justify-between">
-        <form method="POST" action="{{ route('verification.send') }}">
+    <div class="flex flex-col gap-4">
+        <form method="POST" action="{{ route('verification.send') }}" x-data="{ loading: false }" @submit="loading = true">
             @csrf
-
-            <div>
-                <x-primary-button>
-                    {{ __('Resend Verification Email') }}
-                </x-primary-button>
-            </div>
+            <button type="submit" :disabled="loading" class="w-full py-4 bg-[#FF723A] hover:bg-[#ff8c5a] text-white rounded-full font-bold transition-all shadow-lg shadow-[#FF723A]/20 flex justify-center items-center gap-2">
+                <template x-if="loading">
+                    <i class="fas fa-spinner animate-spin"></i>
+                </template>
+                <span x-text="loading ? 'Mengirim...' : 'Kirim Ulang Email Verifikasi'"></span>
+            </button>
         </form>
 
-        <form method="POST" action="{{ route('logout') }}">
+        <form method="POST" action="{{ route('logout') }}" class="text-center">
             @csrf
-
-            <button type="submit" class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800">
-                {{ __('Log Out') }}
+            <button type="submit" class="text-sm font-bold text-neutral-500 hover:text-white transition uppercase tracking-widest">
+                Log Out
             </button>
         </form>
     </div>

@@ -32,29 +32,26 @@ class RegisteredUserController extends Controller
     /**
      * Proses pendaftaran Admin Pertama.
      */
-    public function store(Request $request): RedirectResponse
-    {
-        // Keamanan ekstra: Jika ditembak via API/Postman tetap ditolak kalau user sudah ada
-        if (User::exists()) {
-            abort(403, 'Sistem sudah dikonfigurasi. Registrasi ditutup.');
-        }
+public function store(Request $request): RedirectResponse
+{
+    $request->validate([
+        'name' => ['required', 'string', 'max:255'],
+        'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:admin,email'],
+        'password' => ['required', 'confirmed', Rules\Password::defaults()],
+    ]);
 
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
-        ]);
+    // Pastikan ini menggunakan model yang sudah kamu set ke collection 'admins'
+    $user = User::create([  // Pastikan pakai Model User
+        'name' => $request->name,
+        'email' => $request->email,
+        'password' => Hash::make($request->password),
+        'role' => 'admin', // Tambahkan ini kalau mau kasih tanda role
+    ]);
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-        ]);
+    event(new Registered($user));
 
-        event(new Registered($user));
+    Auth::login($user);
 
-        Auth::login($user);
-
-        return redirect(RouteServiceProvider::HOME);
-    }
+    return redirect(RouteServiceProvider::HOME);
+}
 }
