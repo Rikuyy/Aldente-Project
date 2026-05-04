@@ -52,6 +52,14 @@
                     <span class="ml-3 whitespace-nowrap">Manajemen Resep</span>
                 </a>
 
+                <a href="{{ route('users.index') }}" wire:navigate
+                   class="flex items-center rounded-xl transition-colors duration-200 {{ request()->routeIs('users.*') ? 'bg-[#FF723A]/10 text-[#FF723A] border border-[#FF723A]/20 font-bold' : 'text-neutral-400 border border-transparent hover:text-white hover:bg-neutral-800 font-medium' }} w-full px-4 py-3 justify-start">
+                    <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                    </svg>
+                    <span class="ml-3 whitespace-nowrap">Manajemen User</span>
+                </a>
+
                 <a href="{{ url('/testing') }}" wire:navigate
                    class="flex items-center rounded-xl transition-colors duration-200 {{ request()->is('testing') ? 'bg-[#FF723A]/10 text-[#FF723A] border border-[#FF723A]/20 font-bold' : 'text-neutral-400 border border-transparent hover:text-white hover:bg-neutral-800 font-medium' }} w-full px-4 py-3 justify-start">
                     <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -60,21 +68,16 @@
                     <span class="ml-3 whitespace-nowrap">Evaluasi Algoritma</span>
                 </a>
 
+                <a href="{{ route('users.index') }}" wire:navigate
+                   class="flex items-center rounded-xl transition-colors duration-200 {{ request()->routeIs('users.*') ? 'bg-[#FF723A]/10 text-[#FF723A] border border-[#FF723A]/20 font-bold' : 'text-neutral-400 border border-transparent hover:text-white hover:bg-neutral-800 font-medium' }} w-full px-4 py-3 justify-start">
+                    <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                    </svg>
+                    <span class="ml-3 whitespace-nowrap">Manajemen User</span>
+                </a>
+
             </nav>
 
-            <div class="mt-auto mb-6 flex flex-col px-4">
-                <form method="POST" action="{{ route('logout') }}" class="w-full">
-                    @csrf
-                    <button type="submit" 
-                            class="flex items-center rounded-xl transition-colors duration-200 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-300 hover:text-white w-full px-4 py-3 justify-start">
-                        <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-                        </svg>
-                        <span class="ml-3 text-sm font-bold whitespace-nowrap">Log Out</span>
-                    </button>
-                </form>
-            </div>
-            
         </aside>
 
         <div class="flex-1 flex flex-col min-w-0 overflow-hidden">

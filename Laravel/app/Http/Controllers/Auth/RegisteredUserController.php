@@ -16,36 +16,42 @@ use Illuminate\View\View;
 class RegisteredUserController extends Controller
 {
     /**
-     * Display the registration view.
+     * Menampilkan halaman Setup (Hanya jika belum ada akun).
      */
-    public function create(): View
+    public function create(): View|RedirectResponse
     {
+        // Jika sudah ada akun di database, kunci akses dan lempar ke login
+        // Serta kirimkan pesan 'info' untuk ditampilkan di halaman login
+        if (User::exists()) {
+            return redirect()->route('login')->with('info', 'Registrasi ditutup karena sistem sudah dikonfigurasi (Admin sudah terdaftar).');
+        }
+
         return view('auth.register');
     }
 
     /**
-     * Handle an incoming registration request.
-     *
-     * @throws \Illuminate\Validation\ValidationException
+     * Proses pendaftaran Admin Pertama.
      */
-    public function store(Request $request): RedirectResponse
-    {
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
-        ]);
+public function store(Request $request): RedirectResponse
+{
+    $request->validate([
+        'name' => ['required', 'string', 'max:255'],
+        'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:admin,email'],
+        'password' => ['required', 'confirmed', Rules\Password::defaults()],
+    ]);
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-        ]);
+    // Pastikan ini menggunakan model yang sudah kamu set ke collection 'admins'
+    $user = User::create([  // Pastikan pakai Model User
+        'name' => $request->name,
+        'email' => $request->email,
+        'password' => Hash::make($request->password),
+        'role' => 'admin', // Tambahkan ini kalau mau kasih tanda role
+    ]);
 
-        event(new Registered($user));
+    event(new Registered($user));
 
-        Auth::login($user);
+    Auth::login($user);
 
-        return redirect(RouteServiceProvider::HOME);
-    }
+    return redirect(RouteServiceProvider::HOME);
+}
 }

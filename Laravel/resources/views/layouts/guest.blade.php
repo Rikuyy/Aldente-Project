@@ -71,47 +71,53 @@
 
     <div class="min-h-screen flex flex-col lg:flex-row {{ request()->routeIs('register') ? 'lg:flex-row-reverse' : '' }}">
 
-        <div class="hidden lg:flex lg:w-1/2 bg-neutral-900 p-12 flex-col justify-center relative overflow-hidden {{ request()->routeIs('register') ? 'border-l' : 'border-r' }} border-neutral-800 animate-fade">
+        <div class="relative hidden lg:flex flex-col justify-center items-center w-full lg:w-1/2 bg-neutral-950 overflow-hidden p-8 lg:p-12 {{ request()->routeIs('register') ? 'border-l' : 'border-r' }} border-neutral-800 animate-fade">
+            
+            <div class="absolute inset-0 overflow-hidden pointer-events-none">
+                <div class="absolute -top-20 -left-20 w-96 h-96 bg-[#FF723A] rounded-full mix-blend-screen filter blur-[120px] opacity-20 animate-pulse"></div>
+                <div class="absolute -bottom-32 -right-20 w-[30rem] h-[30rem] bg-orange-700 rounded-full mix-blend-screen filter blur-[150px] opacity-20"></div>
+            </div>
 
-            <div class="absolute top-0 left-0 w-full h-full opacity-20 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#FF723A] via-neutral-900 to-neutral-900"></div>
+            <div class="relative z-10 w-full max-w-lg bg-neutral-800/30 border border-neutral-700/50 backdrop-blur-xl rounded-[2rem] p-10 shadow-2xl shadow-black/50">
+                
+                <div class="text-5xl font-extrabold mb-6 tracking-tight drop-shadow-md">
+                    <span class="text-white">Cook</span><span class="text-[#FF723A]">Cash</span>
+                </div>
 
-            <div class="relative z-10 max-w-lg mx-auto">
-                <h1 class="text-6xl font-extrabold tracking-tight text-white mb-6">
-                    Cook<span class="text-[#FF723A]">Cash</span>
-                </h1>
-
-                <h2 class="text-3xl font-bold text-neutral-200 mb-6">
-                    Kelola Keuangan Bisnis Kulinermu dengan Mudah.
+                <h2 class="text-3xl font-bold mb-5 text-transparent bg-clip-text bg-gradient-to-br from-white to-neutral-400 leading-tight">
+                    Masak Hemat, Perut Kenyang, Kantong Tenang.
                 </h2>
 
-                <p class="text-lg text-neutral-400 leading-relaxed mb-10">
-                    Fokus ciptakan rasa terbaik di dapurmu, biarkan CookCash yang mengurus catatan keuangannya. Platform terbaik untuk memantau pemasukan, pengeluaran, dan profit harianmu.
+                <p class="text-neutral-400 text-lg mb-8 leading-relaxed">
+                    Platform andalan anak kos! Temukan ratusan resep gampang, murah, dan anti-gagal yang pas banget sama sisa uang jajanmu akhir bulan.
                 </p>
 
-                <ul class="space-y-4 text-neutral-300">
-                    <li class="flex items-center">
-                        <div class="flex-shrink-0 w-8 h-8 rounded-full bg-[#FF723A]/20 flex items-center justify-center mr-4">
+                <ul class="space-y-5">
+                    <li class="flex items-center space-x-4 text-neutral-300 transform transition duration-300 hover:translate-x-2">
+                        <div class="flex-shrink-0 w-8 h-8 rounded-full bg-[#FF723A]/10 flex items-center justify-center border border-[#FF723A]/30 shadow-[0_0_10px_rgba(255,114,58,0.2)]">
                             <svg class="w-5 h-5 text-[#FF723A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
                             </svg>
                         </div>
-                        Pencatatan transaksi real-time
+                        <span class="font-medium text-base">Rekomendasi resep sesuai budget</span>
                     </li>
-                    <li class="flex items-center">
-                        <div class="flex-shrink-0 w-8 h-8 rounded-full bg-[#FF723A]/20 flex items-center justify-center mr-4">
+                    
+                    <li class="flex items-center space-x-4 text-neutral-300 transform transition duration-300 hover:translate-x-2">
+                        <div class="flex-shrink-0 w-8 h-8 rounded-full bg-[#FF723A]/10 flex items-center justify-center border border-[#FF723A]/30 shadow-[0_0_10px_rgba(255,114,58,0.2)]">
                             <svg class="w-5 h-5 text-[#FF723A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
                             </svg>
                         </div>
-                        Laporan keuangan otomatis
+                        <span class="font-medium text-base">Langkah masak praktis anti-ribet</span>
                     </li>
-                    <li class="flex items-center">
-                        <div class="flex-shrink-0 w-8 h-8 rounded-full bg-[#FF723A]/20 flex items-center justify-center mr-4">
+
+                    <li class="flex items-center space-x-4 text-neutral-300 transform transition duration-300 hover:translate-x-2">
+                        <div class="flex-shrink-0 w-8 h-8 rounded-full bg-[#FF723A]/10 flex items-center justify-center border border-[#FF723A]/30 shadow-[0_0_10px_rgba(255,114,58,0.2)]">
                             <svg class="w-5 h-5 text-[#FF723A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
                             </svg>
                         </div>
-                        Aman, cepat, dan responsif
+                        <span class="font-medium text-base">Simpan & share resep favorit kosan</span>
                     </li>
                 </ul>
             </div>
