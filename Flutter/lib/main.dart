@@ -10,8 +10,10 @@ import 'pages/finance_page.dart';
 import 'pages/inventory_page.dart';
 import 'pages/profile_page.dart';
 import 'pages/notifications_page.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() {
+void main() async {
+  await dotenv.load(fileName: ".env");
   runApp(const CookCasePlusApp());
 }
 
@@ -19,16 +21,25 @@ final _router = GoRouter(
   initialLocation: '/',
   routes: [
     GoRoute(path: '/', builder: (ctx, state) => const GuestModePage()),
-    GoRoute(path: '/onboarding', builder: (ctx, state) => const OnboardingPage()),
-    GoRoute(path: '/notifications', builder: (ctx, state) => const NotificationsPage()),
+    GoRoute(
+        path: '/onboarding', builder: (ctx, state) => const OnboardingPage()),
+    GoRoute(
+        path: '/notifications',
+        builder: (ctx, state) => const NotificationsPage()),
     ShellRoute(
       builder: (ctx, state, child) => MainLayout(child: child),
       routes: [
         GoRoute(path: '/app/home', builder: (ctx, state) => const HomePage()),
-        GoRoute(path: '/app/consultation', builder: (ctx, state) => const ConsultationPage()),
-        GoRoute(path: '/app/finance', builder: (ctx, state) => const FinancePage()),
-        GoRoute(path: '/app/inventory', builder: (ctx, state) => const InventoryPage()),
-        GoRoute(path: '/app/profile', builder: (ctx, state) => const ProfilePage()),
+        GoRoute(
+            path: '/app/consultation',
+            builder: (ctx, state) => const ConsultationPage()),
+        GoRoute(
+            path: '/app/finance', builder: (ctx, state) => const FinancePage()),
+        GoRoute(
+            path: '/app/inventory',
+            builder: (ctx, state) => const InventoryPage()),
+        GoRoute(
+            path: '/app/profile', builder: (ctx, state) => const ProfilePage()),
       ],
     ),
   ],
