@@ -61,7 +61,7 @@ ATURAN:
       apiKey: apiKey,
       systemInstruction: systemInstruction,
       generationConfig: GenerationConfig(
-        temperature: 0.8, // Sedikit kreatif tapi tetap konsisten
+        temperature: 0.8,
         maxOutputTokens: 800,
       ),
     );
