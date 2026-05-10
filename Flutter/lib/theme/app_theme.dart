@@ -40,6 +40,7 @@ class AppTheme {
   static const purple100 = Color(0xFFF3E8FF);
   static const purple600 = Color(0xFF9333EA);
 
+
   static ThemeData get theme {
     return ThemeData(
       useMaterial3: true,
@@ -62,6 +63,41 @@ class AppTheme {
         selectedItemColor: orange600,
         unselectedItemColor: slate400,
         type: BottomNavigationBarType.fixed,
+      ),
+    );
+  }
+
+  static ThemeData get darkTheme {
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: const ColorScheme.dark(
+        primary: orange400,
+        secondary: orange500,
+        surface: slate800,
+        onSurface: slate100,
+      ),
+      fontFamily: 'SF Pro Display',
+      scaffoldBackgroundColor: slate900,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: slate800,
+        foregroundColor: slate100,
+        elevation: 0,
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+      ),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: slate800,
+        selectedItemColor: orange400,
+        unselectedItemColor: slate500,
+        type: BottomNavigationBarType.fixed,
+      ),
+      cardTheme: const CardThemeData(
+        color: slate800,
+      ),
+      dividerColor: slate700,
+      inputDecorationTheme: const InputDecorationTheme(
+        fillColor: slate800,
+        filled: true,
       ),
     );
   }

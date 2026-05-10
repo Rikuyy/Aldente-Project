@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../theme/app_theme.dart';
+import 'package:avatar_glow/avatar_glow.dart';
 
 class Tag {
   final String text;
-  final FaIconData icon;
+  final IconData icon;
 
   const Tag(this.text, this.icon);
 }
@@ -20,15 +20,16 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   bool _isEditing = false;
   String _name = 'Budi';
-  List<Tag> _favFoods = [const Tag('Pedas', FontAwesomeIcons.pepperHot), const Tag('Ayam', FontAwesomeIcons.drumstickBite), const Tag('Gurih', FontAwesomeIcons.utensils)];
-  List<Tag> _allergies = [const Tag('Kacang', FontAwesomeIcons.seedling)];
+  late final TextEditingController _nameController;
+  List<Tag> _favFoods = [const Tag('Pedas', Icons.local_fire_department), const Tag('Ayam', Icons.lunch_dining), const Tag('Gurih', Icons.restaurant)];
+  List<Tag> _allergies = [const Tag('Kacang', Icons.eco)];
   String _budgetCycle = 'Mingguan';
-  List<Tag> _missingTools = [const Tag('Oven', FontAwesomeIcons.fire), const Tag('Blender', FontAwesomeIcons.blender)];
+  List<Tag> _missingTools = [const Tag('Oven', Icons.local_fire_department), const Tag('Blender', Icons.kitchen)];
   int _eatFrequency = 3;
 
-  final _allFavFoods = [const Tag('Pedas', FontAwesomeIcons.pepperHot), const Tag('Manis', FontAwesomeIcons.candyCane), const Tag('Gurih', FontAwesomeIcons.utensils), const Tag('Asin', FontAwesomeIcons.mortarPestle), const Tag('Ayam', FontAwesomeIcons.drumstickBite), const Tag('Sapi', FontAwesomeIcons.cow), const Tag('Seafood', FontAwesomeIcons.fish), const Tag('Sayuran', FontAwesomeIcons.carrot)];
-  final _allAllergies = [const Tag('Kacang', FontAwesomeIcons.seedling), const Tag('Susu', FontAwesomeIcons.whiskeyGlass), const Tag('Telur', FontAwesomeIcons.egg), const Tag('Seafood', FontAwesomeIcons.fish), const Tag('Gluten', FontAwesomeIcons.breadSlice), const Tag('Kedelai', FontAwesomeIcons.seedling)];
-  final _allTools = [const Tag('Kompor', FontAwesomeIcons.fire), const Tag('Oven', FontAwesomeIcons.fire), const Tag('Microwave', FontAwesomeIcons.radiation), const Tag('Blender', FontAwesomeIcons.blender), const Tag('Rice Cooker', FontAwesomeIcons.bowlRice), const Tag('Kulkas', FontAwesomeIcons.snowflake)];
+  final _allFavFoods = [const Tag('Pedas', Icons.local_fire_department), const Tag('Manis', Icons.cake), const Tag('Gurih', Icons.restaurant), const Tag('Asin', Icons.soup_kitchen), const Tag('Ayam', Icons.lunch_dining), const Tag('Sapi', Icons.pets), const Tag('Seafood', Icons.set_meal), const Tag('Sayuran', Icons.eco)];
+  final _allAllergies = [const Tag('Kacang', Icons.eco), const Tag('Susu', Icons.local_bar), const Tag('Telur', Icons.egg), const Tag('Seafood', Icons.set_meal), const Tag('Gluten', Icons.breakfast_dining), const Tag('Kedelai', Icons.eco)];
+  final _allTools = [const Tag('Kompor', Icons.local_fire_department), const Tag('Oven', Icons.local_fire_department), const Tag('Microwave', Icons.microwave), const Tag('Blender', Icons.kitchen), const Tag('Rice Cooker', Icons.ramen_dining), const Tag('Kulkas', Icons.ac_unit)];
 
   void _toggleItem(Tag item, List<Tag> list, Function(List<Tag>) setter) {
     setState(() {
@@ -38,6 +39,18 @@ class _ProfilePageState extends State<ProfilePage> {
         setter(List.from(list)..add(item));
       }
     });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: _name);
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
   }
 
   @override
@@ -99,29 +112,35 @@ class _ProfilePageState extends State<ProfilePage> {
                 // Avatar
                 Column(
                   children: [
-                    Container(
-                      width: 96,
-                      height: 96,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppTheme.orange100,
-                        border: Border.all(color: Colors.white, width: 4),
-                        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 30.6), blurRadius: 12, offset: const Offset(0, 4))],
-                      ),
-                      child: Center(
-                        child: Text(
-                          _name.isNotEmpty ? _name[0].toUpperCase() : 'B',
-                          style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: AppTheme.orange600),
+                    AvatarGlow(
+                      glowColor: _isEditing ? const Color.fromARGB(255, 60, 251, 66) : const Color.fromARGB(255, 241, 95, 10),
+                      repeat: _isEditing,
+                      duration: const Duration(milliseconds: 1500),
+                      child: Container(
+                        width: 96,
+                        height: 96,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppTheme.orange100,
+                          border: Border.all(color: Colors.white, width: 4),
+                          boxShadow: _isEditing? [BoxShadow(color: const Color.fromARGB(255, 5, 206, 38).withValues(alpha: 30.6), blurRadius: 12, offset: const Offset(0, 4))] :
+                           [BoxShadow(color: const Color.fromARGB(255, 206, 139, 5).withValues(alpha: 30.6), blurRadius: 12, offset: const Offset(0, 4))],
+                        ),
+                        child: Center(
+                          child: Text(
+                            _name.isNotEmpty ? _name[0].toUpperCase() : 'B',
+                            style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: Color.fromARGB(255, 147, 75, 3)),
+                          ),
                         ),
                       ),
                     ),
                     const SizedBox(height: 12),
-                    if (_isEditing)
+                      if (_isEditing)
                       SizedBox(
                         width: 180,
                         child: TextField(
                           onChanged: (v) => setState(() => _name = v),
-                          controller: TextEditingController(text: _name),
+                          controller: _nameController,
                           textAlign: TextAlign.center,
                           decoration: InputDecoration(
                             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -136,7 +155,6 @@ class _ProfilePageState extends State<ProfilePage> {
                       Text(_name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppTheme.slate800, letterSpacing: -0.5)),
                   ],
                 ),
-
                 const SizedBox(height: 24),
 
                 // Food Preferences + Allergies
@@ -432,7 +450,7 @@ class _TagGroup extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      FaIcon(tag.icon, size: 12, color: isSelected ? selectedTextColor : AppTheme.slate500),
+                      Icon(tag.icon, size: 12, color: isSelected ? selectedTextColor : AppTheme.slate500),
                       const SizedBox(width: 6),
                       Text(
                         tag.text,

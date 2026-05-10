@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../theme/app_theme.dart';
 
 class Tag {
   final String text;
-  final FaIconData icon;
+  final IconData icon;
 
   const Tag(this.text, this.icon);
 }
@@ -57,6 +56,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: AppTheme.slate50,
       body: Column(
         children: [
@@ -229,7 +229,7 @@ class _StepIdentity extends StatelessWidget {
         TextField(
           controller: controller,
           decoration: InputDecoration(
-            hintText: 'Misal: Budi',
+            hintText: 'Misal: Rifki, Ratna, Ovi, Nabil, Rendi, dsb.',
             hintStyle: const TextStyle(color: AppTheme.slate300, fontWeight: FontWeight.w500),
             filled: true,
             fillColor: Colors.white,
@@ -253,7 +253,7 @@ class _StepFoodPreferences extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const tags = [Tag('Pedas', FontAwesomeIcons.pepperHot), Tag('Manis', FontAwesomeIcons.candyCane), Tag('Gurih', FontAwesomeIcons.utensils), Tag('Asin', FontAwesomeIcons.mortarPestle), Tag('Ayam', FontAwesomeIcons.drumstickBite), Tag('Sapi', FontAwesomeIcons.cow), Tag('Seafood', FontAwesomeIcons.fish), Tag('Sayuran', FontAwesomeIcons.carrot)];
+    const tags = [Tag('Pedas', Icons.local_fire_department), Tag('Manis', Icons.cake), Tag('Gurih', Icons.restaurant), Tag('Asin', Icons.soup_kitchen), Tag('Ayam', Icons.lunch_dining), Tag('Sapi', Icons.pets), Tag('Seafood', Icons.set_meal), Tag('Sayuran', Icons.eco)];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -290,7 +290,7 @@ class _StepFoodPreferences extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    FaIcon(tag.icon, size: 14, color: isSelected ? AppTheme.orange700 : AppTheme.slate600),
+                    Icon(tag.icon, size: 14, color: isSelected ? AppTheme.orange700 : AppTheme.slate600),
                     const SizedBox(width: 8),
                     Text(tag.text, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: isSelected ? AppTheme.orange700 : AppTheme.slate600)),
                   ],
@@ -312,7 +312,7 @@ class _StepAllergies extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const tags = [Tag('Kacang', FontAwesomeIcons.seedling), Tag('Susu', FontAwesomeIcons.whiskeyGlass), Tag('Telur', FontAwesomeIcons.egg), Tag('Seafood', FontAwesomeIcons.fish), Tag('Gluten', FontAwesomeIcons.breadSlice), Tag('Kedelai', FontAwesomeIcons.seedling)];
+    const tags = [Tag('Kacang', Icons.eco), Tag('Susu', Icons.local_bar), Tag('Telur', Icons.egg), Tag('Seafood', Icons.set_meal), Tag('Gluten', Icons.breakfast_dining), Tag('Kedelai', Icons.eco)];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -358,7 +358,7 @@ class _StepAllergies extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    FaIcon(tag.icon as FaIconData?, size: 14, color: isSelected ? AppTheme.red600 : AppTheme.slate600),
+                    Icon(tag.icon, size: 14, color: isSelected ? AppTheme.red600 : AppTheme.slate600),
                     const SizedBox(width: 8),
                     Text(tag.text, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: isSelected ? AppTheme.red600 : AppTheme.slate600)),
                   ],
@@ -463,22 +463,23 @@ class _StepKitchenTools extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const tools = [
-      Tag('Kompor', FontAwesomeIcons.fire),
-      Tag('Oven', FontAwesomeIcons.fire),
-      Tag('Microwave', FontAwesomeIcons.radiation),
-      Tag('Blender', FontAwesomeIcons.blender),
-      Tag('Rice Cooker', FontAwesomeIcons.bowlRice),
-      Tag('Kulkas', FontAwesomeIcons.snowflake),
+      Tag('Kompor', Icons.local_fire_department),
+      Tag('Oven', Icons.local_fire_department),
+      Tag('Microwave', Icons.microwave),
+      Tag('Blender', Icons.kitchen),
+      Tag('Rice Cooker', Icons.ramen_dining),
+      Tag('Kulkas', Icons.ac_unit),
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        const Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
           children: [
             Text('Alat Masak yang TIDAK Kamu Miliki?', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppTheme.slate900, letterSpacing: -0.5)),
-            SizedBox(width: 8),
-            FaIcon(FontAwesomeIcons.utensils, size: 24, color: AppTheme.slate900),
+            Icon(Icons.restaurant, size: 24, color: AppTheme.slate900),
           ],
         ),
         const SizedBox(height: 8),
@@ -515,7 +516,7 @@ class _StepKitchenTools extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    FaIcon(tool.icon as FaIconData?, size: 28, color: isSelected ? AppTheme.slate500 : AppTheme.slate700),
+                    Icon(tool.icon, size: 28, color: isSelected ? AppTheme.slate500 : AppTheme.slate700),
                     const SizedBox(height: 8),
                     Text(
                       tool.text,

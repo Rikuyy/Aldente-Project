@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../theme/app_theme.dart';
 
 class GuestModePage extends StatelessWidget {
@@ -125,11 +124,11 @@ class GuestModePage extends StatelessWidget {
                         style: TextStyle(color: AppTheme.slate700, height: 1.5),
                       ),
                       const SizedBox(height: 12),
-                      const _MenuOption(icon: FontAwesomeIcons.utensils, title: 'Nasi Telur Pontianak + Es Teh', subtitle: '(Masak di kos)'),
+                      const _MenuOption(icon: Icons.restaurant, title: 'Nasi Telur Pontianak + Es Teh', subtitle: '(Masak di kos)'),
                       const SizedBox(height: 6),
-                      const _MenuOption(icon: FontAwesomeIcons.bowlRice, title: 'Mie Dok-Dok Ala Warkop'),
+                      const _MenuOption(icon: Icons.ramen_dining, title: 'Mie Dok-Dok Ala Warkop'),
                       const SizedBox(height: 6),
-                      const _MenuOption(icon: FontAwesomeIcons.bowlFood, title: 'Beli Nasi Warteg', subtitle: '(Sayur 2 macem, Telur, dan Tempe Orek)'),
+                      const _MenuOption(icon: Icons.rice_bowl, title: 'Beli Nasi Warteg', subtitle: '(Sayur 2 macem, Telur, dan Tempe Orek)'),
                       const SizedBox(height: 16),
 
                       // CTA Card
@@ -279,7 +278,7 @@ class _ChatBubble extends StatelessWidget {
 }
 
 class _MenuOption extends StatelessWidget {
-  final FaIconData icon;
+  final IconData icon;
   final String title;
   final String? subtitle;
   const _MenuOption({required this.icon, required this.title, this.subtitle});
@@ -289,7 +288,7 @@ class _MenuOption extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        FaIcon(icon, size: 16, color: AppTheme.slate600),
+        Icon(icon, size: 16, color: AppTheme.slate600),
         const SizedBox(width: 8),
         Expanded(
           child: Column(

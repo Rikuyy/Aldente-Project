@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../theme/app_theme.dart';
 
 class InventoryPage extends StatefulWidget {
@@ -14,10 +13,10 @@ class _InventoryPageState extends State<InventoryPage> {
   final _searchController = TextEditingController();
 
   final categories = [
-    {'name': 'Protein', 'icon': FontAwesomeIcons.drumstickBite, 'items': ['Telur Ayam (6 btr)', 'Dada Ayam (250g)', 'Sosis (3 pcs)']},
-    {'name': 'Sayur & Buah', 'icon': FontAwesomeIcons.carrot, 'items': ['Bawang Merah (100g)', 'Tomat (2 pcs)']},
-    {'name': 'Karbohidrat', 'icon': FontAwesomeIcons.bowlRice, 'items': ['Beras (2 kg)', 'Mie Instan (4 bks)']},
-    {'name': 'Bumbu & Lainnya', 'icon': FontAwesomeIcons.mortarPestle, 'items': ['Kecap Manis', 'Saus Sambal', 'Garam', 'Minyak Goreng (1L)']},
+    {'name': 'Protein', 'icon': Icons.lunch_dining, 'items': ['Telur Ayam (6 btr)', 'Dada Ayam (250g)', 'Sosis (3 pcs)']},
+    {'name': 'Sayur & Buah', 'icon': Icons.eco, 'items': ['Bawang Merah (100g)', 'Tomat (2 pcs)']},
+    {'name': 'Karbohidrat', 'icon': Icons.rice_bowl, 'items': ['Beras (2 kg)', 'Mie Instan (4 bks)']},
+    {'name': 'Bumbu & Lainnya', 'icon': Icons.soup_kitchen, 'items': ['Kecap Manis', 'Saus Sambal', 'Garam', 'Minyak Goreng (1L)']},
   ];
 
   @override
@@ -106,7 +105,7 @@ class _InventoryPageState extends State<InventoryPage> {
                           children: [
                             Row(
                               children: [
-                                FaIcon(cat['icon'] as FaIconData?, size: 20, color: AppTheme.slate600),
+                                Icon(cat['icon'] as IconData, size: 20, color: AppTheme.slate600),
                                 const SizedBox(width: 8),
                                 Text(
                                   (cat['name'] as String).toUpperCase(),
@@ -233,7 +232,7 @@ class _CookingDonePopup extends StatelessWidget {
                           children: [
                             Text('Selamat Makan!', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -0.5)),
                             SizedBox(width: 8),
-                            FaIcon(FontAwesomeIcons.utensils, color: Colors.white, size: 20),
+                            Icon(Icons.restaurant, color: Colors.white, size: 20),
                           ],
                         ),
                         SizedBox(height: 4),
