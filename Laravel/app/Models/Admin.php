@@ -11,15 +11,12 @@ class Admin extends Authenticatable
     use HasApiTokens, Notifiable;
 
     protected $connection = 'mongodb';
-    protected $collection = 'admins'; // Udah dibalikin jadi 'admin' tanpa 's' ya!
-
-    // $primaryKey DIHAPUS agar Laravel Auth membaca _id bawaan MongoDB
+    protected $collection = 'admins'; 
 
     protected $fillable = [
         'Username', 
         'Password', 
         'Email',
-        'is_setup_done'
     ];
 
     protected $hidden = [
@@ -31,6 +28,18 @@ class Admin extends Authenticatable
         'Password' => 'hashed',
     ];
 
+    /**
+     * PENTING: Memberitahu Laravel ke mana email harus dikirim.
+     * Karena field di MongoDB kamu 'Email' (kapital), Laravel butuh ini.
+     */
+    public function routeNotificationForMail($notification)
+    {
+        return $this->Email;
+    }
+
+    /**
+     * Beritahu Laravel bahwa kolom password di DB namanya 'Password'
+     */
     public function getAuthPassword()
     {
         return $this->Password;

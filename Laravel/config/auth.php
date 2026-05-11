@@ -1,46 +1,31 @@
 <?php
 
 return [
-
     'defaults' => [
         'guard' => 'web',
-        'passwords' => 'admins', // <-- Ganti ke admins
+        'passwords' => 'admins',
     ],
 
     'guards' => [
         'web' => [
             'driver' => 'session',
-            'provider' => 'admins', // <-- Ganti provider ke admins
-        ],
-
-        'api' => [
-            'driver' => 'sanctum',
-            'provider' => 'flutter_users',
+            'provider' => 'admins', // Ganti ke provider admins
         ],
     ],
 
     'providers' => [
-        // Tambahkan provider admins yang mengarah ke model Admin
         'admins' => [
             'driver' => 'eloquent',
-            'model' => App\Models\Admin::class, 
-        ],
-
-        'flutter_users' => [
-            'driver' => 'eloquent',
-            'model' => App\Models\User::class, 
+            'model' => App\Models\Admin::class,
         ],
     ],
 
     'passwords' => [
-        'admins' => [ // <-- Ganti namanya jadi admins
+        'admins' => [
             'provider' => 'admins',
             'table' => 'password_reset_tokens',
-            'expire' => 5, 
+            'expire' => 60,
             'throttle' => 60,
         ],
     ],
-
-    'password_timeout' => 10800,
-
 ];

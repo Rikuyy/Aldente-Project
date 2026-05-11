@@ -1,6 +1,9 @@
 <head>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
 </head>
 
 <x-app-layout>
@@ -36,7 +39,7 @@
                 </button>
             </div>
 
-            <div x-show="evalResult !== null" class="space-y-6" style="display:none;">
+            <div x-show="evalResult" class="space-y-6" x-transition>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div class="bg-neutral-900 p-6 rounded-2xl border border-neutral-800 border-l-4 border-l-green-500">
                         <p class="text-neutral-400 text-sm mb-1">Tingkat Akurasi</p>
@@ -81,7 +84,7 @@
             </div>
         </div>
 
-        <div x-show="activeTab === 'api'" x-transition style="display:none;" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div x-show="activeTab === 'api'" x-transition class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div class="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 flex flex-col gap-4">
                 
                 <div class="flex flex-col gap-2">
@@ -104,7 +107,7 @@
                 </div>
 
                 <div class="flex flex-col gap-2">
-                    <label class="text-xs font-bold text-neutral-500 uppercase">2. Pilih API (Otomatis dari api.php)</label>
+                    <label class="text-xs font-bold text-neutral-500 uppercase">2. Pilih API</label>
                     <select x-model="apiUrl" @change="updateBody()" class="w-full bg-neutral-800 border border-neutral-700 text-white rounded-xl p-3 focus:border-[#FF723A] outline-none">
                         <option value="">-- Pilih Endpoint --</option>
                         <template x-for="route in filteredRoutes" :key="route.uri">
@@ -119,7 +122,7 @@
                 </div>
 
                 <div x-show="apiMethod !== 'GET' && apiMethod !== 'DELETE'">
-                    <label class="text-xs font-bold text-neutral-500 uppercase mb-2 block">4. Request Body (Otomatis Menyesuaikan)</label>
+                    <label class="text-xs font-bold text-neutral-500 uppercase mb-2 block">4. Request Body</label>
                     <textarea x-model="apiBody" rows="8" class="w-full bg-neutral-950 border border-neutral-700 text-[#a6e22e] font-mono text-sm rounded-xl p-4 focus:border-[#FF723A] outline-none"></textarea>
                 </div>
                 
@@ -156,6 +159,10 @@
                 apiStatus: '',
                 isLoadingApi: false,
 
+                // Evaluasi State
+                isTesting: false,
+                evalResult: null,
+
                 init() {
                     this.filterUrls();
                 },
@@ -170,42 +177,29 @@
 
                 updateBody() {
                     const url = this.apiUrl;
-                    
                     if(this.apiMethod === 'GET' || this.apiMethod === 'DELETE') {
                         this.apiBody = "";
                         return;
                     }
 
                     if(url.includes('rekomendasi')) {
-                        this.apiBody = JSON.stringify({ 
-                            message: "aku punya ayam dan bawang" 
-                        }, null, 4);
-                    } 
-                    else if(url.includes('login')) {
-                        this.apiBody = JSON.stringify({ 
-                            email: "userflutter@cookcash.com",
-                            password: "password123"
-                        }, null, 4);
-                    }
-                    else if(url.includes('resep')) {
+                        this.apiBody = JSON.stringify({ message: "aku punya ayam dan bawang" }, null, 4);
+                    } else if(url.includes('login')) {
+                        this.apiBody = JSON.stringify({ email: "userflutter@cookcash.com", password: "password123" }, null, 4);
+                    } else if(url.includes('resep')) {
                         this.apiBody = JSON.stringify({ 
                             "Title Cleaned": "Ayam Goreng Spesial",
                             "Category": "ayam",
-                            "Ingredients Cleaned": "ayam, bawang putih, garam, ketumbar",
-                            "Steps": "1. Cuci ayam. 2. Ungkep dengan bumbu. 3. Goreng."
+                            "Ingredients Cleaned": "ayam, bawang putih, garam",
+                            "Steps": "Masak sampai matang."
                         }, null, 4);
-                    }
-                    else {
+                    } else {
                         this.apiBody = "{\n  \"key\": \"value\"\n}";
                     }
                 },
 
                 async sendApiRequest() {
-                    if(!this.apiUrl) {
-                        alert("Pilih atau isi URL dulu!");
-                        return;
-                    }
-
+                    if(!this.apiUrl) return alert("Pilih URL dulu!");
                     this.isLoadingApi = true;
                     this.apiResponse = "// Menghubungi server...";
                     
@@ -231,19 +225,31 @@
                     }
                 },
 
-                isTesting: false,
-                evalResult: null,
                 async runEvaluasi() {
                     this.isTesting = true;
-                    this.evalResult = null;
+                    this.evalResult = null; // Reset hasil sebelumnya
+                    
                     try {
                         const res = await fetch('/api/chatbot/evaluasi', { 
                             method: 'POST',
-                            headers: { 'Accept': 'application/json' }
+                            headers: { 
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content
+                            }
                         });
-                        this.evalResult = await res.json();
+                        
+                        const data = await res.json();
+                        console.log("Response Evaluasi:", data); // Untuk debugging
+                        
+                        // Cek apakah data tidak kosong
+                        if (data && typeof data === 'object') {
+                            this.evalResult = data;
+                        } else {
+                            alert("API mengembalikan format yang salah");
+                        }
                     } catch (e) {
-                        alert("Gagal koneksi ke server Python/API!");
+                        console.error("Fetch Error:", e);
+                        alert("Gagal koneksi ke server!");
                     } finally {
                         this.isTesting = false;
                     }

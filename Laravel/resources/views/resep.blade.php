@@ -5,7 +5,7 @@
 
 <x-app-layout>
     <x-slot name="header">
-        Manajemen Resep Makanan & AI
+        Manajemen Resep Makanan 
     </x-slot>
 
     <div x-data="{ 
@@ -234,7 +234,7 @@
 
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-                <h1 class="text-2xl font-bold text-white">Database Resep & AI</h1>
+                <h1 class="text-2xl font-bold text-white">Rincian Resep</h1>
                 <p class="text-neutral-400 text-sm mt-1">Sistem Otomatis: Sinkronasi Database dan Retrain Model ML CookCash.</p>
             </div>
 

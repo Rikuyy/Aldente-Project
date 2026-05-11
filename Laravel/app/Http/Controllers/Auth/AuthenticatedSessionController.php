@@ -4,8 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
-use App\Models\Admin; // <-- INI TAMBAHANNYA: Import Model Admin
-use App\Providers\RouteServiceProvider;
+use App\Models\Admin;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -13,12 +12,9 @@ use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
 {
-    /**
-     * Display the login view.
-     */
-    public function create(): View|RedirectResponse // <-- INI TAMBAHANNYA: Tambah |RedirectResponse
+    public function create(): View|RedirectResponse
     {
-        // <-- INI TAMBAHANNYA: Cek kalau database admin kosong, otomatis lempar ke register
+        // Jika belum ada admin sama sekali, lempar ke register untuk setup awal
         if (Admin::count() === 0) {
             return redirect()->route('register');
         }
@@ -26,27 +22,18 @@ class AuthenticatedSessionController extends Controller
         return view('auth.login');
     }
 
-    /**
-     * Handle an incoming authentication request.
-     */
     public function store(LoginRequest $request): RedirectResponse
     {
         $request->authenticate();
-
         $request->session()->regenerate();
 
-        return redirect()->intended(RouteServiceProvider::HOME);
+        return redirect()->intended(route('dashboard'));
     }
 
-    /**
-     * Destroy an authenticated session.
-     */
     public function destroy(Request $request): RedirectResponse
     {
         Auth::guard('web')->logout();
-
         $request->session()->invalidate();
-
         $request->session()->regenerateToken();
 
         return redirect('/');
