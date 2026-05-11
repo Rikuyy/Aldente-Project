@@ -37,11 +37,17 @@ class LoginRequest extends FormRequest
      *
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function authenticate(): void
+   public function authenticate(): void
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        // UBAH DI SINI: Kita kasih tau Laravel buat nyari ke kolom 'Email' (Huruf Besar)
+        $credentials = [
+            'Email' => $this->email, // Sesuaikan dengan field MongoDB kamu
+            'password' => $this->password
+        ];
+
+        if (! Auth::attempt($credentials, $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([

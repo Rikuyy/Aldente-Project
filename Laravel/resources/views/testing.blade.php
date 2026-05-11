@@ -16,7 +16,7 @@
             </h1>
             <div class="flex space-x-2 bg-neutral-900/50 p-1 rounded-xl w-max border border-neutral-800">
                 <button @click="activeTab = 'evaluasi'" :class="activeTab === 'evaluasi' ? 'bg-[#FF723A] text-white shadow-lg' : 'text-neutral-400 hover:text-white'" class="px-6 py-2.5 rounded-lg font-bold transition-all flex items-center gap-2">
-                    <i class="fas fa-microchip"></i> Evaluasi AI
+                    <i class="fas fa-microchip"></i> Evaluasi Model
                 </button>
                 <button @click="activeTab = 'api'" :class="activeTab === 'api' ? 'bg-[#FF723A] text-white shadow-lg' : 'text-neutral-400 hover:text-white'" class="px-6 py-2.5 rounded-lg font-bold transition-all flex items-center gap-2">
                     <i class="fas fa-satellite-dish"></i> API Tester

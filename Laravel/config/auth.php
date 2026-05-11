@@ -4,41 +4,42 @@ return [
 
     'defaults' => [
         'guard' => 'web',
-        'passwords' => 'users',
+        'passwords' => 'admins', // <-- Ganti ke admins
     ],
 
     'guards' => [
         'web' => [
             'driver' => 'session',
-            'provider' => 'users',
+            'provider' => 'admins', // <-- Ganti provider ke admins
         ],
 
         'api' => [
             'driver' => 'sanctum',
-            'provider' => 'flutter_users', // Flutter pakai provider khusus
+            'provider' => 'flutter_users',
         ],
     ],
 
     'providers' => [
-        'users' => [
+        // Tambahkan provider admins yang mengarah ke model Admin
+        'admins' => [
             'driver' => 'eloquent',
-            'model' => App\Models\User::class, // Admin (Koleksi: admin)
+            'model' => App\Models\Admin::class, 
         ],
 
         'flutter_users' => [
             'driver' => 'eloquent',
-            'model' => App\Models\UserFlutter::class, // User (Koleksi: users)
+            'model' => App\Models\User::class, 
         ],
     ],
 
-'passwords' => [
-    'users' => [
-        'provider' => 'users',
-        'table' => 'password_reset_tokens',
-        'expire' => 5, // <--- Token cuma berlaku 5 menit!
-        'throttle' => 60,
+    'passwords' => [
+        'admins' => [ // <-- Ganti namanya jadi admins
+            'provider' => 'admins',
+            'table' => 'password_reset_tokens',
+            'expire' => 5, 
+            'throttle' => 60,
+        ],
     ],
-],
 
     'password_timeout' => 10800,
 

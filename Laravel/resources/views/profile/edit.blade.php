@@ -19,11 +19,7 @@
             </div>
         </div>
 
-        <div class="bg-neutral-900 p-6 sm:p-8 rounded-[2.5rem] border border-neutral-800 border-l-4 border-l-red-500/50 shadow-2xl transition hover:border-red-500/30">
-            <div class="max-w-xl">
-                @include('profile.partials.delete-user-form')
-            </div>
-        </div>
+    
 
         <div x-data="{ showLogoutModal: false }" class="bg-neutral-900 p-6 sm:p-8 rounded-[2.5rem] border border-neutral-800 border-l-4 border-l-blue-700 shadow-2xl transition hover:border-blue-800/50">
             <div class="max-w-xl">

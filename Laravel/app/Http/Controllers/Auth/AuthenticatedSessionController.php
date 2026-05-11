@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\Admin; // <-- INI TAMBAHANNYA: Import Model Admin
 use App\Providers\RouteServiceProvider;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,8 +16,13 @@ class AuthenticatedSessionController extends Controller
     /**
      * Display the login view.
      */
-    public function create(): View
+    public function create(): View|RedirectResponse // <-- INI TAMBAHANNYA: Tambah |RedirectResponse
     {
+        // <-- INI TAMBAHANNYA: Cek kalau database admin kosong, otomatis lempar ke register
+        if (Admin::count() === 0) {
+            return redirect()->route('register');
+        }
+
         return view('auth.login');
     }
 
