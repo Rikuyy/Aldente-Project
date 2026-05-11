@@ -2,27 +2,32 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
+use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/login');
 
-// =========================================================
-// ZONA AMAN (Web Admin)
-// =========================================================
+// Semua route yang butuh login masukkan ke dalam group ini
 Route::middleware(['auth', 'verified'])->group(function () {
     
+    // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+    // Manajemen Resep
     Route::get('/resep', function () {
         return view('resep');
     })->name('resep.index');
 
+    // Manajemen Bahan
     Route::get('/bahan', function () {
         return view('bahan');
     })->name('bahan.index');
 
-    // Route Testing dipindah ke sini (Hanya Admin yang bisa akses)
+    // Manajemen User (User Flutter)
+    Route::get('/manajemen-user', [UserController::class, 'index'])->name('users.index');
+    Route::delete('/manajemen-user/{id}', [UserController::class, 'destroy'])->name('users.destroy');
+
+    // Evaluasi Algoritma / Testing
     Route::get('/testing', function () {
         $routes = collect(\Route::getRoutes())->filter(function($route) {
             return str_contains($route->uri, 'api/') && !str_contains($route->uri, 'sanctum');
@@ -36,15 +41,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return view('testing', compact('routes'));
     })->name('testing');
 
+    // Profile
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-});
-
-Route::middleware('auth')->group(function () {
-    // Route untuk halaman user
-Route::get('/manajemen-user', [UserController::class, 'index'])->name('users.index');
-    Route::delete('/manajemen-user/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 });
 
 require __DIR__.'/auth.php';
