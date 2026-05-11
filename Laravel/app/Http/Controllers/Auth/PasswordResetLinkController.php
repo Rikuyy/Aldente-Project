@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\OtpCode;
-use App\Models\User;
+use App\Models\Admin; // <-- GANTI: Gunakan Admin, bukan User
 use App\Notifications\SendOtpNotification;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -14,7 +14,7 @@ use Illuminate\View\View;
 class PasswordResetLinkController extends Controller
 {
     /**
-     * Tampilan 1: Form input email (Halaman Lupa Password)
+     * Tampilan 1: Form input email
      */
     public function create(): View
     {
@@ -30,27 +30,28 @@ class PasswordResetLinkController extends Controller
             'email' => ['required', 'email'],
         ]);
 
-        // Cari user di koleksi admin
-        $user = User::where('email', $request->email)->first();
+        // MENCARI ADMIN: Sesuaikan dengan field 'Email' (E kapital)
+        $admin = Admin::where('Email', $request->email)->first();
 
-        if (!$user) {
+        if (!$admin) {
             return back()->withErrors(['email' => 'Email admin tidak ditemukan di sistem!']);
         }
 
         // Generate 6 angka random
         $otp = rand(100000, 999999);
 
-        // Simpan ke database MongoDB (koleksi otp_codes)
+        // Simpan ke database (koleksi otp_codes)
+        // Kita gunakan 'Email' (kapital) supaya konsisten dengan tabel Admin
         OtpCode::updateOrCreate(
-            ['email' => $request->email],
+            ['Email' => $request->email], 
             [
                 'otp' => (int)$otp,
-                'expires_at' => Carbon::now()->addMinutes(5) // Berlaku 5 menit
+                'expires_at' => Carbon::now()->addMinutes(5)
             ]
         );
 
         // Kirim email notifikasi
-        $user->notify(new SendOtpNotification($otp));
+        $admin->notify(new SendOtpNotification($otp));
 
         // Pindah ke halaman input kode
         return redirect()->route('password.otp.view', ['email' => $request->email])
@@ -58,31 +59,30 @@ class PasswordResetLinkController extends Controller
     }
 
     /**
-     * Proses 2: Cek apakah kode yang diinput user bener/salah
+     * Proses 2: Verifikasi OTP
      */
-    public function verifyOtp(Request $request): \Illuminate\Http\RedirectResponse
+    public function verifyOtp(Request $request): RedirectResponse
     {
         $request->validate([
             'email' => ['required', 'email'],
             'otp'   => ['required', 'numeric'],
         ]);
 
-        $check = \App\Models\OtpCode::where('email', $request->email)
+        // Cek kode OTP di database
+        $check = OtpCode::where('Email', $request->email)
                         ->where('otp', (int)$request->otp)
-                        ->where('expires_at', '>', \Carbon\Carbon::now())
+                        ->where('expires_at', '>', Carbon::now())
                         ->first();
 
         if (!$check) {
             return back()->withErrors(['otp' => 'Kode OTP salah atau sudah kedaluwarsa!']);
         }
 
-        // JANGAN MENGHAPUS OTP DI SINI. Kita hapus nanti setelah password berhasil diganti.
-
-        // Lanjut ke halaman reset password bawaan Breeze
+        // Jika benar, lanjut ke halaman reset password
+        // Token kita isi dengan kode OTP-nya saja untuk sementara
         return redirect()->route('password.reset', [
             'token' => $request->otp, 
             'email' => $request->email
         ]);
-    
     }
 }

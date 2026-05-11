@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use MongoDB\Laravel\Eloquent\Model; // Pastikan pakai model MongoDB
+use MongoDB\Laravel\Eloquent\Model;
 
 class OtpCode extends Model
 {
@@ -10,11 +10,13 @@ class OtpCode extends Model
     protected $collection = 'otp_codes';
 
     protected $fillable = [
-        'email', 'kode', 'expired_at', 'is_used'
+        'Email', // Gunakan E kapital agar konsisten dengan model Admin
+        'otp',
+        'expires_at'
     ];
 
     protected $casts = [
-        'expired_at' => 'datetime',
-        'is_used' => 'boolean'
+        'expires_at' => 'datetime',
+        'otp' => 'integer'
     ];
 }
