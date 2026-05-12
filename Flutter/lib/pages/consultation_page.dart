@@ -2,8 +2,8 @@ import 'package:cookcase_plus/models/chat_message.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../theme/app_theme.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:google_generative_ai/google_generative_ai.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class ConsultationPage extends StatefulWidget {
   const ConsultationPage({super.key});
@@ -13,9 +13,10 @@ class ConsultationPage extends StatefulWidget {
 }
 
 class _ConsultationPageState extends State<ConsultationPage> {
-  final String apiKey = dotenv.env['GEMINI_API_KEY'] ?? "";
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final List<Map<String, String>> _chatHistory = [];
+  static const String _baseUrl = 'http://127.0.0.1:8000/api';
 
   final List<ChatMessage> _messages = [];
   bool _isLoading = false;
@@ -27,46 +28,10 @@ class _ConsultationPageState extends State<ConsultationPage> {
     'totalBudget': 150000,
   };
 
-  late GenerativeModel _model;
-  late ChatSession _chat;
-
   @override
   void initState() {
     super.initState();
-    _initGemini();
     _addWelcomeMessage();
-  }
-
-  void _initGemini() {
-    final systemInstruction = Content.system('''
-Kamu adalah ChefBot, asisten memasak hemat dari aplikasi Cookcah.
-Kamu ramah, singkat, dan selalu berbahasa Indonesia casual (boleh pakai "sih", "dong", "nih").
-
-KONTEKS USER SAAT INI:
-- Nama: ${_userContext['nama']}
-- Stok bahan di kulkas: ${(_userContext['stokBahan'] as List).join(', ')}
-- Sisa budget hari ini: Rp ${_userContext['sisaBudget']} dari Rp ${_userContext['totalBudget']}
-- Persentase budget tersisa: ${((_userContext['sisaBudget'] / _userContext['totalBudget']) * 100).toStringAsFixed(0)}%
-
-ATURAN:
-1. Prioritaskan resep dari bahan yang SUDAH ADA di stok.
-2. Jika perlu beli bahan, estimasikan harganya dan cek apakah masuk budget.
-3. Format resep: nama masakan → bahan → langkah singkat → estimasi biaya.
-4. Jika budget < 30%, sarankan masak dari stok, jangan beli.
-5. Jawab maksimal 3-4 kalimat kecuali diminta resep lengkap.
-''');
-
-    _model = GenerativeModel(
-      model: 'gemini-2.5-flash',
-      apiKey: apiKey,
-      systemInstruction: systemInstruction,
-      generationConfig: GenerationConfig(
-        temperature: 0.8,
-        maxOutputTokens: 800,
-      ),
-    );
-
-    _chat = _model.startChat();
   }
 
   void _addWelcomeMessage() {
@@ -90,7 +55,6 @@ ATURAN:
     final trimmed = text.trim();
     if (trimmed.isEmpty || _isLoading) return;
 
-    // 1. Tambah pesan user ke UI
     setState(() {
       _messages.add(ChatMessage(text: trimmed, isUser: true));
       _messages.add(ChatMessage.loading());
@@ -99,16 +63,38 @@ ATURAN:
     _textController.clear();
     _scrollToBottom();
 
+    _chatHistory.add({'role': 'user', 'text': trimmed});
+
     try {
-      final response = await _chat.sendMessage(Content.text(trimmed));
-      final botReply = response.text ?? 'Maaf, aku tidak bisa menjawab itu.';
+      final response = await http.post(
+        Uri.parse('$_baseUrl/consultation'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: jsonEncode({
+          'message': trimmed,
+          'history': _chatHistory.length > 1
+              ? _chatHistory.sublist(0, _chatHistory.length - 1)
+              : [],
+          'context': _userContext,
+        }),
+      );
+
+      debugPrint('STATUS: ${response.statusCode}');
+      debugPrint('BODY: ${response.body}');
+
+      final data = jsonDecode(response.body);
+      final botReply = data['reply'] ?? 'Maaf, aku tidak bisa menjawab itu.';
+
+      _chatHistory.add({'role': 'model', 'text': botReply});
 
       setState(() {
         _messages.removeLast();
         _messages.add(ChatMessage(text: botReply, isUser: false));
         _isLoading = false;
       });
-    } catch (e, stackTrace) {
+    } catch (e) {
       setState(() {
         _messages.removeLast();
         _messages.add(ChatMessage(
@@ -118,9 +104,6 @@ ATURAN:
         ));
         _isLoading = false;
       });
-      debugPrint('❌ Error: $e');
-      debugPrint('❌ Type: ${e.runtimeType}');
-      debugPrint('❌ Stacktrace: $stackTrace');
     }
 
     _scrollToBottom();
@@ -259,7 +242,7 @@ ATURAN:
           ),
           const SizedBox(width: 10),
           const Text(
-            'Cak Bot sedang mengetik...',
+            'ChefBot sedang mengetik...',
             style: TextStyle(
               fontSize: 12,
               color: AppTheme.slate400,

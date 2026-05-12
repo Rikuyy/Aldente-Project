@@ -6,10 +6,12 @@ use Illuminate\Support\Facades\Route;
 // Import semua controller yang dibutuhkan 
 use App\Http\Controllers\API\Auth\AuthController;
 use App\Http\Controllers\API\SetupController;
+use App\Http\Controllers\API\ConsultationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\ResepController;
 use App\Http\Controllers\ChatbotController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -66,4 +68,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/update-ai',    [ChatbotController::class, 'updateModel']);
         Route::post('/evaluasi',     [ChatbotController::class, 'evaluasi']);
     });
+
+    
 });
+
+Route::post('/consultation', [ConsultationController::class, 'send']);
