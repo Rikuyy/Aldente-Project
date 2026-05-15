@@ -10,6 +10,10 @@ import 'pages/finance_page.dart';
 import 'pages/inventory_page.dart';
 import 'pages/profile_page.dart';
 import 'pages/notifications_page.dart';
+// IMPORT halaman auth kamu di sini
+import '../login_system/splash.dart';
+import '../login_system/sign_in.dart';
+import '../login_system/sign_up.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
@@ -18,8 +22,11 @@ void main() async {
 }
 
 final _router = GoRouter(
-  initialLocation: '/',
+  initialLocation: '/splash', // Mulai dari Splash Screen untuk cek login
   routes: [
+    GoRoute(path: '/splash', builder: (ctx, state) => const SplashScreen()),
+    GoRoute(path: '/sign_in', builder: (ctx, state) => const SignInScreen()),
+    GoRoute(path: '/sign_up', builder: (ctx, state) => const SignUpScreen()),
     GoRoute(path: '/', builder: (ctx, state) => const GuestModePage()),
     GoRoute(
         path: '/onboarding', builder: (ctx, state) => const OnboardingPage()),

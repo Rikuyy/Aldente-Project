@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-
+import 'package:go_router/go_router.dart';
+import '../services/auth_services.dart'; // Import service yang kamu buat tadi
 import 'sign_up.dart';
 
-
 class SignInScreen extends StatelessWidget {
-  static const String routeName = '/confirm_password';
+  static const String routeName = '/sign_in';
 
   const SignInScreen({super.key});
   @override
@@ -26,7 +26,7 @@ class SignInScreen extends StatelessWidget {
                 children: [
                   const SizedBox(height: 16),
                   const Text(
-                    "Welcome Back, Mates",
+                    "Welcome Back",
                     style: TextStyle(
                       color: Colors.black,
                       fontSize: 24,
@@ -39,26 +39,25 @@ class SignInScreen extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Color(0xFF757575)),
                   ),
-                  // const SizedBox(height: 16),
                   SizedBox(height: MediaQuery.of(context).size.height * 0.05),
                   const SignInForm(),
-                  SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.1),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       SocalCard(
-                        icon: SvgPicture.string(googleIcon),
+                        icon: googleIcon,
                         press: () {},
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: SocalCard(
-                          icon: SvgPicture.string(facebookIcon),
+                          icon: facebookIcon,
                           press: () {},
                         ),
                       ),
                       SocalCard(
-                        icon: SvgPicture.string(twitterIcon),
+                        icon: twitterIcon,
                         press: () {},
                       ),
                     ],
@@ -75,13 +74,38 @@ class SignInScreen extends StatelessWidget {
   }
 }
 
-const authOutlineInputBorder = OutlineInputBorder(
-  borderSide: BorderSide(color: Color(0xFF757575)),
-  borderRadius: BorderRadius.all(Radius.circular(100)),
-);
-
-class SignInForm extends StatelessWidget {
+class SignInForm extends StatefulWidget {
   const SignInForm({super.key});
+
+  @override
+  State<SignInForm> createState() => _SignInFormState();
+}
+
+class _SignInFormState extends State<SignInForm> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final AuthService _authService = AuthService();
+  bool _isLoading = false;
+
+  void _handleLogin() async {
+    setState(() => _isLoading = true);
+    final response = await _authService.login(
+      _emailController.text.trim(),
+      _passwordController.text.trim(),
+    );
+    setState(() => _isLoading = false);
+
+    if (response['access_token'] != null) {
+      await _authService.saveToken(response['access_token']);
+      if (!mounted) return;
+      context.go('/app/home');
+    } else {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(response['message'] ?? "Login Failed")),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -89,20 +113,16 @@ class SignInForm extends StatelessWidget {
       child: Column(
         children: [
           TextFormField(
-            onSaved: (email) {},
-            onChanged: (email) {},
-            textInputAction: TextInputAction.next,
+            controller: _emailController,
             decoration: InputDecoration(
                 hintText: "Enter your email",
                 labelText: "Email",
                 floatingLabelBehavior: FloatingLabelBehavior.always,
-                hintStyle: const TextStyle(color: Color(0xFF757575)),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 16,
-                ),
-                suffix: SvgPicture.string(
-                  mailIcon,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                suffixIcon: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: SvgPicture.string(mailIcon),
                 ),
                 border: authOutlineInputBorder,
                 enabledBorder: authOutlineInputBorder,
@@ -112,20 +132,17 @@ class SignInForm extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 24),
             child: TextFormField(
-              onSaved: (password) {},
-              onChanged: (password) {},
+              controller: _passwordController,
               obscureText: true,
               decoration: InputDecoration(
                   hintText: "Enter your password",
                   labelText: "Password",
                   floatingLabelBehavior: FloatingLabelBehavior.always,
-                  hintStyle: const TextStyle(color: Color(0xFF757575)),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 16,
-                  ),
-                  suffix: SvgPicture.string(
-                    lockIcon,
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  suffixIcon: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: SvgPicture.string(lockIcon),
                   ),
                   border: authOutlineInputBorder,
                   enabledBorder: authOutlineInputBorder,
@@ -133,19 +150,22 @@ class SignInForm extends StatelessWidget {
                       borderSide: const BorderSide(color: Color(0xFFFF7643)))),
             ),
           ),
-          const SizedBox(height: 8),
           ElevatedButton(
-            onPressed: () {},
+            onPressed: _isLoading ? null : _handleLogin,
             style: ElevatedButton.styleFrom(
               elevation: 0,
               backgroundColor: const Color(0xFFFF7643),
               foregroundColor: Colors.white,
               minimumSize: const Size(double.infinity, 48),
               shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.all(Radius.circular(16)),
-              ),
+                  borderRadius: BorderRadius.all(Radius.circular(16))),
             ),
-            child: const Text("Continue"),
+            child: _isLoading
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(color: Colors.white))
+                : const Text("Continue"),
           )
         ],
       ),
@@ -153,14 +173,14 @@ class SignInForm extends StatelessWidget {
   }
 }
 
-class SocalCard extends StatelessWidget {
-  const SocalCard({
-    super.key,
-    required this.icon,
-    required this.press,
-  });
+const authOutlineInputBorder = OutlineInputBorder(
+  borderSide: BorderSide(color: Color(0xFF757575)),
+  borderRadius: BorderRadius.all(Radius.circular(100)),
+);
 
-  final Widget icon;
+class SocalCard extends StatelessWidget {
+  const SocalCard({super.key, required this.icon, required this.press});
+  final String icon;
   final VoidCallback press;
 
   @override
@@ -168,14 +188,12 @@ class SocalCard extends StatelessWidget {
     return GestureDetector(
       onTap: press,
       child: Container(
-        padding: const EdgeInsets.all(16),
-        height: 56,
-        width: 56,
+        padding: const EdgeInsets.all(12),
+        height: 40,
+        width: 40,
         decoration: const BoxDecoration(
-          color: Color(0xFFF5F6F9),
-          shape: BoxShape.circle,
-        ),
-        child: icon,
+            color: Color(0xFFF5F6F9), shape: BoxShape.circle),
+        child: SvgPicture.string(icon),
       ),
     );
   }
@@ -183,57 +201,31 @@ class SocalCard extends StatelessWidget {
 
 class NoAccountText extends StatelessWidget {
   const NoAccountText({super.key});
-
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Text(
-          "Don’t have an account? ",
-          style: TextStyle(color: Color(0xFF757575)),
-        ),
+        const Text("Don't have an account? ",
+            style: TextStyle(color: Color(0xFF757575))),
         GestureDetector(
-          onTap: () {
-            Navigator.pushNamed(context, SignUpScreen.routeName);
-          },
-          child: const Text(
-            "Sign Up",
-            style: TextStyle(
-              color: Color(0xFFFF7643),
-            ),
-          ),
+          onTap: () => context.push('/sign_up'),
+          child:
+              const Text("Sign Up", style: TextStyle(color: Color(0xFFFF7643))),
         ),
       ],
     );
   }
 }
 
-// Icons
+// ICON DATA
 const mailIcon =
-    '''<svg width="18" height="13" viewBox="0 0 18 13" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path fill-rule="evenodd" clip-rule="evenodd" d="M15.3576 3.39368C15.5215 3.62375 15.4697 3.94447 15.2404 4.10954L9.80876 8.03862C9.57272 8.21053 9.29421 8.29605 9.01656 8.29605C8.7406 8.29605 8.4638 8.21138 8.22775 8.04204L2.76041 4.11039C2.53201 3.94618 2.47851 3.62546 2.64154 3.39454C2.80542 3.16362 3.12383 3.10974 3.35223 3.27566L8.81872 7.20645C8.93674 7.29112 9.09552 7.29197 9.2144 7.20559L14.6469 3.27651C14.8753 3.10974 15.1937 3.16447 15.3576 3.39368ZM16.9819 10.7763C16.9819 11.4366 16.4479 11.9745 15.7932 11.9745H2.20765C1.55215 11.9745 1.01892 11.4366 1.01892 10.7763V2.22368C1.01892 1.56342 1.55215 1.02632 2.20765 1.02632H15.7932C16.4479 1.02632 16.9819 1.56342 16.9819 2.22368V10.7763ZM15.7932 0H2.20765C0.990047 0 0 0.998092 0 2.22368V10.7763C0 12.0028 0.990047 13 2.20765 13H15.7932C17.01 13 18 12.0028 18 10.7763V2.22368C18 0.998092 17.01 0 15.7932 0Z" fill="#757575"/>
-</svg>''';
-
+    '''<svg width="18" height="13" viewBox="0 0 18 13" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M15.3576 3.39368C15.5215 3.62375 15.4697 3.94447 15.2404 4.10954L9.80876 8.03862C9.57272 8.21053 9.29421 8.29605 9.01656 8.29605C8.7406 8.29605 8.4638 8.21138 8.22775 8.04204L2.79373 4.10954C2.56447 3.94447 2.51261 3.62375 2.67652 3.39368C2.84042 3.16361 3.15984 3.11157 3.3891 3.27664L8.81434 7.20336C8.93237 7.28788 9.10086 7.28788 9.21889 7.20336L14.645 3.27664C14.8743 3.11157 15.1937 3.16361 15.3576 3.39368ZM1.18421 1.11842C0.686526 1.11842 0.282895 1.52205 0.282895 2.01974V10.1382C0.282895 11.2327 1.17 12.1197 2.26447 12.1197H15.7697C16.8642 12.1197 17.7513 11.2327 17.7513 10.1382V2.01974C17.7513 1.52205 17.3477 1.11842 16.85 1.11842H1.18421ZM16.85 0H1.18421C0.0716842 0 -0.815789 0.887474 -0.815789 2V10.1382C-0.815789 11.8363 0.566316 13.2184 2.26447 13.2184H15.7697C17.4679 13.2184 18.85 11.8363 18.85 10.1382V2C18.85 0.887474 17.9625 0 16.85 0Z" fill="#757575"/></svg>''';
 const lockIcon =
-    '''<svg width="15" height="18" viewBox="0 0 15 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path fill-rule="evenodd" clip-rule="evenodd" d="M9.24419 11.5472C9.24419 12.4845 8.46279 13.2453 7.5 13.2453C6.53721 13.2453 5.75581 12.4845 5.75581 11.5472C5.75581 10.6098 6.53721 9.84906 7.5 9.84906C8.46279 9.84906 9.24419 10.6098 9.24419 11.5472ZM13.9535 14.0943C13.9535 15.6863 12.6235 16.9811 10.9884 16.9811H4.01163C2.37645 16.9811 1.04651 15.6863 1.04651 14.0943V9C1.04651 7.40802 2.37645 6.11321 4.01163 6.11321H10.9884C12.6235 6.11321 13.9535 7.40802 13.9535 9V14.0943ZM4.53488 3.90566C4.53488 2.31368 5.86483 1.01887 7.5 1.01887C8.28488 1.01887 9.03139 1.31943 9.59477 1.86028C10.1564 2.41387 10.4651 3.14066 10.4651 3.90566V5.09434H4.53488V3.90566ZM11.5116 5.12745V3.90566C11.5116 2.87151 11.0956 1.89085 10.3352 1.14028C9.5686 0.405 8.56221 0 7.5 0C5.2875 0 3.48837 1.7516 3.48837 3.90566V5.12745C1.52267 5.37792 0 7.01915 0 9V14.0943C0 16.2484 1.79913 18 4.01163 18H10.9884C13.2 18 15 16.2484 15 14.0943V9C15 7.01915 13.4773 5.37792 11.5116 5.12745Z" fill="#757575"/>
-</svg>''';
-
+    '''<svg width="14" height="18" viewBox="0 0 14 18" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M3.56579 5.92105V4.28289C3.56579 2.41461 5.07697 0.903421 6.94526 0.903421C8.81355 0.903421 10.3247 2.41461 10.3247 4.28289V5.92105H3.56579ZM1.31579 5.92105V4.28289C1.31579 1.17382 3.83618 -1.34658 6.94526 -1.34658C10.0543 -1.34658 12.5747 1.17382 12.5747 4.28289V5.92105H12.8553C13.9712 5.92105 14.875 6.82487 14.875 7.94079V15.8289C14.875 16.9449 13.9712 17.8487 12.8553 17.8487H1.03487C-0.0810526 17.8487 -0.984868 16.9449 -0.984868 15.8289V7.94079C-0.984868 6.82487 -0.0810526 5.92105 1.03487 5.92105H1.31579ZM1.125 7.04605H12.7651C13.2731 7.04605 13.6842 7.45711 13.6842 7.96513V15.8033C13.6842 16.3113 13.2731 16.7224 12.7651 16.7224H1.125C0.616974 16.7224 0.205921 16.3113 0.205921 15.8033V7.96513C0.205921 7.45711 0.616974 7.04605 1.125 7.04605Z" fill="#757575"/></svg>''';
 const googleIcon =
-    '''<svg width="16" height="17" viewBox="0 0 16 17" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M15.9988 8.3441C15.9988 7.67295 15.9443 7.18319 15.8265 6.67529H8.1626V9.70453H12.6611C12.5705 10.4573 12.0807 11.5911 10.9923 12.3529L10.9771 12.4543L13.4002 14.3315L13.5681 14.3482C15.1099 12.9243 15.9988 10.8292 15.9988 8.3441Z" fill="#4285F4"/>
-<path d="M8.16265 16.3254C10.3666 16.3254 12.2168 15.5998 13.5682 14.3482L10.9924 12.3528C10.3031 12.8335 9.37796 13.1691 8.16265 13.1691C6.00408 13.1691 4.17202 11.7452 3.51894 9.7771L3.42321 9.78523L0.903556 11.7352L0.870605 11.8268C2.2129 14.4933 4.9701 16.3254 8.16265 16.3254Z" fill="#34A853"/>
-<path d="M3.519 9.77716C3.34668 9.26927 3.24695 8.72505 3.24695 8.16275C3.24695 7.6004 3.34668 7.05624 3.50994 6.54834L3.50537 6.44017L0.954141 4.45886L0.870669 4.49857C0.317442 5.60508 0 6.84765 0 8.16275C0 9.47785 0.317442 10.7204 0.870669 11.8269L3.519 9.77716Z" fill="#FBBC05"/>
-<path d="M8.16265 3.15623C9.69541 3.15623 10.7293 3.81831 11.3189 4.3716L13.6226 2.12231C12.2077 0.807206 10.3666 0 8.16265 0C4.9701 0 2.2129 1.83206 0.870605 4.49853L3.50987 6.54831C4.17202 4.58019 6.00408 3.15623 8.16265 3.15623Z" fill="#EB4335"/>
-</svg>''';
-
+    '''<svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14.6738 7.65345C14.6738 7.15172 14.6301 6.64998 14.5427 6.16113H7.49841V8.9959H11.5348C11.3653 9.91494 10.841 10.7275 10.0654 11.2518V13.1031H12.4357C13.823 11.821 14.6738 9.91494 14.6738 7.65345Z" fill="#4285F4"/><path d="M7.49811 15.0001C9.5188 15.0001 11.2227 14.3283 12.4411 13.1741L10.0708 11.3228C9.41005 11.7651 8.54162 12.0218 7.50357 12.0218C5.55396 12.0218 3.90471 10.6946 3.31489 8.91412H0.857422V10.8146C2.09708 13.294 4.65301 15.0001 7.49811 15.0001Z" fill="#34A853"/><path d="M3.30932 8.91408C3.00349 7.99504 3.00349 7.00108 3.30932 6.08204V4.18152H0.857313C-0.180327 6.25141 -0.180327 8.73919 0.857313 10.8091L3.30932 8.91408Z" fill="#FBBC04"/><path d="M7.49811 2.97825C8.56847 2.96187 9.59518 3.36601 10.3543 4.10952L12.4848 1.97905C11.1303 0.684739 9.33857 -0.0252118 7.49811 5.43896e-05C4.65301 5.43896e-05 2.09708 1.7061 0.857422 4.18552L3.30943 6.08604C3.90471 4.30556 5.55396 2.97825 7.49811 2.97825Z" fill="#EA4335"/></svg>''';
 const facebookIcon =
-    '''<svg width="8" height="15" viewBox="0 0 8 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M5.02224 14.8963V8.10133H7.30305L7.64452 5.45323H5.02224V3.7625C5.02224 2.99583 5.23517 2.4733 6.33467 2.4733L7.73695 2.47265V0.104232C7.49432 0.0720777 6.66197 0 5.6936 0C3.67183 0 2.28768 1.23402 2.28768 3.50037V5.4533H0.000976562V8.1014H2.28761V14.8963L5.02224 14.8963Z" fill="#3C5A9A"/>
-</svg>''';
-
+    '''<svg width="8" height="15" viewBox="0 0 8 15" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.02224 14.8963V8.10133H7.30305L7.64452 5.45323H5.02224V3.7625C5.02224 2.99583 5.23517 2.4733 6.33467 2.4733L7.73695 2.47265V0.104232C7.49432 0.0720777 6.66197 0 5.6936 0C3.67183 0 2.28768 1.23402 2.28768 3.50037V5.4533H0.000976562V8.1014H2.28761V14.8963L5.02224 14.8963Z" fill="#3C5A9A"/></svg>''';
 const twitterIcon =
-    '''<svg width="16" height="14" viewBox="0 0 16 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M15.9821 1.5867C15.3952 1.84714 14.7648 2.0232 14.102 2.10234C14.7785 1.69727 15.2967 1.05538 15.5414 0.291424C14.8988 0.673076 14.1955 0.941758 13.4622 1.0858C12.8654 0.449657 12.0143 0.0524902 11.0728 0.0524902C9.26556 0.0524902 7.79989 1.51757 7.79989 3.32586C7.79989 3.58208 7.82875 3.83204 7.88423 4.07203C5.16367 3.9353 2.75173 2.63213 1.13729 0.651959C0.855385 1.13557 0.694025 1.69786 0.694025 2.29779C0.694025 3.43331 1.27199 4.43519 2.15019 5.02206C1.63031 5.00595 1.12184 4.86563 0.66728 4.61281V4.65418C0.66728 6.24031 1.79545 7.56287 3.29302 7.86367C3.01792 7.93904 2.72921 7.97842 2.43053 7.97842C2.21936 7.97842 2.01448 7.95844 1.81433 7.92079C2.23089 9.22084 3.4398 10.1671 4.8718 10.1939C3.75149 11.0721 2.33986 11.5956 0.806669 11.5956C0.542595 11.5956 0.281606 11.5798 0.0253906 11.549C1.47425 12.478 3.19453 13.0203 5.04317 13.0203C11.0639 13.0203 14.3567 8.03242 14.3567 3.70685C14.3567 3.56484 14.3535 3.42389 14.3467 3.28344C14.9882 2.81942 15.542 2.24487 15.9821 1.5867Z" fill="#2DAAE1"/>
-</svg>''';
+    '''<svg width="16" height="14" viewBox="0 0 16 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15.9821 1.53761C15.3946 1.7981 14.7629 1.97334 14.1005 2.05267C14.7766 1.64765 15.2952 1.00645 15.5393 0.24233C14.9062 0.617942 14.2057 0.890334 13.4599 1.03719C12.8624 0.40058 12.011 0 11.0691 0C9.25992 0 7.79159 1.46824 7.79159 3.27733C7.79159 3.53428 7.82069 3.78426 7.87679 4.0238C5.15424 3.88714 2.73377 2.57945 1.11504 0.596245C0.832966 1.08055 0.671309 1.64375 0.671309 2.24434C0.671309 3.38072 1.25015 4.38466 2.12812 4.97136C1.59051 4.95435 1.08985 4.80662 0.651792 4.56306V4.60424C0.651792 6.19106 1.78168 7.51475 3.28148 7.81595C3.00639 7.8906 2.71676 7.93069 2.41775 7.93069C2.20666 7.93069 2.00127 7.91024 1.80131 7.87208C2.21817 9.17296 3.4267 10.121 4.8596 10.1472C3.73892 11.0256 2.32674 11.5487 0.791771 11.5487C0.527315 11.5487 0.266504 11.5332 0.0101562 11.5029C1.45914 12.4316 3.17983 12.9733 5.02847 12.9733C11.0487 12.9733 14.3377 7.98606 14.3377 3.66669C14.3377 3.52504 14.3345 3.38421 14.3282 3.24419C14.9678 2.78248 15.5235 2.20015 15.9821 1.53761Z" fill="#1DA1F2"/></svg>''';

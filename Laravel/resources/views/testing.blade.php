@@ -4,6 +4,7 @@
     <style>
         [x-cloak] { display: none !important; }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
 <x-app-layout>
@@ -55,7 +56,7 @@
                     </div>
                 </div>
 
-                <div class="bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden">
+                <div class="bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden flex flex-col shadow-xl">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-sm text-neutral-400">
                             <thead class="bg-neutral-800/50 text-neutral-300 border-b border-neutral-800">
@@ -67,7 +68,7 @@
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-neutral-800">
-                                <template x-for="(item, index) in evalResult?.detail_hasil" :key="index">
+                                <template x-for="(item, index) in paginatedResults" :key="index">
                                     <tr class="hover:bg-neutral-800/20">
                                         <td class="px-6 py-3 text-white font-medium" x-text="item.soal"></td>
                                         <td class="px-6 py-3" x-text="item.target"></td>
@@ -80,6 +81,22 @@
                             </tbody>
                         </table>
                     </div>
+
+                    <div x-show="safeArrayData.length > 0" class="p-4 border-t border-neutral-800 bg-neutral-800/30 flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <span class="text-sm text-neutral-400">
+                            Halaman <span x-text="currentPage" class="font-bold text-white"></span> dari <span x-text="totalPages" class="font-bold text-white"></span>
+                            <span class="mx-1">•</span> Total <span x-text="safeArrayData.length" class="text-white"></span> data
+                        </span>
+                        <div class="flex space-x-2">
+                            <button @click="prevPage()" :disabled="currentPage === 1" class="px-4 py-2 bg-neutral-800 border border-neutral-700 hover:bg-neutral-700 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed text-neutral-400 rounded-lg text-sm font-bold transition-all">
+                                <i class="fas fa-chevron-left mr-1"></i> Prev
+                            </button>
+                            <button @click="nextPage()" :disabled="currentPage === totalPages" class="px-4 py-2 bg-neutral-800 border border-neutral-700 hover:bg-neutral-700 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed text-neutral-400 rounded-lg text-sm font-bold transition-all">
+                                Next <i class="fas fa-chevron-right ml-1"></i>
+                            </button>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -159,12 +176,42 @@
                 apiStatus: '',
                 isLoadingApi: false,
 
-                // Evaluasi State
+                // State untuk Evaluasi & Paginasi ditambahkan di sini
                 isTesting: false,
                 evalResult: null,
+                currentPage: 1,
+                itemsPerPage: 10, // Menampilkan 10 baris ke bawah saja
 
                 init() {
                     this.filterUrls();
+                },
+
+                // LOGIKA PAGINASI
+                get safeArrayData() {
+                    if (!this.evalResult || !this.evalResult.detail_hasil) return [];
+                    let data = this.evalResult.detail_hasil;
+                    if (typeof data === 'string') {
+                        try { data = JSON.parse(data); } catch(e) { return []; }
+                    }
+                    return Array.isArray(data) ? data : Object.values(data);
+                },
+
+                get paginatedResults() {
+                    const start = (this.currentPage - 1) * this.itemsPerPage;
+                    const end = start + this.itemsPerPage;
+                    return this.safeArrayData.slice(start, end);
+                },
+
+                get totalPages() {
+                    return Math.max(1, Math.ceil(this.safeArrayData.length / this.itemsPerPage));
+                },
+
+                nextPage() {
+                    if (this.currentPage < this.totalPages) this.currentPage++;
+                },
+
+                prevPage() {
+                    if (this.currentPage > 1) this.currentPage--;
                 },
 
                 filterUrls() {
@@ -228,6 +275,7 @@
                 async runEvaluasi() {
                     this.isTesting = true;
                     this.evalResult = null; // Reset hasil sebelumnya
+                    this.currentPage = 1; // Reset halaman kembali ke 1 setiap nge-test ulang
                     
                     try {
                         const res = await fetch('/api/chatbot/evaluasi', { 
@@ -241,7 +289,6 @@
                         const data = await res.json();
                         console.log("Response Evaluasi:", data); // Untuk debugging
                         
-                        // Cek apakah data tidak kosong
                         if (data && typeof data === 'object') {
                             this.evalResult = data;
                         } else {
