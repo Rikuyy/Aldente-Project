@@ -19,8 +19,7 @@ import '../login_system/forgot_password.dart'; // Tambahkan import ini
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() async {
-  await dotenv.load(fileName: ".env");
+void main() {
   runApp(const CookCasePlusApp());
 }
 

@@ -4,12 +4,25 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\StockController;
+
+// Import semua controller yang dibutuhkan 
+use App\Http\Controllers\API\Auth\AuthController;
+use App\Http\Controllers\API\SetupController;
+use App\Http\Controllers\API\ConsultationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ResepController;
 use App\Http\Controllers\ChatbotController;
 use Illuminate\Support\Facades\Password;
 
 // AUTH PUBLIC
+
+/*
+|--------------------------------------------------------------------------
+| API Routes (Untuk Flutter)
+|--------------------------------------------------------------------------
+*/
+
+// Auth routes (tidak perlu login)
 Route::prefix('auth')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login',    [AuthController::class, 'login']);
@@ -62,4 +75,8 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/update-ai',   [ChatbotController::class, 'updateModel']);
         Route::post('/evaluasi',    [ChatbotController::class, 'evaluasi']);
     });
+
+    
 });
+
+Route::post('/consultation', [ConsultationController::class, 'send']);
