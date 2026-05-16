@@ -41,21 +41,20 @@ class AuthController extends Controller
                 'Alergi'           => $request->alergi ?? null,
             ]);
 
-            // Generate JWT token
             $token = JWTAuth::fromUser($user);
 
             return response()->json([
-                'success' => true,
-                'message' => 'Registrasi Berhasil',
-                'token'   => $token,
-                'user'    => $user
-            ], 201);
+                'success'      => true,
+                'message'      => 'Registrasi Berhasil',
+                'access_token' => $token, // Disamakan dengan kode Flutter context.go
+                'user'         => $user
+            ], 211);
 
         } catch (\Exception $e) {
             return response()->json([
-                'success'      => false,
-                'message'      => 'Gagal menyimpan data ke MongoDB. Pastikan MongoDB berjalan.',
-                'error_detail' => $e->getMessage()
+                'success' => false,
+                'message' => 'Registrasi Gagal',
+                'error'   => $e->getMessage()
             ], 500);
         }
     }
@@ -71,20 +70,16 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors'  => $validator->errors()
-            ], 422);
+            return response()->json($validator->errors(), 422);
         }
 
-        try {
-            // Kredensial disesuaikan dengan field di MongoDB
-            $credentials = [
-                'Email'    => strtolower($request->email),
-                'password' => $request->password,
-            ];
+        // Kredensial disesuaikan dengan kolom di MongoDB (Email & Password)
+        $credentials = [
+            'Email'    => strtolower($request->email),
+            'password' => $request->password 
+        ];
 
-            // Attempt login menggunakan guard 'api' (JWT)
+        try {
             if (!$token = auth('api')->attempt($credentials)) {
                 return response()->json([
                     'success' => false,
@@ -95,17 +90,17 @@ class AuthController extends Controller
             $user = auth('api')->user();
 
             return response()->json([
-                'success' => true,
-                'message' => 'Login Berhasil',
-                'token'   => $token,
-                'user'    => $user
+                'success'      => true,
+                'message'      => 'Login Berhasil',
+                'access_token' => $token, // Disamakan dengan kode Flutter context.go
+                'user'         => $user
             ]);
 
         } catch (JWTException $e) {
             return response()->json([
-                'success'      => false,
-                'message'      => 'Tidak dapat membuat token.',
-                'error_detail' => $e->getMessage()
+                'success' => false,
+                'message' => 'Tidak dapat membuat token.',
+                'error'   => $e->getMessage()
             ], 500);
         }
     }
@@ -127,7 +122,6 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         try {
-            // Invalidate token saat ini
             JWTAuth::invalidate(JWTAuth::getToken());
 
             return response()->json([
@@ -137,8 +131,7 @@ class AuthController extends Controller
         } catch (JWTException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal logout',
-                'error_detail' => $e->getMessage()
+                'message' => 'Gagal Logout'
             ], 500);
         }
     }

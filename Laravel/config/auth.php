@@ -8,7 +8,7 @@ return [
     |--------------------------------------------------------------------------
     */
     'defaults' => [
-        'guard' => 'web', // default tetap web (untuk session admin)
+        'guard' => 'api', // Default diubah ke api agar JWT langsung aktif
         'passwords' => 'users',
     ],
 
@@ -20,12 +20,12 @@ return [
     'guards' => [
         'web' => [
             'driver' => 'session',
-            'provider' => 'admins', // admin panel menggunakan model Admin
+            'provider' => 'admins',
         ],
 
         'api' => [
             'driver' => 'jwt',          // WAJIB: JWT untuk API
-            'provider' => 'users',      // model User
+            'provider' => 'users',      // Model User MongoDB
         ],
     ],
 
@@ -41,7 +41,7 @@ return [
         ],
         'users' => [
             'driver' => 'eloquent',
-            'model' => App\Models\User::class,
+            'model' => App\Models\User::class, // Menggunakan model User yang kamu upload
         ],
     ],
 
@@ -53,7 +53,7 @@ return [
     'passwords' => [
         'users' => [
             'provider' => 'users',
-            'table' => 'password_reset_tokens',
+            'table' => 'password_reset_tokens', // Ini koleksi di MongoDB nantinya
             'expire' => 60,
             'throttle' => 60,
         ],
