@@ -14,7 +14,10 @@ dependencies:
   cupertino_icons: ^1.0.6
   font_awesome_flutter: ^11.0.0
   flutter_svg: ^2.0.10+1
-  http: ^1.2.2
+  google_generative_ai: ^0.4.6
+  flutter_dotenv: ^5.2.1
+  http: ^1.6.0
+  shared_preferences: ^2.5.5
 
 dev_dependencies:
   flutter_test:

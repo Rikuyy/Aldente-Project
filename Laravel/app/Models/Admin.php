@@ -25,7 +25,7 @@ class Admin extends Authenticatable
     ];
 
     protected $casts = [
-        'Password' => 'hashed',
+
     ];
 
     /**

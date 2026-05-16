@@ -11,19 +11,36 @@ import 'pages/inventory_page.dart';
 import 'pages/profile_page.dart';
 import 'pages/notifications_page.dart';
 
+// IMPORT Sistem Auth
+import '../login_system/splash.dart';
+import '../login_system/sign_in.dart';
+import '../login_system/sign_up.dart';
+import '../login_system/forgot_password.dart'; // Tambahkan import ini
+
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 void main() {
   runApp(const CookCasePlusApp());
 }
 
 final _router = GoRouter(
-  initialLocation: '/',
+  initialLocation: '/splash', // Mulai dari Splash Screen untuk cek login
   routes: [
+    GoRoute(path: '/splash', builder: (ctx, state) => const SplashScreen()),
+    GoRoute(path: '/sign_in', builder: (ctx, state) => const SignInScreen()),
+    GoRoute(path: '/sign_up', builder: (ctx, state) => const SignUpScreen()),
+    GoRoute(
+        path: '/forgot_password',
+        builder: (ctx, state) =>
+            const ForgotPasswordScreen()), // Tambahkan rute ini
+
     GoRoute(path: '/', builder: (ctx, state) => const GuestModePage()),
     GoRoute(
         path: '/onboarding', builder: (ctx, state) => const OnboardingPage()),
     GoRoute(
         path: '/notifications',
         builder: (ctx, state) => const NotificationsPage()),
+
     ShellRoute(
       builder: (ctx, state, child) => MainLayout(child: child),
       routes: [

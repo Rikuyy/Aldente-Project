@@ -2,24 +2,25 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use MongoDB\Laravel\Auth\User as Authenticatable;
-use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Notifications\Notifiable;
+use Tymon\JWTAuth\Contracts\JWTSubject;
 
-class User extends Authenticatable
+class User extends Authenticatable implements JWTSubject
 {
-    use HasApiTokens, Notifiable;
+    use HasFactory, Notifiable;
 
     protected $connection = 'mongodb';
     protected $collection = 'users';
 
     protected $fillable = [
-        'Username', 
-        'Email', 
-        'Password', 
-        'Kategori_Favorit', 
-        'Jumlah_Makan', 
-        'Budget_Bulanan', 
+        'Username',
+        'Email',
+        'Password',
+        'Kategori_Favorit',
+        'Jumlah_Makan',
+        'Budget_Bulanan',
         'Alergi'
     ];
 
@@ -28,27 +29,26 @@ class User extends Authenticatable
         'remember_token',
     ];
 
-    /**
-     * Casting data supaya pas dikirim ke Flutter tipe datanya bener.
-     */
     protected $casts = [
         'Email_verified_at' => 'datetime',
-        'Password' => 'hashed', // Biar otomatis aman
         'Jumlah_Makan' => 'integer',
-        'Budget_Bulanan' => 'float', // Pakai float/double buat uang
+        'Budget_Bulanan' => 'float',
     ];
 
-    /**
-     * Laravel mencari field 'password' (lowercase) secara default.
-     * Fungsi ini mengarahkan Laravel ke kolom 'Password' (Capital) kamu.
-     */
+    // Wajib untuk JWT
+    public function getJWTIdentifier()
+    {
+        return $this->getKey();
+    }
+
+    public function getJWTCustomClaims()
+    {
+        return [];
+    }
+
+    // Custom password field
     public function getAuthPassword()
     {
         return $this->Password;
     }
-
-    /**
-     * (Opsional) Jika Flutter butuh field email dengan nama 'email' (kecil), 
-     * tapi di DB kamu 'Email' (besar).
-     */
 }

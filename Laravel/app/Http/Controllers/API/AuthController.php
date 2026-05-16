@@ -1,67 +1,138 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
-use App\Models\OtpCode;
-use App\Helpers\OtpHelper;
-use App\Notifications\SendOtpNotification;
-use Carbon\Carbon;
+use Tymon\JWTAuth\Facades\JWTAuth;
+use Tymon\JWTAuth\Exceptions\JWTException;
 
-class UserAuthController extends Controller
+class AuthController extends Controller
 {
+    /**
+     * REGISTER
+     */
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'username' => 'required|string|unique:users,Username|min:3|max:50',
+            'username' => 'required|string|min:3',
             'email'    => 'required|email|unique:users,Email',
             'password' => 'required|string|min:6|confirmed',
         ]);
 
-        if ($validator->fails()) return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
-
-        $user = User::create([
-            'Username' => $request->username,
-            'Email'    => $request->email,
-            'Password' => Hash::make($request->password),
-            'Jumlah_Makan' => $request->jumlah_makan ?? 0,
-            'Budget_Bulanan' => $request->budget_bulanan ?? 0,
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'token' => $user->createToken('auth_token')->plainTextToken
-        ], 201);
-    }
-
-    public function login(Request $request)
-    {
-        $user = User::where('Email', $request->email)->first();
-
-        if (!$user || !Hash::check($request->password, $user->Password)) {
-            return response()->json(['success' => false, 'message' => 'Email atau password salah'], 401);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors'  => $validator->errors()
+            ], 422);
         }
 
+        try {
+            $user = User::create([
+                'Username'         => $request->username,
+                'Email'            => strtolower($request->email),
+                'Password'         => Hash::make($request->password),
+                'Kategori_Favorit' => $request->kategori_favorit ?? null,
+                'Jumlah_Makan'     => (int) ($request->jumlah_makan ?? 0),
+                'Budget_Bulanan'   => (float) ($request->budget_bulanan ?? 0),
+                'Alergi'           => $request->alergi ?? null,
+            ]);
+
+            $token = JWTAuth::fromUser($user);
+
+            return response()->json([
+                'success'      => true,
+                'message'      => 'Registrasi Berhasil',
+                'access_token' => $token, // Disamakan dengan kode Flutter context.go
+                'user'         => $user
+            ], 211);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Registrasi Gagal',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * LOGIN
+     */
+    public function login(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email'    => 'required|email',
+            'password' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 422);
+        }
+
+        // Kredensial disesuaikan dengan kolom di MongoDB (Email & Password)
+        $credentials = [
+            'Email'    => strtolower($request->email),
+            'password' => $request->password 
+        ];
+
+        try {
+            if (!$token = auth('api')->attempt($credentials)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Email atau password salah'
+                ], 401);
+            }
+
+            $user = auth('api')->user();
+
+            return response()->json([
+                'success'      => true,
+                'message'      => 'Login Berhasil',
+                'access_token' => $token, // Disamakan dengan kode Flutter context.go
+                'user'         => $user
+            ]);
+
+        } catch (JWTException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tidak dapat membuat token.',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * ME (Get Profile)
+     */
+    public function me(Request $request)
+    {
         return response()->json([
             'success' => true,
-            'token' => $user->createToken('auth_token')->plainTextToken,
-            'user' => $user
+            'data'    => auth('api')->user()
         ]);
     }
 
-    public function forgotPassword(Request $request)
+    /**
+     * LOGOUT
+     */
+    public function logout(Request $request)
     {
-        $user = User::where('Email', $request->email)->first();
-        if (!$user) return response()->json(['success' => false, 'message' => 'Email tidak terdaftar'], 404);
+        try {
+            JWTAuth::invalidate(JWTAuth::getToken());
 
-        // Pakai Helper biar kodenya rapi
-        $otp = OtpHelper::generateOtp($request->email);
-        $user->notify(new SendOtpNotification($otp));
-
-        return response()->json(['success' => true, 'message' => 'OTP terkirim!']);
+            return response()->json([
+                'success' => true,
+                'message' => 'Logout Berhasil'
+            ]);
+        } catch (JWTException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal Logout'
+            ], 500);
+        }
     }
 }
