@@ -17,13 +17,45 @@ class ConsultationController extends Controller
             'history'  => 'nullable|array',  
             'context'  => 'nullable|array',  
         ]);
+    
+    $message     = $request->input('message');
+    $userContext = $request->input('context', []);
 
-        $userContext = $request->input('context', [
-            'nama'         => 'Pengguna',
-            'stokBahan'    => [],
-            'sisaBudget'   => 0,
-            'totalBudget'  => 150000,
-        ]);
+    $user      = auth()->user();
+    $alergi    = $user?->riwayat_alergi ?? '';
+
+    $pythonExe  = env('PYTHON_EXE', 'python');
+    $scriptPath = base_path('rekomendasi.py');
+
+    $process = new Process(
+        [$pythonExe, $scriptPath, $message, $alergi],
+        null,
+        [
+            'SYSTEMROOT' => getenv('SYSTEMROOT') ?: 'C:\\Windows',
+            'PATH'       => getenv('PATH'),
+        ]
+    );
+    $process->run();
+
+    $resepDitemukan = [];
+    if ($process->isSuccessful()) {
+        $resepDitemukan = json_decode($process->getOutput(), true) ?? [];
+    }
+
+    $resepContext = '';
+    if (!empty($resepDitemukan)) {
+        $resepContext = "\n\nRESEP RELEVAN DARI DATABASE:\n";
+        foreach ($resepDitemukan as $i => $resep) {
+            $no = $i + 1;
+            $resepContext .= "{$no}. {$resep['nama']}\n";
+            $resepContext .= "   Bahan: {$resep['bahan']}\n";
+            $resepContext .= "   Langkah: {$resep['langkah']}\n";
+            $resepContext .= "   Estimasi biaya: Rp {$resep['estimasi_biaya']}\n\n";
+        }
+        $resepContext .= "Gunakan resep di atas sebagai referensi utama jawabanmu.";
+    } else {
+        $resepContext = "\n\nTidak ada resep yang cocok di database. Jawab berdasarkan pengetahuanmu.";
+    }
 
         $stok   = implode(', ', $userContext['stokBahan'] ?? []);
         $sisa   = $userContext['sisaBudget']   ?? 0;
@@ -38,15 +70,14 @@ Kamu ramah, singkat, dan selalu berbahasa Indonesia casual (boleh pakai "sih", "
 KONTEKS USER SAAT INI:
 - Nama: {$nama}
 - Stok bahan di kulkas: {$stok}
-- Sisa budget hari ini: Rp {$sisa} dari Rp {$total}
-- Persentase budget tersisa: {$persen}%
+- Sisa budget hari ini: Rp {$sisa} dari Rp {$total} ({$persen}%)
 
 ATURAN:
-1. Prioritaskan resep dari bahan yang SUDAH ADA di stok.
-2. Jika perlu beli bahan, estimasikan harganya dan cek apakah masuk budget.
-3. Format resep: nama masakan → bahan → langkah singkat → estimasi biaya.
-4. Jika budget < 30%, sarankan masak dari stok, jangan beli.
-5. Jawab maksimal 3-4 kalimat kecuali diminta resep lengkap.
+1. Prioritaskan resep dari database yang sudah disediakan.
+2. Jika perlu beli bahan, sarankan apa yang kurang dari stok yang ada.
+3. Jika budget < 30%, sarankan masak dari stok, jangan beli.
+4. Jawab maksimal 3-4 kalimat kecuali diminta resep lengkap.
+{$resepContext}
 PROMPT;
 
         
@@ -62,7 +93,7 @@ PROMPT;
             $response = Gemini::generativeModel(model: 'models/gemini-2.5-flash')
                 ->withSystemInstruction(new Content(parts: [new Part(text: $systemPrompt)]))
                 ->startChat(history: $history)
-                ->sendMessage($request->input('message'));
+                ->sendMessage('message');
 
             return response()->json([
                 'success' => true,
