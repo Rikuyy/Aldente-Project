@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../api_config.dart';
@@ -96,7 +97,7 @@ class AuthService {
         },
       );
     } catch (e) {
-      print("Error during logout: $e");
+      debugPrint("Error during logout: $e");
     } finally {
       // Apapun yang terjadi, hapus token dari memori lokal
       await removeToken();

@@ -11,13 +11,10 @@ import 'pages/inventory_page.dart';
 import 'pages/profile_page.dart';
 import 'pages/notifications_page.dart';
 
-// IMPORT Sistem Auth
 import '../login_system/splash.dart';
 import '../login_system/sign_in.dart';
 import '../login_system/sign_up.dart';
-import '../login_system/forgot_password.dart'; // Tambahkan import ini
-
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../login_system/forgot_password.dart';
 
 void main() {
   runApp(const CookCasePlusApp());
