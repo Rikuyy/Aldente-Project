@@ -229,7 +229,7 @@ class _ConsultationPageState extends State<ConsultationPage> {
 
   Widget _buildBotContent(ChatMessage msg) {
     if (msg.status == MessageStatus.loading) {
-      return Row(
+      return const Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           SizedBox(
@@ -240,8 +240,8 @@ class _ConsultationPageState extends State<ConsultationPage> {
               color: AppTheme.orange500,
             ),
           ),
-          const SizedBox(width: 10),
-          const Text(
+          SizedBox(width: 10),
+          Text(
             'ChefBot sedang mengetik...',
             style: TextStyle(
               fontSize: 12,
@@ -300,7 +300,7 @@ class _ConsultationPageState extends State<ConsultationPage> {
       child: Container(
         padding: const EdgeInsets.only(left: 20, right: 6, top: 4, bottom: 4),
         decoration: BoxDecoration(
-          color: AppTheme.slate100.withOpacity(0.8),
+          color: AppTheme.slate100.withValues(alpha: 0.8),
           borderRadius: BorderRadius.circular(50),
           border: Border.all(color: AppTheme.slate200, width: 2),
         ),
@@ -331,7 +331,7 @@ class _ConsultationPageState extends State<ConsultationPage> {
                       ? []
                       : [
                           BoxShadow(
-                            color: AppTheme.orange500.withOpacity(0.3),
+                            color: AppTheme.orange500.withValues(alpha: 0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           )
@@ -425,10 +425,9 @@ class _BotMessage extends StatelessWidget {
             bottomRight: Radius.circular(24),
           ),
           border: Border.all(color: AppTheme.slate100),
-          // ignore: deprecated_member_use
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withOpacity(0.04),
+                color: Colors.black.withValues(alpha: 0.04),
                 blurRadius: 10,
                 offset: const Offset(0, 2))
           ],
@@ -463,10 +462,9 @@ class _UserMessage extends StatelessWidget {
             bottomLeft: Radius.circular(24),
             bottomRight: Radius.circular(24),
           ),
-          // ignore: deprecated_member_use
           boxShadow: [
             BoxShadow(
-                color: AppTheme.orange600.withOpacity(0.2),
+                color: AppTheme.orange600.withValues(alpha: 0.2),
                 blurRadius: 12,
                 offset: const Offset(0, 4))
           ],

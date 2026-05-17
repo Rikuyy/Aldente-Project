@@ -1,12 +1,13 @@
 <?php
 
 namespace App\Http\Controllers\Api;
-
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Gemini\Laravel\Facades\Gemini;
 use Gemini\Data\Content;
 use Gemini\Data\Part;
+use Symfony\Component\Process\Process;
+use Illuminate\Support\Facades\Log;
 
 class ConsultationController extends Controller
 {
@@ -20,9 +21,20 @@ class ConsultationController extends Controller
     
     $message     = $request->input('message');
     $userContext = $request->input('context', []);
+    $historyInput = $request->input('history', []);
 
     $user      = auth()->user();
-    $alergi    = $user?->riwayat_alergi ?? '';
+    if ($user) {
+            $nama = $user->Username;
+            $alergi = $user->Alergi ?? 'Tidak ada';
+            $sisaBudget = $user->wallets()->sum('amount');
+            $totalBudget = $user->Budget_Bulanan ?? 0;
+        } else { 
+            $nama = "Cookmate";
+            $alergi = "Tidak diketahui (Guest)";
+            $sisaBudget = $request->input('context.sisaBudget', 0);
+            $totalBudget = $request->input('context.totalBudget', 0);
+        }
 
     $pythonExe  = env('PYTHON_EXE', 'python');
     $scriptPath = base_path('rekomendasi.py');
@@ -37,40 +49,35 @@ class ConsultationController extends Controller
     );
     $process->run();
 
-    $resepDitemukan = [];
+    $resepContext = '';
     if ($process->isSuccessful()) {
         $resepDitemukan = json_decode($process->getOutput(), true) ?? [];
     }
-
-    $resepContext = '';
     if (!empty($resepDitemukan)) {
         $resepContext = "\n\nRESEP RELEVAN DARI DATABASE:\n";
         foreach ($resepDitemukan as $i => $resep) {
             $no = $i + 1;
-            $resepContext .= "{$no}. {$resep['nama']}\n";
-            $resepContext .= "   Bahan: {$resep['bahan']}\n";
-            $resepContext .= "   Langkah: {$resep['langkah']}\n";
-            $resepContext .= "   Estimasi biaya: Rp {$resep['estimasi_biaya']}\n\n";
+            $resepContext .= "{$no}. Nama: " . ($resep['Title Cleaned'] ?? 'Tanpa Nama') . "\n";
+            $resepContext .= "   Kategori: " . ($resep['Category'] ?? '-') . "\n";
+            $resepContext .= "   Bahan: " . ($resep['Ingredients Cleaned'] ?? '-') . "\n";
+            $resepContext .= "   Langkah: " . ($resep['Steps'] ?? '-') . "\n\n";
         }
         $resepContext .= "Gunakan resep di atas sebagai referensi utama jawabanmu.";
-    } else {
-        $resepContext = "\n\nTidak ada resep yang cocok di database. Jawab berdasarkan pengetahuanmu.";
     }
 
-        $stok   = implode(', ', $userContext['stokBahan'] ?? []);
-        $sisa   = $userContext['sisaBudget']   ?? 0;
-        $total  = $userContext['totalBudget']  ?? 150000;
-        $persen = $total > 0 ? round(($sisa / $total) * 100) : 0;
-        $nama   = $userContext['nama'] ?? 'Pengguna';
+        if (empty($resepContext)) {
+            $resepContext = "\n\nTidak ada resep yang cocok di database. Jawab berdasarkan pengetahuan umum masakan hemat.";
+        }
+        $persen = $totalBudget > 0 ? round(($sisaBudget / $totalBudget) * 100) : 0;
 
         $systemPrompt = <<<PROMPT
-Kamu adalah ChefBot, asisten memasak hemat dari aplikasi Cookcah.
+Kamu adalah ChefBot, asisten memasak hemat dari aplikasi CookCash.
 Kamu ramah, singkat, dan selalu berbahasa Indonesia casual (boleh pakai "sih", "dong", "nih").
 
 KONTEKS USER SAAT INI:
+- Status:  ($user ? 'Terautentikasi' : 'Guest/Tamu')
 - Nama: {$nama}
-- Stok bahan di kulkas: {$stok}
-- Sisa budget hari ini: Rp {$sisa} dari Rp {$total} ({$persen}%)
+- Sisa Budget: Rp {$sisaBudget} dari Rp {$totalBudget} ({$persen}%)
 
 ATURAN:
 1. Prioritaskan resep dari database yang sudah disediakan.
@@ -82,7 +89,7 @@ PROMPT;
 
         
         $history = [];
-        foreach ($request->input('history', []) as $item) {
+        foreach ($historyInput as $item) {
             $history[] = [
                 'role'  => $item['role'],  
                 'parts' => [['text' => $item['text']]],
@@ -98,6 +105,7 @@ PROMPT;
             return response()->json([
                 'success' => true,
                 'reply'   => $response->text(),
+                'is_guest' => !$user
             ]);
 
         } catch (\Exception $e) {

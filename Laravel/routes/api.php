@@ -4,9 +4,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\StockController;
-
-// Import semua controller yang dibutuhkan 
-use App\Http\Controllers\API\Auth\AuthController;
 use App\Http\Controllers\API\SetupController;
 use App\Http\Controllers\API\ConsultationController;
 use App\Http\Controllers\DashboardController;

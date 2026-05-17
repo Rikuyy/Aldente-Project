@@ -6,5 +6,5 @@ class ApiConfig {
   static const String _host = '10.0.2.2'; // Ubah di sini saja jika ganti device
   static const String _port = '8000';
 
-  static const String baseUrl = 'http://192.168.1.10:8000/api';
+  static const String baseUrl = 'http://$_host:$_port/api';
 }

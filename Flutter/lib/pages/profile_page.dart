@@ -376,8 +376,9 @@ class _ProfilePageState extends State<ProfilePage> {
                           children: [
                             GestureDetector(
                               onTap: () {
-                                if (_eatFrequency > 1)
+                                if (_eatFrequency > 1) {
                                   setState(() => _eatFrequency--);
+                                }
                               },
                               child: Container(
                                 width: 40,
@@ -406,8 +407,9 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                             GestureDetector(
                               onTap: () {
-                                if (_eatFrequency < 6)
+                                if (_eatFrequency < 6) {
                                   setState(() => _eatFrequency++);
+                                }
                               },
                               child: Container(
                                 width: 40,

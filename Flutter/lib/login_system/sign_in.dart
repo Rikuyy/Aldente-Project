@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import '../services/auth_services.dart';
-import 'sign_up.dart';
 
 class SignInScreen extends StatelessWidget {
   static const String routeName = '/sign_in';

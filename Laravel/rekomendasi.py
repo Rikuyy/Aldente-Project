@@ -51,6 +51,7 @@ def main():
                         "title": str(df_train['Title Cleaned'].iloc[idx]),
                         "category": str(df_train['Category'].iloc[idx]),
                         "ingredients": str(df_train['Ingredients Cleaned'].iloc[idx]),
+                        "steps": str(df_train['Steps'].iloc[idx]),
                         "similarity": f"{sim[idx] * 100:.0f}%"
                     })
                     
