@@ -28,7 +28,7 @@ class WelcomeScreen extends StatelessWidget {
               ),
               const Spacer(flex: 2),
               ErrorInfo(
-                title: "Welcome to CookMate",
+                title: "Welcome to CookCash",
                 description:
                     "We're setting things up for you. This will only take a moment.",
                 button: Transform.scale(

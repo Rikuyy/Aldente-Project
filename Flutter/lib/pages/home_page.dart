@@ -31,7 +31,7 @@ class HomePage extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          'CookCase+',
+                          'CookCash',
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w900,

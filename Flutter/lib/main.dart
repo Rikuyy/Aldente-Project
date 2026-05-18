@@ -10,9 +10,10 @@ import 'pages/finance_page.dart';
 import 'pages/inventory_page.dart';
 import 'pages/profile_page.dart';
 import 'pages/notifications_page.dart';
+import 'pages/todo_page.dart';
 
 void main() {
-  runApp(const CookCasePlusApp());
+  runApp(const CookCashApp());
 }
 
 final _router = GoRouter(
@@ -21,6 +22,7 @@ final _router = GoRouter(
     GoRoute(path: '/', builder: (ctx, state) => const GuestModePage()),
     GoRoute(path: '/onboarding', builder: (ctx, state) => const OnboardingPage()),
     GoRoute(path: '/notifications', builder: (ctx, state) => const NotificationsPage()),
+    GoRoute(path: '/todo', builder: (ctx, state) => const TodoPage()),
     ShellRoute(
       builder: (ctx, state, child) => MainLayout(child: child),
       routes: [
@@ -38,13 +40,13 @@ final _router = GoRouter(
   },
 );
 
-class CookCasePlusApp extends StatelessWidget {
-  const CookCasePlusApp({super.key});
+class CookCashApp extends StatelessWidget {
+  const CookCashApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'CookCase+',
+      title: 'CookCash',
       theme: AppTheme.theme,
       routerConfig: _router,
       debugShowCheckedModeBanner: false,

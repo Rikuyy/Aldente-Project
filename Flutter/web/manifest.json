@@ -1,6 +1,6 @@
 {
-    "name": "cook_mate",
-    "short_name": "cook_mate",
+    "name": "cook_cash",
+    "short_name": "cook_cash",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

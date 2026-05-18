@@ -26,7 +26,7 @@ class GuestModePage extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      'CookCase+',
+                      'CookCash',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w900,
@@ -69,7 +69,7 @@ class GuestModePage extends StatelessWidget {
                       ),
                       SizedBox(height: 4),
                       Text(
-                        'Saya asisten CookCase+ kamu. Ada yang bisa saya bantu untuk rencana makan hari ini?',
+                        'Saya asisten CookCash kamu. Ada yang bisa saya bantu untuk rencana makan hari ini?',
                         style: TextStyle(color: AppTheme.slate800, height: 1.5),
                       ),
                     ],

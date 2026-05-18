@@ -1,4 +1,4 @@
-name: cookcase_plus
+name: cook_cash
 description: CookCash Aplikasi Rekomendasi Resep Masakan
 version: 1.0.0+1
 
@@ -19,6 +19,14 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icon/icon.png"
+  adaptive_icon_background: "#ffffff"
+  adaptive_icon_foreground: "assets/icon/foreground.png"

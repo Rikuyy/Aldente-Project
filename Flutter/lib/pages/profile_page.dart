@@ -340,7 +340,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                     ),
-                    child: const Text('Keluar dari CookCase+', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
+                    child: const Text('Keluar dari CookCash', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
                   ),
                 ),
 
