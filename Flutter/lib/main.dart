@@ -31,6 +31,7 @@ final _router = GoRouter(
         GoRoute(path: '/app/finance', builder: (ctx, state) => const FinancePage()),
         GoRoute(path: '/app/inventory', builder: (ctx, state) => const InventoryPage()),
         GoRoute(path: '/app/profile', builder: (ctx, state) => const ProfilePage()),
+        GoRoute(path: '/app/todo', builder: (ctx, state) => const TodoPage()),
       ],
     ),
   ],
