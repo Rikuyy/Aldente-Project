@@ -3,8 +3,11 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
+use App\Http\Controllers\API\DashboardController as ApiDashboardController;
 use App\Http\Controllers\API\StockController;
-use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\API\KeuanganController;
+use App\Http\Controllers\API\ProfileController;
+use App\Http\Controllers\DashboardController as WebDashboardController;
 use App\Http\Controllers\ResepController;
 use App\Http\Controllers\ChatbotController;
 use Illuminate\Support\Facades\Password;
@@ -33,15 +36,21 @@ Route::prefix('auth')->group(function () {
     });
 });
 
-// PROTECTED ROUTES (Wajib Login)
+// PROTECTED ROUTES (Wajib Login & Full Menggunakan JWT)
 Route::middleware('auth:api')->group(function () {
 
+    // ── Dashboard ─────────────────────────────
     Route::prefix('dashboard')->group(function () {
-        Route::get('/summary', [DashboardController::class, 'summary']);
-        Route::get('/laporan', [DashboardController::class, 'laporan']);
+        // Menggunakan ApiDashboardController agar sesuai dengan alias import di atas
+        Route::get('/summary', [ApiDashboardController::class, 'summary']);
+        Route::get('/laporan', [ApiDashboardController::class, 'laporan']);
+        Route::get('/',        [ApiDashboardController::class, 'index']);
+        Route::post('/budget', [ApiDashboardController::class, 'setBudget']);
     });
 
+    // ── Inventory / Stock ──────────────────────
     Route::prefix('inventory')->group(function () {
+        // Pastikan StockController kamu ada di folder App\Http\Controllers\API\StockController
         Route::get('/',               [StockController::class, 'index']);
         Route::get('/search',         [StockController::class, 'search']);
         Route::post('/',              [StockController::class, 'store']);
@@ -50,6 +59,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/masak-selesai', [StockController::class, 'masakSelesai']);
     });
 
+    // ── Resep ──────────────────────────────────
     Route::prefix('resep')->group(function () {
         Route::get('/',         [ResepController::class, 'index']);
         Route::post('/',        [ResepController::class, 'store']);
@@ -57,9 +67,28 @@ Route::middleware('auth:api')->group(function () {
         Route::delete('/{id}',  [ResepController::class, 'destroy']);
     });
 
+    // ── Chatbot AI ─────────────────────────────
     Route::prefix('chatbot')->group(function () {
         Route::post('/rekomendasi', [ChatbotController::class, 'rekomendasi']);
         Route::post('/update-ai',   [ChatbotController::class, 'updateModel']);
         Route::post('/evaluasi',    [ChatbotController::class, 'evaluasi']);
+    });
+
+    // ── Laporan Keuangan ────────────────────────
+    Route::prefix('keuangan')->group(function () {
+        // Ringkasan bulan: total, rata2, prediksi, komposisi
+        Route::get('/ringkasan', [KeuanganController::class, 'ringkasan']);
+        // Data grafik tren harian
+        Route::get('/grafik',    [KeuanganController::class, 'grafik']);
+        // List mutasi (pagination)
+        Route::get('/mutasi',    [KeuanganController::class, 'mutasi']);
+        // Detail 1 transaksi
+        Route::get('/{id}',      [KeuanganController::class, 'detail']);
+    });
+
+    // ── Profil User ─────────────────────────────
+    Route::prefix('profile')->group(function () {
+        Route::get('/', [ProfileController::class, 'show']);
+        Route::put('/', [ProfileController::class, 'update']);
     });
 });
