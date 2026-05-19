@@ -479,11 +479,11 @@ class _StockInputSheetState extends State<_StockInputSheet> {
   }
 }
 
-class _IngredientRow extends StatelessWidget {
+class IngredientRow extends StatelessWidget {
   final String name;
   final String subtitle;
   final String change;
-  const _IngredientRow({required this.name, required this.subtitle, required this.change});
+  const IngredientRow({super.key, required this.name, required this.subtitle, required this.change});
 
   @override
   Widget build(BuildContext context) {
