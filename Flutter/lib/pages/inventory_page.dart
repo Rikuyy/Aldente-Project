@@ -153,7 +153,7 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
               ),
             ],
             bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(92),
+              preferredSize: const Size.fromHeight(95.5),
               child: Column(children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),

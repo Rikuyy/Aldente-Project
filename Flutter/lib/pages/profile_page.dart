@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../theme/app_theme.dart';
+import '../widgets/theme_toggle.dart';
 import 'package:avatar_glow/avatar_glow.dart';
 
 class Tag {
@@ -16,6 +17,7 @@ class ProfilePage extends StatefulWidget {
   @override
   State<ProfilePage> createState() => _ProfilePageState();
 }
+
 
 class _ProfilePageState extends State<ProfilePage> {
   bool _isEditing = false;
@@ -41,6 +43,8 @@ class _ProfilePageState extends State<ProfilePage> {
     });
   }
 
+
+
   @override
   void initState() {
     super.initState();
@@ -52,6 +56,7 @@ class _ProfilePageState extends State<ProfilePage> {
     _nameController.dispose();
     super.dispose();
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -350,6 +355,9 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         ],
       ),
+
+        floatingActionButton: ThemeToggle(onToggle: () {  },),
+
     );
   }
 }
@@ -375,6 +383,9 @@ class _ProfileSection extends StatelessWidget {
     );
   }
 }
+
+
+
 
 class _TagGroup extends StatelessWidget {
   final IconData icon;
@@ -406,6 +417,7 @@ class _TagGroup extends StatelessWidget {
     this.emptyIsGood = false,
     this.strikethrough = false,
   });
+
 
   @override
   Widget build(BuildContext context) {
@@ -470,4 +482,5 @@ class _TagGroup extends StatelessWidget {
       ],
     );
   }
+  
 }
