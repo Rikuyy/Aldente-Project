@@ -1,3 +1,4 @@
+import 'package:cook_cash/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
 class ThemeToggle extends StatelessWidget {
@@ -14,7 +15,7 @@ class ThemeToggle extends StatelessWidget {
       backgroundColor: isDark
           ? const Color(0xFFFB923C)
           : const Color(0xFFEA580C),
-      foregroundColor: Colors.white,
+      foregroundColor: context.colors.cardBackground,
       elevation: 4,
       shape: const CircleBorder(),
       child: AnimatedSwitcher(

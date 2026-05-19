@@ -1,3 +1,4 @@
+import 'package:cook_cash/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'sign_in.dart';
 
@@ -83,7 +84,7 @@ class _SplashScreenState extends State<SplashScreen> {
                         style: ElevatedButton.styleFrom(
                           elevation: 0,
                           backgroundColor: const Color(0xFFFF7643),
-                          foregroundColor: Colors.white,
+                          foregroundColor: context.colors.cardBackground,
                           minimumSize: const Size(double.infinity, 48),
                           shape: const RoundedRectangleBorder(
                             borderRadius: BorderRadius.all(Radius.circular(16)),

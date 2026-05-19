@@ -13,27 +13,21 @@ class _OnboardingPageState extends State<OnboardingPage> {
   int _step = 1;
   static const int _totalSteps = 4;
 
-  // Step 1 � Food preferences
   final List<String> _favFoods = [];
 
-  // Step 2 � Allergies (preset + custom)
   final List<String> _allergies = [];
   final _allergyCtrl = TextEditingController();
   bool _noAllergy = false;
 
-  // Step 3 � Budget (monthly only)
   final _budgetCtrl = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    // Rebuild when budget text changes so the Next button updates
     _budgetCtrl.addListener(() {
       setState(() {});
     });
   }
-
-  // Step 4 � Meal frequency (2-4)
   int _mealFreq = 3;
 
   void _next() {
@@ -89,33 +83,31 @@ class _OnboardingPageState extends State<OnboardingPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.slate50,
+      backgroundColor: context.colors.surface,
       body: Column(
         children: [
-          // -- Header --
           Container(
-            color: Colors.white,
+            color: context.colors.cardBackground,
             padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 8, left: 16, right: 16, bottom: 12),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 GestureDetector(
                   onTap: _back,
-                  child: Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: AppTheme.slate50, borderRadius: BorderRadius.circular(50)), child: const Icon(Icons.chevron_left, size: 22, color: AppTheme.slate600)),
+                  child: Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: context.colors.surface, borderRadius: BorderRadius.circular(50)), child: Icon(Icons.chevron_left, size: 22, color: context.colors.textSecondary)),
                 ),
                 Column(children: [
-                  Text('Langkah $_step dari $_totalSteps', style: const TextStyle(fontWeight: FontWeight.w700, color: AppTheme.slate800, fontSize: 13)),
+                  Text('Langkah $_step dari $_totalSteps', style: TextStyle(fontWeight: FontWeight.w700, color: context.colors.textPrimary, fontSize: 13)),
                   const SizedBox(height: 2),
                   Text(['Selera Makan', 'Alergi', 'Budget Bulanan', 'Jadwal Makan'][_step - 1],
-                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: AppTheme.slate500)),
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: context.colors.surface)),
                 ]),
                 const SizedBox(width: 38),
               ],
             ),
           ),
-          // Progress bar
           Stack(children: [
-            Container(height: 5, color: AppTheme.slate100),
+            Container(height: 5, color: context.colors.border),
             AnimatedFractionallySizedBox(
               duration: const Duration(milliseconds: 400),
               curve: Curves.easeOut,
@@ -128,7 +120,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
             ),
           ]),
 
-          // -- Content --
           Expanded(
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 280),
@@ -146,9 +137,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
             ),
           ),
 
-          // -- Next button --
           Container(
-            color: Colors.white,
+            color: context.colors.cardBackground,
             padding: EdgeInsets.only(left: 24, right: 24, top: 14, bottom: MediaQuery.of(context).padding.bottom + 14),
             child: SizedBox(
               width: double.infinity,
@@ -156,8 +146,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 onPressed: _canContinue ? _next : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.orange600,
-                  disabledBackgroundColor: AppTheme.slate200,
-                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: context.colors.border,
+                  foregroundColor: context.colors.cardBackground,
                   padding: const EdgeInsets.symmetric(vertical: 17),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   elevation: 0,
@@ -184,8 +174,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
     }
   }
 }
-
-// --- Step 1: Food Preferences -----------------------------------------------
 class _StepFoodPrefs extends StatelessWidget {
   final List<String> selected;
   final Function(String) onToggle;
@@ -203,12 +191,12 @@ class _StepFoodPrefs extends StatelessWidget {
       children: [
         const Text('Makanan Favoritmu?', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppTheme.slate900, letterSpacing: -0.5)),
         const SizedBox(height: 6),
-        const Text('Pilih minimal 1. CookCase+ akan merekomendasikan menu sesuai seleramu.', style: TextStyle(fontSize: 13, color: AppTheme.slate500, fontWeight: FontWeight.w500, height: 1.5)),
+         Text('Pilih minimal 1. CookCase+ akan merekomendasikan menu sesuai seleramu.', style: TextStyle(fontSize: 13, color: context.colors.surface, fontWeight: FontWeight.w500, height: 1.5)),
         const SizedBox(height: 24),
         ...(groups).map((g) => Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(g['label'] as String, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppTheme.slate400, letterSpacing: 0.5)),
+            Text(g['label'] as String, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: context.colors.textHint, letterSpacing: 0.5)),
             const SizedBox(height: 8),
             Wrap(spacing: 8, runSpacing: 8, children: (g['tags'] as List<String>).map((tag) {
               final isSel = selected.contains(tag);
@@ -218,14 +206,14 @@ class _StepFoodPrefs extends StatelessWidget {
                   duration: const Duration(milliseconds: 180),
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
-                    color: isSel ? AppTheme.orange500 : Colors.white,
+                    color: isSel ? AppTheme.orange500 : context.colors.cardBackground,
                     borderRadius: BorderRadius.circular(50),
-                    border: Border.all(color: isSel ? AppTheme.orange500 : AppTheme.slate200, width: 1.5),
+                    border: Border.all(color: isSel ? AppTheme.orange500 : context.colors.border, width: 1.5),
                     boxShadow: isSel ? [BoxShadow(color: AppTheme.orange500.withValues(alpha:0.25), blurRadius: 8, offset: const Offset(0, 2))] : null,
                   ),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    if (isSel) ...[const Icon(Icons.check_rounded, size: 14, color: Colors.white), const SizedBox(width: 4)],
-                    Text(tag, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: isSel ? Colors.white : AppTheme.slate600)),
+                    if (isSel) ...[Icon(Icons.check_rounded, size: 14, color: context.colors.cardBackground), const SizedBox(width: 4)],
+                    Text(tag, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: isSel ? context.colors.cardBackground : context.colors.textSecondary)),
                   ]),
                 ),
               );
@@ -238,7 +226,6 @@ class _StepFoodPrefs extends StatelessWidget {
   }
 }
 
-// --- Step 2: Allergies -------------------------------------------------------
 class _StepAllergies extends StatelessWidget {
   final List<String> selected;
   final bool noAllergy;
@@ -259,27 +246,25 @@ class _StepAllergies extends StatelessWidget {
         const SizedBox(height: 12),
         const Text('Ada Alergi Bahan Makanan? ??', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppTheme.slate900, letterSpacing: -0.5)),
         const SizedBox(height: 6),
-        const Text('Pilih dari daftar atau ketik sendiri. Kami tidak akan merekomendasikan bahan ini.', style: TextStyle(fontSize: 13, color: AppTheme.slate500, fontWeight: FontWeight.w500, height: 1.5)),
+         Text('Pilih dari daftar atau ketik sendiri. Kami tidak akan merekomendasikan bahan ini.', style: TextStyle(fontSize: 13, color: context.colors.surface, fontWeight: FontWeight.w500, height: 1.5)),
         const SizedBox(height: 20),
-
-        // No allergy toggle
         GestureDetector(
           onTap: onNoAllergy,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: noAllergy ? AppTheme.green50 : Colors.white,
+              color: noAllergy ? AppTheme.green50 : context.colors.cardBackground,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: noAllergy ? AppTheme.green500 : AppTheme.slate200, width: 2),
+              border: Border.all(color: noAllergy ? AppTheme.green500 : context.colors.border, width: 2),
             ),
             child: Row(children: [
-              Container(width: 20, height: 20, decoration: BoxDecoration(color: noAllergy ? AppTheme.green500 : Colors.white, shape: BoxShape.circle, border: Border.all(color: noAllergy ? AppTheme.green500 : AppTheme.slate300, width: 2)),
-                child: noAllergy ? const Icon(Icons.check, size: 13, color: Colors.white) : null),
+              Container(width: 20, height: 20, decoration: BoxDecoration(color: noAllergy ? AppTheme.green500 : context.colors.cardBackground, shape: BoxShape.circle, border: Border.all(color: noAllergy ? AppTheme.green500 : context.colors.textHint, width: 2)),
+                child: noAllergy ? Icon(Icons.check, size: 13, color: context.colors.cardBackground) : null),
               const SizedBox(width: 12),
-              const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Tidak Ada Alergi', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: AppTheme.slate800)),
-                Text('Saya bisa makan semua bahan makanan', style: TextStyle(fontSize: 12, color: AppTheme.slate500, fontWeight: FontWeight.w500)),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Tidak Ada Alergi', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: context.colors.textPrimary)),
+                Text('Saya bisa makan semua bahan makanan', style: TextStyle(fontSize: 12, color: context.colors.surface, fontWeight: FontWeight.w500)),
               ])),
             ]),
           ),
@@ -287,7 +272,7 @@ class _StepAllergies extends StatelessWidget {
 
         const SizedBox(height: 16),
         if (!noAllergy) ...[
-          const Text('Pilih dari daftar:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppTheme.slate400, letterSpacing: 0.5)),
+          Text('Pilih dari daftar:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: context.colors.textHint, letterSpacing: 0.5)),
           const SizedBox(height: 8),
           Wrap(spacing: 8, runSpacing: 8, children: presets.map((tag) {
             final isSel = selected.contains(tag);
@@ -297,18 +282,17 @@ class _StepAllergies extends StatelessWidget {
                 duration: const Duration(milliseconds: 180),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: isSel ? AppTheme.red50 : Colors.white,
+                  color: isSel ? AppTheme.red50 : context.colors.cardBackground,
                   borderRadius: BorderRadius.circular(50),
-                  border: Border.all(color: isSel ? AppTheme.red500 : AppTheme.slate200, width: 1.5),
+                  border: Border.all(color: isSel ? AppTheme.red500 : context.colors.border, width: 1.5),
                 ),
-                child: Text(tag, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: isSel ? AppTheme.red600 : AppTheme.slate600)),
+                child: Text(tag, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: isSel ? AppTheme.red600 : context.colors.textSecondary)),
               ),
             );
           }).toList()),
           const SizedBox(height: 16),
 
-          // Custom allergy input
-          const Text('Atau ketik sendiri:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppTheme.slate400, letterSpacing: 0.5)),
+          Text('Atau ketik sendiri:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: context.colors.textHint, letterSpacing: 0.5)),
           const SizedBox(height: 8),
           Row(children: [
             Expanded(
@@ -317,11 +301,11 @@ class _StepAllergies extends StatelessWidget {
                 onSubmitted: (_) => onCustomAdd(),
                 decoration: InputDecoration(
                   hintText: 'Contoh: Durian, Petai...',
-                  hintStyle: const TextStyle(color: AppTheme.slate300, fontWeight: FontWeight.w500, fontSize: 14),
-                  filled: true, fillColor: Colors.white,
+                  hintStyle: TextStyle(color: context.colors.textHint, fontWeight: FontWeight.w500, fontSize: 14),
+                  filled: true, fillColor: context.colors.cardBackground,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppTheme.slate200, width: 1.5)),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppTheme.slate200, width: 1.5)),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: context.colors.border, width: 1.5)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: context.colors.border, width: 1.5)),
                   focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppTheme.orange500, width: 2)),
                 ),
               ),
@@ -332,7 +316,7 @@ class _StepAllergies extends StatelessWidget {
               child: Container(
                 width: 46, height: 46,
                 decoration: BoxDecoration(color: AppTheme.orange600, borderRadius: BorderRadius.circular(14)),
-                child: const Icon(Icons.add, color: Colors.white, size: 22),
+                child: Icon(Icons.add, color: context.colors.cardBackground, size: 22),
               ),
             ),
           ]),
@@ -357,7 +341,6 @@ class _StepAllergies extends StatelessWidget {
   }
 }
 
-// --- Step 3: Monthly Budget --------------------------------------------------
 class _StepBudget extends StatelessWidget {
   final TextEditingController controller;
   const _StepBudget({required this.controller});
@@ -369,25 +352,25 @@ class _StepBudget extends StatelessWidget {
       children: [
         const Text('Budget Makan Bulanan ??', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppTheme.slate900, letterSpacing: -0.5)),
         const SizedBox(height: 6),
-        const Text('Berapa total budget makan kamu dalam sebulan? CookCase+ akan memantau pengeluaran agar kamu tidak defisit.', style: TextStyle(fontSize: 13, color: AppTheme.slate500, fontWeight: FontWeight.w500, height: 1.5)),
+         Text('Berapa total budget makan kamu dalam sebulan? CookCase+ akan memantau pengeluaran agar kamu tidak defisit.', style: TextStyle(fontSize: 13, color: context.colors.surface, fontWeight: FontWeight.w500, height: 1.5)),
         const SizedBox(height: 28),
         Container(
           padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: AppTheme.slate100),
+          decoration: BoxDecoration(color: context.colors.cardBackground, borderRadius: BorderRadius.circular(20), border: Border.all(color: context.colors.border),
             boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))]),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('Budget Bulanan', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.slate500, letterSpacing: 0.3)),
+            Text('Budget Bulanan', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: context.colors.surface, letterSpacing: 0.3)),
             const SizedBox(height: 10),
             Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-              const Text('Rp', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppTheme.slate400)),
+              Text('Rp', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: context.colors.textHint)),
               const SizedBox(width: 8),
               Expanded(
                 child: TextField(
                   controller: controller,
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: AppTheme.slate800, letterSpacing: -0.5),
-                  decoration: const InputDecoration(hintText: '0', hintStyle: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: AppTheme.slate200), border: InputBorder.none),
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: context.colors.textPrimary, letterSpacing: -0.5),
+                  decoration: InputDecoration(hintText: '0', hintStyle: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: context.colors.border), border: InputBorder.none),
                 ),
               ),
             ]),
@@ -396,7 +379,7 @@ class _StepBudget extends StatelessWidget {
           ]),
         ),
         const SizedBox(height: 16),
-        const Text('Pilih cepat:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppTheme.slate400, letterSpacing: 0.5)),
+        Text('Pilih cepat:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: context.colors.textHint, letterSpacing: 0.5)),
         const SizedBox(height: 10),
         Wrap(spacing: 10, runSpacing: 10, children: ['300.000', '500.000', '750.000', '1.000.000'].map((v) {
           return GestureDetector(
@@ -425,8 +408,6 @@ class _StepBudget extends StatelessWidget {
     );
   }
 }
-
-// --- Step 4: Meal Frequency (2-4) --------------------------------------------
 class _StepMealFreq extends StatelessWidget {
   final int freq;
   final Function(int) onChanged;
@@ -444,7 +425,7 @@ class _StepMealFreq extends StatelessWidget {
       children: [
         const Text('Jadwal Makan Sehari ???', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppTheme.slate900, letterSpacing: -0.5)),
         const SizedBox(height: 6),
-        const Text('Berapa kali kamu biasanya makan dalam sehari? Ini membantu kami membagi budget dan rekomendasi menu.', style: TextStyle(fontSize: 13, color: AppTheme.slate500, fontWeight: FontWeight.w500, height: 1.5)),
+         Text('Berapa kali kamu biasanya makan dalam sehari? Ini membantu kami membagi budget dan rekomendasi menu.', style: TextStyle(fontSize: 13, color: context.colors.surface, fontWeight: FontWeight.w500, height: 1.5)),
         const SizedBox(height: 28),
         Column(children: (options).map((opt) {
           final val = opt['val'] as int;
@@ -456,19 +437,19 @@ class _StepMealFreq extends StatelessWidget {
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: isSel ? AppTheme.orange50 : Colors.white,
+                color: isSel ? AppTheme.orange50 : context.colors.cardBackground,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: isSel ? AppTheme.orange500 : AppTheme.slate200, width: 2),
+                border: Border.all(color: isSel ? AppTheme.orange500 : context.colors.border, width: 2),
                 boxShadow: isSel ? [BoxShadow(color: AppTheme.orange500.withValues(alpha: 0.2), blurRadius: 10, offset: const Offset(0, 3))] : [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 6, offset: const Offset(0, 2))],
               ),
               child: Row(children: [
-                Container(width: 22, height: 22, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: isSel ? AppTheme.orange500 : AppTheme.slate300, width: 2)),
+                Container(width: 22, height: 22, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: isSel ? AppTheme.orange500 : context.colors.textHint, width: 2)),
                   child: isSel ? Center(child: Container(width: 10, height: 10, decoration: const BoxDecoration(color: AppTheme.orange500, shape: BoxShape.circle))) : null),
                 const SizedBox(width: 14),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(opt['label'] as String, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: isSel ? AppTheme.orange700 : AppTheme.slate800, letterSpacing: -0.3)),
+                  Text(opt['label'] as String, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: isSel ? AppTheme.orange700 : context.colors.textPrimary, letterSpacing: -0.3)),
                   const SizedBox(height: 2),
-                  Text(opt['desc'] as String, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: isSel ? AppTheme.orange600 : AppTheme.slate500)),
+                  Text(opt['desc'] as String, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: isSel ? AppTheme.orange600 : context.colors.surface)),
                 ])),
                 Text(opt['icon'] as String, style: const TextStyle(fontSize: 18)),
               ]),

@@ -1,4 +1,3 @@
-// Notification model
 class AppNotification {
   final String id;
   final NotifType type;
@@ -23,7 +22,6 @@ class AppNotification {
 
 enum NotifType { recipe, shopping, budget, tip }
 
-// Inventory model
 class InventoryCategory {
   final String name;
   final String icon;
@@ -36,14 +34,12 @@ class InventoryCategory {
   });
 }
 
-// Finance data
 class DailyExpense {
   final String day;
   final double amount;
   DailyExpense(this.day, this.amount);
 }
 
-// Todo model
 class TodoItem {
   final String title;
   final String subtitle;

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  
-    static const white = Color.fromARGB(255, 255, 255, 255);
+  static const white = Color.fromARGB(255, 255, 255, 255);
 
   static const orange50 = Color(0xFFFFF7ED);
   static const orange100 = Color(0xFFFFEDD5);
   static const orange200 = Color(0xFFFED7AA);
+  static const orange300 = Color(0xFFFDBA74);
   static const orange400 = Color(0xFFFB923C);
   static const orange500 = Color(0xFFF97316);
   static const orange600 = Color(0xFFEA580C);
@@ -24,6 +24,7 @@ class AppTheme {
   static const slate900 = Color(0xFF0F172A);
 
   static const green50 = Color(0xFFF0FDF4);
+  static const green100 = Color(0xFFDCFCE7);
   static const green500 = Color(0xFF22C55E);
   static const green600 = Color(0xFF16A34A);
 
@@ -40,8 +41,8 @@ class AppTheme {
 
   static const purple50 = Color(0xFFFAF5FF);
   static const purple100 = Color(0xFFF3E8FF);
+  static const purple200 = Color(0xFFE9D5FF);
   static const purple600 = Color(0xFF9333EA);
-
 
   static ThemeData get theme {
     return ThemeData(
@@ -66,6 +67,7 @@ class AppTheme {
         unselectedItemColor: slate400,
         type: BottomNavigationBarType.fixed,
       ),
+      extensions: const [AppColors.light],
     );
   }
 
@@ -93,14 +95,100 @@ class AppTheme {
         unselectedItemColor: slate500,
         type: BottomNavigationBarType.fixed,
       ),
-      cardTheme: const CardThemeData(
-        color: slate800,
-      ),
+      cardTheme: const CardThemeData(color: slate800),
       dividerColor: slate700,
       inputDecorationTheme: const InputDecorationTheme(
         fillColor: slate800,
         filled: true,
       ),
+      extensions: const [AppColors.dark],
     );
   }
+}
+
+class AppColors extends ThemeExtension<AppColors> {
+  final Color surface;
+  final Color surfaceSecondary;
+  final Color border;
+  final Color textPrimary;
+  final Color textSecondary;
+  final Color textHint;
+  final Color cardBackground;
+  final Color inputFill;
+  final Color chipBackground;  
+final Color chipText;
+
+  const AppColors({
+    required this.surface,
+    required this.surfaceSecondary,
+    required this.border,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.textHint,
+    required this.cardBackground,
+    required this.inputFill,
+    required this.chipBackground,
+    required this.chipText,
+  });
+
+  @override
+  AppColors copyWith({
+    Color? surface,
+    Color? surfaceSecondary,
+    Color? border,
+    Color? textPrimary,
+    Color? textSecondary,
+    Color? textHint,
+    Color? cardBackground,
+    Color? inputFill,
+    Color? chipBackground,
+    Color? chipText,
+  }) {
+    return AppColors(
+      surface: surface ?? this.surface,
+      surfaceSecondary: surfaceSecondary ?? this.surfaceSecondary,
+      border: border ?? this.border,
+      textPrimary: textPrimary ?? this.textPrimary,
+      textSecondary: textSecondary ?? this.textSecondary,
+      textHint: textHint ?? this.textHint,
+      cardBackground: cardBackground ?? this.cardBackground,
+      inputFill: inputFill ?? this.inputFill, 
+      chipBackground: chipBackground ?? this.chipBackground, 
+      chipText: chipText ?? this.chipText,
+    );
+  }
+
+  @override
+  AppColors lerp(AppColors? other, double t) => this;
+
+  static const light = AppColors(
+    surface: AppTheme.slate50,
+    surfaceSecondary: Colors.white,
+    border: AppTheme.slate100,
+    textPrimary: AppTheme.slate800,
+    textSecondary: AppTheme.slate500,
+    textHint: AppTheme.slate400,
+    cardBackground: Colors.white,
+    inputFill: AppTheme.slate50,
+    chipBackground: AppTheme.slate100,
+chipText: AppTheme.slate600,
+    
+  );
+
+  static const dark = AppColors(
+    surface: AppTheme.slate900,
+    surfaceSecondary: AppTheme.slate800,
+    border: AppTheme.slate700,
+    textPrimary: AppTheme.slate100,
+    textSecondary: AppTheme.slate400,
+    textHint: AppTheme.slate600,
+    cardBackground: AppTheme.slate800,
+    inputFill: AppTheme.slate800,
+    chipBackground: AppTheme.slate700,
+chipText: AppTheme.slate300,
+  );
+}
+
+extension AppThemeContext on BuildContext {
+  AppColors get colors => Theme.of(this).extension<AppColors>()!;
 }

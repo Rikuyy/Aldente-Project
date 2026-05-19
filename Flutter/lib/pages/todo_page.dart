@@ -52,36 +52,36 @@ class _TodoPageState extends State<TodoPage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(child: Container(width: 36, height: 4, decoration: BoxDecoration(color: AppTheme.slate200, borderRadius: BorderRadius.circular(2)))),
+              Center(child: Container(width: 36, height: 4, decoration: BoxDecoration(color: context.colors.border, borderRadius: BorderRadius.circular(2)))),
               const SizedBox(height: 16),
-              const Text('To-Do Baru', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppTheme.slate800)),
+              Text('To-Do Baru', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: context.colors.textPrimary)),
               const SizedBox(height: 20),
-              const Text('Tugas', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.slate500)),
+              Text('Tugas', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: context.colors.surface)),
               const SizedBox(height: 8),
               TextField(
                 controller: _titleCtrl,
                 decoration: InputDecoration(
                   hintText: 'Contoh: Beli telur di warung',
-                  hintStyle: const TextStyle(color: AppTheme.slate300, fontWeight: FontWeight.w500),
-                  filled: true, fillColor: AppTheme.slate50,
+                  hintStyle: TextStyle(color: context.colors.textHint, fontWeight: FontWeight.w500),
+                  filled: true, fillColor: context.colors.surface,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppTheme.slate200)),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppTheme.slate200)),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: context.colors.border)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: context.colors.border)),
                   focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppTheme.orange500, width: 2)),
                 ),
               ),
               const SizedBox(height: 14),
-              const Text('Keterangan (opsional)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.slate500)),
+              Text('Keterangan (opsional)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: context.colors.surface)),
               const SizedBox(height: 8),
               TextField(
                 controller: _subtitleCtrl,
                 decoration: InputDecoration(
                   hintText: 'Detail tambahan...',
-                  hintStyle: const TextStyle(color: AppTheme.slate300, fontWeight: FontWeight.w500),
-                  filled: true, fillColor: AppTheme.slate50,
+                  hintStyle: TextStyle(color: context.colors.textHint, fontWeight: FontWeight.w500),
+                  filled: true, fillColor: context.colors.surface,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppTheme.slate200)),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppTheme.slate200)),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: context.colors.border)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: context.colors.border)),
                   focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppTheme.orange500, width: 2)),
                 ),
               ),
@@ -123,7 +123,7 @@ class _TodoPageState extends State<TodoPage> {
   Widget build(BuildContext context) {
     final filtered = _filtered;
     return Scaffold(
-      backgroundColor: AppTheme.slate50,
+      backgroundColor: context.colors.surface,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
@@ -132,7 +132,7 @@ class _TodoPageState extends State<TodoPage> {
             elevation: 0,
             toolbarHeight: 56,
             automaticallyImplyLeading: false,
-            title: const Text('To-Do List', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppTheme.slate800, letterSpacing: -0.5)),
+            title: Text('To-Do List', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: context.colors.textPrimary, letterSpacing: -0.5)),
             actions: [
               GestureDetector(
                 onTap: _showAddSheet,
@@ -144,7 +144,7 @@ class _TodoPageState extends State<TodoPage> {
                 ),
               ),
             ],
-            bottom: PreferredSize(preferredSize: const Size.fromHeight(1), child: Container(color: AppTheme.slate100, height: 1)),
+            bottom: PreferredSize(preferredSize: const Size.fromHeight(1), child: Container(color: context.colors.border, height: 1)),
           ),
 
           SliverPadding(
@@ -154,11 +154,11 @@ class _TodoPageState extends State<TodoPage> {
               // Progress bar
               Container(
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(color: AppTheme.white, borderRadius: BorderRadius.circular(18), border: Border.all(color: AppTheme.slate100),
+                decoration: BoxDecoration(color: AppTheme.white, borderRadius: BorderRadius.circular(18), border: Border.all(color: context.colors.border),
                   boxShadow: [BoxShadow(color: Colors.black.withValues(alpha:0.04), blurRadius: 6, offset: const Offset(0, 2))]),
                 child: Column(children: [
                   Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                    Text('$_doneCount dari ${_todos.length} selesai', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.slate700)),
+                    Text('$_doneCount dari ${_todos.length} selesai', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: context.colors.textPrimary)),
                     Text('${_todos.isEmpty ? 0 : (_doneCount / _todos.length * 100).round()}%', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: AppTheme.orange600)),
                   ]),
                   const SizedBox(height: 10),
@@ -167,7 +167,7 @@ class _TodoPageState extends State<TodoPage> {
                     child: LinearProgressIndicator(
                       value: _todos.isEmpty ? 0 : _doneCount / _todos.length,
                       minHeight: 8,
-                      backgroundColor: AppTheme.slate100,
+                      backgroundColor: context.colors.border,
                       valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.orange500),
                     ),
                   ),
@@ -190,9 +190,9 @@ class _TodoPageState extends State<TodoPage> {
                       decoration: BoxDecoration(
                         color: isSel ? AppTheme.orange500 : AppTheme.white,
                         borderRadius: BorderRadius.circular(50),
-                        border: Border.all(color: isSel ? AppTheme.orange500 : AppTheme.slate200),
+                        border: Border.all(color: isSel ? AppTheme.orange500 : context.colors.border),
                       ),
-                      child: Text(f, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: isSel ? AppTheme.white : AppTheme.slate600)),
+                      child: Text(f, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: isSel ? AppTheme.white : context.colors.textSecondary)),
                     ),
                   );
                 }).toList()),
@@ -204,9 +204,9 @@ class _TodoPageState extends State<TodoPage> {
                 Center(child: Padding(
                   padding: const EdgeInsets.only(top: 40),
                   child: Column(children: [
-                    const Icon(Icons.check_circle_outline_rounded, size: 48, color: AppTheme.slate300),
+                    Icon(Icons.check_circle_outline_rounded, size: 48, color: context.colors.textHint),
                     const SizedBox(height: 12),
-                    Text(_filter == 'Selesai' ? 'Belum ada yang selesai' : 'Tidak ada tugas aktif', style: const TextStyle(color: AppTheme.slate400, fontWeight: FontWeight.w600)),
+                    Text(_filter == 'Selesai' ? 'Belum ada yang selesai' : 'Tidak ada tugas aktif', style: TextStyle(color: context.colors.textHint, fontWeight: FontWeight.w600)),
                   ]),
                 ))
               else
@@ -228,9 +228,9 @@ class _TodoPageState extends State<TodoPage> {
                         duration: const Duration(milliseconds: 200),
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: todo.isDone ? AppTheme.slate50 : AppTheme.white,
+                          color: todo.isDone ? context.colors.surface : AppTheme.white,
                           borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: todo.isDone ? AppTheme.slate200 : AppTheme.slate100),
+                          border: Border.all(color: todo.isDone ? context.colors.border : context.colors.border),
                           boxShadow: todo.isDone ? null : [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6, offset: const Offset(0, 2))],
                         ),
                         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -240,19 +240,19 @@ class _TodoPageState extends State<TodoPage> {
                             decoration: BoxDecoration(
                               color: todo.isDone ? AppTheme.green500 : AppTheme.white,
                               shape: BoxShape.circle,
-                              border: Border.all(color: todo.isDone ? AppTheme.green500 : AppTheme.slate300, width: 2),
+                              border: Border.all(color: todo.isDone ? AppTheme.green500 : context.colors.textHint, width: 2),
                             ),
                             child: todo.isDone ? const Icon(Icons.check_rounded, size: 14, color: AppTheme.white) : null,
                           ),
                           const SizedBox(width: 12),
                           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Text(todo.title, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: todo.isDone ? AppTheme.slate400 : AppTheme.slate800, decoration: todo.isDone ? TextDecoration.lineThrough : null, letterSpacing: -0.2)),
-                            if (todo.subtitle.isNotEmpty) ...[const SizedBox(height: 3), Text(todo.subtitle, style: TextStyle(fontSize: 12, color: todo.isDone ? AppTheme.slate300 : AppTheme.slate500, fontWeight: FontWeight.w500))],
+                            Text(todo.title, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: todo.isDone ? context.colors.textHint : context.colors.textPrimary, decoration: todo.isDone ? TextDecoration.lineThrough : null, letterSpacing: -0.2)),
+                            if (todo.subtitle.isNotEmpty) ...[const SizedBox(height: 3), Text(todo.subtitle, style: TextStyle(fontSize: 12, color: todo.isDone ? context.colors.textHint : context.colors.surface, fontWeight: FontWeight.w500))],
                           ])),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(color: AppTheme.slate100, borderRadius: BorderRadius.circular(50)),
-                            child: Text(todo.category, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppTheme.slate500)),
+                            decoration: BoxDecoration(color: context.colors.border, borderRadius: BorderRadius.circular(50)),
+                            child: Text(todo.category, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: context.colors.surface)),
                           ),
                         ]),
                       ),

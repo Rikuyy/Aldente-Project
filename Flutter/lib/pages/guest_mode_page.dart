@@ -8,19 +8,18 @@ class GuestModePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.slate50,
+      backgroundColor: context.colors.surface,
       body: Column(
         children: [
-          // Header
           Container(
-            color: Colors.white,
+            color: context.colors.cardBackground,
             padding: EdgeInsets.only(
               top: MediaQuery.of(context).padding.top + 12,
               left: 24,
               right: 24,
               bottom: 16,
             ),
-            child: const Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
@@ -30,54 +29,50 @@ class GuestModePage extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w900,
-                        color: AppTheme.slate800,
+                        color: context.colors.textPrimary,
                         letterSpacing: -0.5,
                       ),
                     ),
-                    SizedBox(width: 8),
-                    Icon(Icons.auto_awesome, color: AppTheme.orange500, size: 20),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.auto_awesome, color: AppTheme.orange500, size: 20),
                   ],
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
                   'Ruang Konsultasi Cerdas',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
-                    color: AppTheme.slate500,
+                    color: context.colors.surface,
                   ),
                 ),
               ],
             ),
           ),
-          const Divider(height: 1, color: AppTheme.slate100),
+          Divider(height: 1, color: context.colors.border),
 
-          // Chat area
           Expanded(
             child: ListView(
               padding: const EdgeInsets.all(24),
               children: [
-                // Bot message 1
-                const _ChatBubble(
+                _ChatBubble(
                   isBot: true,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      const Text(
                         'Halo!',
                         style: TextStyle(fontWeight: FontWeight.w700, color: AppTheme.slate900),
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
                       Text(
                         'Saya asisten CookCash kamu. Ada yang bisa saya bantu untuk rencana makan hari ini?',
-                        style: TextStyle(color: AppTheme.slate800, height: 1.5),
+                        style: TextStyle(color: context.colors.textPrimary, height: 1.5),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 16),
-
-                // User message
                 Align(
                   alignment: Alignment.centerRight,
                   child: Container(
@@ -105,23 +100,21 @@ class GuestModePage extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: const Text(
+                    child: Text(
                       'Rekomendasi menu untuk makan siang dengan budget 15 ribu',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500, height: 1.5),
+                      style: TextStyle(color: context.colors.cardBackground, fontWeight: FontWeight.w500, height: 1.5),
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
-
-                // Bot reply with CTA
                 _ChatBubble(
                   isBot: true,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Tentu! Dengan budget Rp15.000, kamu bisa mempertimbangkan menu berikut:',
-                        style: TextStyle(color: AppTheme.slate700, height: 1.5),
+                        style: TextStyle(color: context.colors.textPrimary, height: 1.5),
                       ),
                       const SizedBox(height: 12),
                       const _MenuOption(icon: Icons.restaurant, title: 'Nasi Telur Pontianak + Es Teh', subtitle: '(Masak di kos)'),
@@ -130,8 +123,6 @@ class GuestModePage extends StatelessWidget {
                       const SizedBox(height: 6),
                       const _MenuOption(icon: Icons.rice_bowl, title: 'Beli Nasi Warteg', subtitle: '(Sayur 2 macem, Telur, dan Tempe Orek)'),
                       const SizedBox(height: 16),
-
-                      // CTA Card
                       GestureDetector(
                         onTap: () => context.go('/onboarding'),
                         child: Container(
@@ -177,19 +168,19 @@ class GuestModePage extends StatelessWidget {
                                     ),
                                   ],
                                 ),
-                                child: const Row(
+                                child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Text(
                                       'Yuk, Login!',
                                       style: TextStyle(
-                                        color: Colors.white,
+                                        color: context.colors.cardBackground,
                                         fontWeight: FontWeight.w700,
                                         fontSize: 13,
                                       ),
                                     ),
-                                    SizedBox(width: 6),
-                                    Icon(Icons.arrow_forward, color: Colors.white, size: 16),
+                                    const SizedBox(width: 6),
+                                    Icon(Icons.arrow_forward, color: context.colors.cardBackground, size: 16),
                                   ],
                                 ),
                               ),
@@ -203,10 +194,8 @@ class GuestModePage extends StatelessWidget {
               ],
             ),
           ),
-
-          // Input area
           Container(
-            color: Colors.white,
+            color: context.colors.cardBackground,
             padding: EdgeInsets.only(
               left: 16,
               right: 16,
@@ -216,22 +205,22 @@ class GuestModePage extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               decoration: BoxDecoration(
-                color: AppTheme.slate100,
+                color: context.colors.border,
                 borderRadius: BorderRadius.circular(50),
-                border: Border.all(color: AppTheme.slate200),
+                border: Border.all(color: context.colors.border),
               ),
-              child: const Row(
+              child: Row(
                 children: [
                   Expanded(
                     child: TextField(
                       decoration: InputDecoration(
                         hintText: 'Ketik pertanyaanmu di sini...',
-                        hintStyle: TextStyle(color: AppTheme.slate400, fontWeight: FontWeight.w500),
+                        hintStyle: TextStyle(color: context.colors.textHint, fontWeight: FontWeight.w500),
                         border: InputBorder.none,
                       ),
                     ),
                   ),
-                  Icon(Icons.send_rounded, color: AppTheme.orange500, size: 22),
+                  const Icon(Icons.send_rounded, color: AppTheme.orange500, size: 22),
                 ],
               ),
             ),
@@ -255,14 +244,14 @@ class _ChatBubble extends StatelessWidget {
         constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.85),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.colors.cardBackground,
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(4),
             topRight: Radius.circular(20),
             bottomLeft: Radius.circular(20),
             bottomRight: Radius.circular(20),
           ),
-          border: Border.all(color: AppTheme.slate100),
+          border: Border.all(color: context.colors.border),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 10.2),
@@ -288,15 +277,15 @@ class _MenuOption extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 16, color: AppTheme.slate600),
+        Icon(icon, size: 16, color: context.colors.textSecondary),
         const SizedBox(width: 8),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppTheme.slate800)),
+              Text(title, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: context.colors.textPrimary)),
               if (subtitle != null)
-                Text(subtitle!, style: const TextStyle(fontSize: 12, color: AppTheme.slate500)),
+                Text(subtitle!, style:  TextStyle(fontSize: 12, color: context.colors.surface)),
             ],
           ),
         ),

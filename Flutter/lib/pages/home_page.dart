@@ -10,13 +10,12 @@ class HomePage extends StatelessWidget {
     const unreadCount = 3;
 
     return Scaffold(
-      backgroundColor: AppTheme.slate50,
+      backgroundColor: context.colors.surface,
       body: CustomScrollView(
         slivers: [
-          // Sticky Header
           SliverAppBar(
             pinned: true,
-            backgroundColor: Colors.white,
+            backgroundColor: context.colors.cardBackground,
             elevation: 0,
             expandedHeight: 0,
             toolbarHeight: 72,
@@ -26,7 +25,7 @@ class HomePage extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Column(
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -35,7 +34,7 @@ class HomePage extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w900,
-                            color: AppTheme.slate800,
+                            color: context.colors.textPrimary,
                             letterSpacing: -0.5,
                           ),
                         ),
@@ -46,30 +45,29 @@ class HomePage extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
-                                color: AppTheme.slate500,
+                                color: context.colors.surface,
                               ),
                             ),
-                            SizedBox(width: 4),
-                            Icon(Icons.waving_hand, size: 12, color: AppTheme.slate500),
+                            const SizedBox(width: 4),
+                            Icon(Icons.waving_hand, size: 12, color: context.colors.surface),
                           ],
                         ),
                       ],
                     ),
                     Row(
                       children: [
-                        // Bell button
                         GestureDetector(
                           onTap: () => context.push('/notifications'),
                           child: Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: AppTheme.slate50,
+                              color: context.colors.surface,
                               borderRadius: BorderRadius.circular(50),
                             ),
                             child: Stack(
                               clipBehavior: Clip.none,
                               children: [
-                                const Icon(Icons.notifications_rounded, size: 22, color: AppTheme.slate400),
+                                Icon(Icons.notifications_rounded, size: 22, color: context.colors.textHint),
                                 if (unreadCount > 0)
                                   Positioned(
                                     top: -6,
@@ -79,11 +77,11 @@ class HomePage extends StatelessWidget {
                                       decoration: BoxDecoration(
                                         color: AppTheme.orange500,
                                         borderRadius: BorderRadius.circular(50),
-                                        border: Border.all(color: Colors.white, width: 1.5),
+                                        border: Border.all(color: context.colors.cardBackground, width: 1.5),
                                       ),
-                                      child: const Text(
+                                      child: Text(
                                         '$unreadCount',
-                                        style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w900),
+                                        style: TextStyle(color: context.colors.cardBackground, fontSize: 9, fontWeight: FontWeight.w900),
                                       ),
                                     ),
                                   ),
@@ -92,7 +90,6 @@ class HomePage extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 12),
-                        // Avatar
                         GestureDetector(
                           onTap: () => context.go('/app/profile'),
                           child: Container(
@@ -123,16 +120,14 @@ class HomePage extends StatelessWidget {
             ),
             bottom: PreferredSize(
               preferredSize: const Size.fromHeight(1),
-              child: Container(color: AppTheme.slate100, height: 1),
+              child: Container(color: context.colors.border, height: 1),
             ),
           ),
 
-          // Content
           SliverPadding(
             padding: const EdgeInsets.all(20),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                // Warning banner
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -155,7 +150,7 @@ class HomePage extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: context.colors.cardBackground,
                           borderRadius: BorderRadius.circular(50),
                           boxShadow: [
                             BoxShadow(
@@ -203,8 +198,6 @@ class HomePage extends StatelessWidget {
                 ),
 
                 const SizedBox(height: 16),
-
-                // Main Budget Card
                 GestureDetector(
                   onTap: () => context.go('/app/finance'),
                   child: Container(
@@ -226,7 +219,6 @@ class HomePage extends StatelessWidget {
                     ),
                     child: Stack(
                       children: [
-                        // Decorative circles
                         Positioned(
                           top: -30,
                           right: -20,
@@ -234,7 +226,7 @@ class HomePage extends StatelessWidget {
                             width: 120,
                             height: 120,
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 12.75),
+                              color: context.colors.cardBackground.withValues(alpha: 12.75),
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -263,14 +255,14 @@ class HomePage extends StatelessWidget {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 25.5),
+                                    color: context.colors.cardBackground.withValues(alpha: 25.5),
                                     borderRadius: BorderRadius.circular(50),
-                                    border: Border.all(color: Colors.white.withValues(alpha: 25.5)),
+                                    border: Border.all(color: context.colors.cardBackground.withValues(alpha: 25.5)),
                                   ),
-                                  child: const Text(
+                                  child: Text(
                                     'Minggu Ini',
                                     style: TextStyle(
-                                      color: Colors.white,
+                                      color: context.colors.cardBackground,
                                       fontSize: 11,
                                       fontWeight: FontWeight.w700,
                                     ),
@@ -289,10 +281,10 @@ class HomePage extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(height: 6),
-                            const Text(
+                            Text(
                               'Rp 15.000',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: context.colors.cardBackground,
                                 fontSize: 36,
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: -1,
@@ -301,7 +293,7 @@ class HomePage extends StatelessWidget {
                             const SizedBox(height: 20),
                             Container(
                               height: 1,
-                              color: Colors.white.withValues(alpha: 25.5),
+                              color: context.colors.cardBackground.withValues(alpha: 25.5),
                             ),
                             const SizedBox(height: 20),
                             Row(
@@ -340,10 +332,10 @@ class HomePage extends StatelessWidget {
                                 Container(
                                   padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 25.5),
+                                    color: context.colors.cardBackground.withValues(alpha: 25.5),
                                     borderRadius: BorderRadius.circular(14),
                                   ),
-                                  child: const Icon(Icons.arrow_forward, color: Colors.white, size: 20),
+                                  child: Icon(Icons.arrow_forward, color: context.colors.cardBackground, size: 20),
                                 ),
                               ],
                             ),
@@ -356,16 +348,15 @@ class HomePage extends StatelessWidget {
 
                 const SizedBox(height: 24),
 
-                // To-Do List Header
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'To-Do List Hari Ini',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w900,
-                        color: AppTheme.slate800,
+                        color: context.colors.textPrimary,
                         letterSpacing: -0.5,
                       ),
                     ),
@@ -394,7 +385,6 @@ class HomePage extends StatelessWidget {
 
                 const SizedBox(height: 12),
 
-                // Todo items
                 const _TodoItem(
                   title: 'Rencana Makan Malam',
                   subtitle: 'Nasi Goreng Sosis (Budget sisa: Rp 15.000)',
@@ -433,9 +423,9 @@ class _TodoItem extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDone ? AppTheme.slate50 : Colors.white,
+        color: isDone ? context.colors.surface : context.colors.cardBackground,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppTheme.slate100),
+        border: Border.all(color: context.colors.border),
         boxShadow: isDone ? null : [
           BoxShadow(
             color: Colors.black.withValues(alpha: 10.2),
@@ -449,7 +439,7 @@ class _TodoItem extends StatelessWidget {
         children: [
           Icon(
             isDone ? Icons.check_circle_rounded : Icons.circle_outlined,
-            color: isDone ? AppTheme.green500 : AppTheme.slate300,
+            color: isDone ? AppTheme.green500 : context.colors.textHint,
             size: 24,
           ),
           const SizedBox(width: 12),
@@ -462,7 +452,7 @@ class _TodoItem extends StatelessWidget {
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
-                    color: isDone ? AppTheme.slate500 : AppTheme.slate800,
+                    color: isDone ? context.colors.surface : context.colors.textPrimary,
                     decoration: isDone ? TextDecoration.lineThrough : null,
                     letterSpacing: -0.3,
                   ),
@@ -472,7 +462,7 @@ class _TodoItem extends StatelessWidget {
                   subtitle,
                   style: TextStyle(
                     fontSize: 12,
-                    color: isDone ? AppTheme.slate400 : AppTheme.slate500,
+                    color: isDone ? context.colors.textHint : context.colors.surface,
                     fontWeight: FontWeight.w500,
                   ),
                 ),

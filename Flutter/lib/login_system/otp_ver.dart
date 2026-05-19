@@ -1,3 +1,4 @@
+import 'package:cook_cash/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -11,9 +12,9 @@ class OtpScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.cardBackground,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.colors.cardBackground,
         title: const Text(
           "OTP Verification",
           style: TextStyle(color: Color(0xFF757575)),
@@ -42,7 +43,6 @@ class OtpScreen extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Color(0xFF757575)),
                   ),
-                  // const SizedBox(height: 16),
                   SizedBox(height: MediaQuery.of(context).size.height * 0.1),
                   const OtpForm(),
                   SizedBox(height: MediaQuery.of(context).size.height * 0.2),
@@ -205,7 +205,7 @@ class OtpForm extends StatelessWidget {
             style: ElevatedButton.styleFrom(
               elevation: 0,
               backgroundColor: const Color(0xFFFF7643),
-              foregroundColor: Colors.white,
+              foregroundColor: context.colors.cardBackground,
               minimumSize: const Size(double.infinity, 48),
               shape: const RoundedRectangleBorder(
                 borderRadius: BorderRadius.all(Radius.circular(16)),

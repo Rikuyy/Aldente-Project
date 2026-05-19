@@ -19,33 +19,33 @@ class FinancePage extends StatelessWidget {
     const days = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 
     return Scaffold(
-      backgroundColor: AppTheme.slate50,
+      backgroundColor: context.colors.surface,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
             pinned: true,
-            backgroundColor: Colors.white,
+            backgroundColor: context.colors.cardBackground,
             elevation: 0,
             toolbarHeight: 60,
-            title: const Text('Laporan Keuangan', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppTheme.slate800, letterSpacing: -0.5)),
+            title: Text('Laporan Keuangan', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: context.colors.textPrimary, letterSpacing: -0.5)),
             actions: [
               Container(
                 margin: const EdgeInsets.only(right: 16),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: AppTheme.slate100,
+                  color: context.colors.border,
                   borderRadius: BorderRadius.circular(50),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Text('Minggu Ini', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.slate500)),
-                    SizedBox(width: 4),
-                    Icon(Icons.keyboard_arrow_down, size: 16, color: AppTheme.slate500),
+                    Text('Minggu Ini', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: context.colors.surface)),
+                    const SizedBox(width: 4),
+                    Icon(Icons.keyboard_arrow_down, size: 16, color: context.colors.surface),
                   ],
                 ),
               ),
             ],
-            bottom: PreferredSize(preferredSize: const Size.fromHeight(1), child: Container(color: AppTheme.slate100, height: 1)),
+            bottom: PreferredSize(preferredSize: const Size.fromHeight(1), child: Container(color: context.colors.border, height: 1)),
           ),
 
           SliverPadding(
@@ -53,8 +53,6 @@ class FinancePage extends StatelessWidget {
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 const SizedBox(height: 8),
-
-                // Summary Cards
                 const Row(
                   children: [
                     Expanded(
@@ -78,16 +76,13 @@ class FinancePage extends StatelessWidget {
                 ),
 
                 const SizedBox(height: 16),
-
-                // Warning
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: AppTheme.orange50,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: AppTheme.orange200),
-                    // ignore: deprecated_member_use
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
+                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
                   ),
                   child: const Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -112,21 +107,18 @@ class FinancePage extends StatelessWidget {
                 ),
 
                 const SizedBox(height: 16),
-
-                // Line Chart
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: context.colors.cardBackground,
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: AppTheme.slate100),
-                    // ignore: deprecated_member_use
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+                    border: Border.all(color: context.colors.border),
+                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4))],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Tren Pengeluaran Harian', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppTheme.slate800, letterSpacing: 0.3)),
+                      Text('Tren Pengeluaran Harian', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: context.colors.textPrimary, letterSpacing: 0.3)),
                       const SizedBox(height: 24),
                       SizedBox(
                         height: 180,
@@ -136,7 +128,7 @@ class FinancePage extends StatelessWidget {
                               show: true,
                               drawVerticalLine: false,
                               horizontalInterval: 20000,
-                              getDrawingHorizontalLine: (_) => const FlLine(color: AppTheme.slate100, strokeWidth: 1),
+                              getDrawingHorizontalLine: (_) => FlLine(color: context.colors.border, strokeWidth: 1),
                             ),
                             titlesData: FlTitlesData(
                               leftTitles: AxisTitles(
@@ -146,7 +138,7 @@ class FinancePage extends StatelessWidget {
                                   interval: 20000,
                                   getTitlesWidget: (v, m) => Text(
                                     '${(v / 1000).toStringAsFixed(0)}k',
-                                    style: const TextStyle(fontSize: 9, color: AppTheme.slate400, fontWeight: FontWeight.w600),
+                                    style: TextStyle(fontSize: 9, color: context.colors.textHint, fontWeight: FontWeight.w600),
                                   ),
                                 ),
                               ),
@@ -159,7 +151,7 @@ class FinancePage extends StatelessWidget {
                                     padding: const EdgeInsets.only(top: 8),
                                     child: Text(
                                       v.toInt() < days.length ? days[v.toInt()] : '',
-                                      style: const TextStyle(fontSize: 10, color: AppTheme.slate400, fontWeight: FontWeight.w600),
+                                      style: TextStyle(fontSize: 10, color: context.colors.textHint, fontWeight: FontWeight.w600),
                                     ),
                                   ),
                                 ),
@@ -179,14 +171,13 @@ class FinancePage extends StatelessWidget {
                                     radius: 4,
                                     color: AppTheme.orange600,
                                     strokeWidth: 2,
-                                    strokeColor: Colors.white,
+                                    strokeColor: context.colors.cardBackground,
                                   ),
                                 ),
                                 belowBarData: BarAreaData(
                                   show: true,
                                   gradient: LinearGradient(
-                                    // ignore: deprecated_member_use
-                                    colors: [AppTheme.orange500.withOpacity(0.2), AppTheme.orange500.withOpacity(0)],
+                                    colors: [AppTheme.orange500.withValues(alpha: 0.2), AppTheme.orange500.withValues(alpha: 0)],
                                     begin: Alignment.topCenter,
                                     end: Alignment.bottomCenter,
                                   ),
@@ -203,21 +194,18 @@ class FinancePage extends StatelessWidget {
                 ),
 
                 const SizedBox(height: 16),
-
-                // Pie Chart / Composition
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: context.colors.cardBackground,
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: AppTheme.slate100),
-                    // ignore: deprecated_member_use
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+                    border: Border.all(color: context.colors.border),
+                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4))],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Komposisi Pengeluaran', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppTheme.slate800)),
+                      Text('Komposisi Pengeluaran', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: context.colors.textPrimary)),
                       const SizedBox(height: 16),
                       Row(
                         children: [
@@ -240,28 +228,28 @@ class FinancePage extends StatelessWidget {
                                         ),
                                         PieChartSectionData(
                                           value: 90000,
-                                          color: AppTheme.slate200,
+                                          color: context.colors.border,
                                           radius: 28,
                                           showTitle: false,
                                         ),
                                       ],
                                     ),
                                   ),
-                                  const Text(
+                                  Text(
                                     '62%',
-                                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppTheme.slate800),
+                                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: context.colors.textPrimary),
                                   ),
                                 ],
                               ),
                             ),
                           ),
                           const SizedBox(width: 16),
-                          const Column(
+                          Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _LegendItem(color: AppTheme.orange500, label: 'Masak Sendiri', value: 'Rp150.000'),
-                              SizedBox(height: 16),
-                              _LegendItem(color: AppTheme.slate200, label: 'Jajan Luar', value: 'Rp90.000'),
+                              const _LegendItem(color: AppTheme.orange500, label: 'Masak Sendiri', value: 'Rp150.000'),
+                              const SizedBox(height: 16),
+                              _LegendItem(color: context.colors.border, label: 'Jajan Luar', value: 'Rp90.000'),
                             ],
                           ),
                         ],
@@ -293,18 +281,17 @@ class _SummaryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.colors.cardBackground,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppTheme.slate100),
-        // ignore: deprecated_member_use
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
+        border: Border.all(color: context.colors.border),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label.toUpperCase(), style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: AppTheme.slate500, letterSpacing: 0.5)),
+          Text(label.toUpperCase(), style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: context.colors.surface, letterSpacing: 0.5)),
           const SizedBox(height: 8),
-          Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppTheme.slate800, letterSpacing: -0.5)),
+          Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: context.colors.textPrimary, letterSpacing: -0.5)),
           const SizedBox(height: 4),
           Row(
             children: [
@@ -344,13 +331,13 @@ class _LegendItem extends StatelessWidget {
           children: [
             Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
             const SizedBox(width: 8),
-            Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.slate600)),
+            Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: context.colors.textSecondary)),
           ],
         ),
         const SizedBox(height: 4),
         Padding(
           padding: const EdgeInsets.only(left: 20),
-          child: Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: AppTheme.slate800)),
+          child: Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: context.colors.textPrimary)),
         ),
       ],
     );

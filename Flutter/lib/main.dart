@@ -12,11 +12,9 @@ import 'pages/profile_page.dart';
 import 'pages/notifications_page.dart';
 import 'pages/todo_page.dart';
 
-
 void main() {
-  runApp(const DarkModeCooking(child: CookCashApp()));
+  runApp(const CookCashApp());
 }
-
 final _router = GoRouter(
   initialLocation: '/',
   routes: [
@@ -36,57 +34,29 @@ final _router = GoRouter(
       ],
     ),
   ],
-redirect: (ctx, state) {
-  if (state.matchedLocation == '/app') return '/app/home'; // dead code
-  return null;
-
-  },
 );
+
+final themeNotifier = ValueNotifier<ThemeMode>(ThemeMode.light);
+
+
 
 class CookCashApp extends StatelessWidget {
   const CookCashApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final mode = DarkModeCooking.of(context).themeMode;
-
-    return MaterialApp.router(
-      title: 'CookCash',
-      theme: AppTheme.theme,
-      darkTheme: AppTheme.darkTheme, 
-      themeMode: mode,          
-      routerConfig: _router,
-      debugShowCheckedModeBanner: false,
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: themeNotifier,
+      builder: (context, mode, _) {
+        return MaterialApp.router(
+          title: 'CookCash',
+          theme: AppTheme.theme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: mode,
+          routerConfig: _router,
+          debugShowCheckedModeBanner: false,
+        );
+      },
     );
-  }
-}
-
-class DarkModeCooking extends StatefulWidget {
-  final Widget child; // Added child property to embed CookCashApp
-  const DarkModeCooking({super.key, required this.child});
-
-  static DarkModeCookingState of(BuildContext context) =>
-    context.findAncestorStateOfType<DarkModeCookingState>()!;
-
-  @override
-  State<DarkModeCooking> createState() => DarkModeCookingState();
-}
-
-class DarkModeCookingState extends State<DarkModeCooking> {
-  ThemeMode _themeMode = ThemeMode.light;
-
-  ThemeMode get themeMode => _themeMode;
-
-  void toggleTheme() {
-    setState(() {
-      _themeMode = _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
-    });
-  }
-
-  bool get isDark => _themeMode == ThemeMode.dark;
-
-  @override
-  Widget build(BuildContext context) {
-    return widget.child;
   }
 }

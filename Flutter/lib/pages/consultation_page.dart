@@ -8,12 +8,11 @@ class ConsultationPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.slate50,
+      backgroundColor: context.colors.surface,
       body: Column(
         children: [
-          // Header
           Container(
-            color: Colors.white,
+            color: context.colors.cardBackground,
             padding: EdgeInsets.only(
               top: MediaQuery.of(context).padding.top + 12,
               left: 24, right: 24, bottom: 16,
@@ -24,7 +23,7 @@ class ConsultationPage extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Ruang Konsultasi', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppTheme.slate800, letterSpacing: -0.5)),
+                    Text('Ruang Konsultasi', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: context.colors.textPrimary, letterSpacing: -0.5)),
                     Row(
                       children: [
                         Container(
@@ -54,9 +53,8 @@ class ConsultationPage extends StatelessWidget {
               ],
             ),
           ),
-          const Divider(height: 1, color: AppTheme.slate100),
+           Divider(height: 1, color: context.colors.border),
 
-          // Chat messages
           Expanded(
             child: ListView(
               padding: const EdgeInsets.all(20),
@@ -74,9 +72,9 @@ class ConsultationPage extends StatelessWidget {
                       ),
                       const SizedBox(height: 6),
                       RichText(
-                        text: const TextSpan(
-                          style: TextStyle(color: AppTheme.slate600, fontWeight: FontWeight.w500, fontSize: 13, height: 1.5),
-                          children: [
+                        text: TextSpan(
+                          style: TextStyle(color: context.colors.textSecondary, fontWeight: FontWeight.w500, fontSize: 13, height: 1.5),
+                          children: const [
                             TextSpan(text: 'Hari ini kamu punya stok '),
                             TextSpan(text: 'telur', style: TextStyle(fontWeight: FontWeight.w700, color: AppTheme.orange600, backgroundColor: Color(0xFFFFF7ED))),
                             TextSpan(text: ' dan '),
@@ -89,8 +87,7 @@ class ConsultationPage extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          // ignore: deprecated_member_use
-                          color: AppTheme.blue50.withOpacity(0.5),
+                          color: AppTheme.blue50.withValues(alpha: 0.5),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: AppTheme.blue100),
                         ),
@@ -119,16 +116,16 @@ class ConsultationPage extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       RichText(
-                        text: const TextSpan(
-                          style: TextStyle(color: AppTheme.slate600, fontWeight: FontWeight.w500, fontSize: 13, height: 1.5),
+                        text: TextSpan(
+                          style: TextStyle(color: context.colors.textSecondary, fontWeight: FontWeight.w500, fontSize: 13, height: 1.5),
                           children: [
-                            TextSpan(text: 'Sip! Dengan bahan '),
-                            TextSpan(text: 'Telur', style: TextStyle(fontWeight: FontWeight.w700, color: AppTheme.slate800)),
-                            TextSpan(text: ' dan '),
-                            TextSpan(text: 'Mie', style: TextStyle(fontWeight: FontWeight.w700, color: AppTheme.slate800)),
-                            TextSpan(text: ', kamu bisa bikin '),
-                            TextSpan(text: 'Mie Nyemek Telur Pedas', style: TextStyle(fontWeight: FontWeight.w700, color: AppTheme.orange600)),
-                            TextSpan(text: '.'),
+                            const TextSpan(text: 'Sip! Dengan bahan '),
+                            TextSpan(text: 'Telur', style: TextStyle(fontWeight: FontWeight.w700, color: context.colors.textPrimary)),
+                            const TextSpan(text: ' dan '),
+                            TextSpan(text: 'Mie', style: TextStyle(fontWeight: FontWeight.w700, color: context.colors.textPrimary)),
+                            const TextSpan(text: ', kamu bisa bikin '),
+                            const TextSpan(text: 'Mie Nyemek Telur Pedas', style: TextStyle(fontWeight: FontWeight.w700, color: AppTheme.orange600)),
+                            const TextSpan(text: '.'),
                           ],
                         ),
                       ),
@@ -136,32 +133,32 @@ class ConsultationPage extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: AppTheme.slate50,
+                          color: context.colors.surface,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppTheme.slate100),
+                          border: Border.all(color: context.colors.border),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Row(
+                            Row(
                               children: [
-                                Icon(Icons.check_circle_rounded, color: AppTheme.green500, size: 16),
-                                SizedBox(width: 6),
-                                Text('Estimasi Biaya: Rp 0', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: AppTheme.slate800)),
+                                const Icon(Icons.check_circle_rounded, color: AppTheme.green500, size: 16),
+                                const SizedBox(width: 6),
+                                Text('Estimasi Biaya: Rp 0', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: context.colors.textPrimary)),
                               ],
                             ),
                             const SizedBox(height: 4),
-                            const Text('Karena semua bahan sudah ada di stokmu.', style: TextStyle(fontSize: 11, color: AppTheme.slate500, fontWeight: FontWeight.w500)),
+                            Text('Karena semua bahan sudah ada di stokmu.', style: TextStyle(fontSize: 11, color: context.colors.surface, fontWeight: FontWeight.w500)),
                             const SizedBox(height: 12),
                             Container(
                               width: double.infinity,
                               padding: const EdgeInsets.symmetric(vertical: 10),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: context.colors.cardBackground,
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: AppTheme.slate200, width: 2),
+                                border: Border.all(color: context.colors.border, width: 2),
                               ),
-                              child: const Text('Lihat Resep Lengkap', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: AppTheme.slate700)),
+                              child: Text('Lihat Resep Lengkap', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: context.colors.textPrimary)),
                             ),
                           ],
                         ),
@@ -173,9 +170,8 @@ class ConsultationPage extends StatelessWidget {
             ),
           ),
 
-          // Quick action chips
           Container(
-            color: Colors.white,
+            color: context.colors.cardBackground,
             padding: const EdgeInsets.only(left: 16, right: 16, top: 12),
             child: const SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -191,9 +187,8 @@ class ConsultationPage extends StatelessWidget {
             ),
           ),
 
-          // Text input
           Container(
-            color: Colors.white,
+            color: context.colors.cardBackground,
             padding: EdgeInsets.only(
               left: 16, right: 16, top: 12,
               bottom: MediaQuery.of(context).padding.bottom + 12,
@@ -201,18 +196,17 @@ class ConsultationPage extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.only(left: 20, right: 6, top: 4, bottom: 4),
               decoration: BoxDecoration(
-                // ignore: deprecated_member_use
-                color: AppTheme.slate100.withOpacity(0.8),
+                color: context.colors.border.withValues(alpha: 0.8),
                 borderRadius: BorderRadius.circular(50),
-                border: Border.all(color: AppTheme.slate200, width: 2),
+                border: Border.all(color: context.colors.border, width: 2),
               ),
               child: Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: TextField(
                       decoration: InputDecoration(
                         hintText: 'Ketik pertanyaan...',
-                        hintStyle: TextStyle(color: AppTheme.slate400, fontWeight: FontWeight.w500),
+                        hintStyle: TextStyle(color: context.colors.textHint, fontWeight: FontWeight.w500),
                         border: InputBorder.none,
                       ),
                     ),
@@ -222,10 +216,9 @@ class ConsultationPage extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: AppTheme.orange500,
                       shape: BoxShape.circle,
-                      // ignore: deprecated_member_use
-                      boxShadow: [BoxShadow(color: AppTheme.orange500.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 2))],
+                      boxShadow: [BoxShadow(color: AppTheme.orange500.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 2))],
                     ),
-                    child: const Icon(Icons.send_rounded, color: Colors.white, size: 18),
+                    child: Icon(Icons.send_rounded, color: context.colors.cardBackground, size: 18),
                   ),
                 ],
               ),
@@ -249,16 +242,15 @@ class _BotMessage extends StatelessWidget {
         constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.85),
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.colors.cardBackground,
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(4),
             topRight: Radius.circular(24),
             bottomLeft: Radius.circular(24),
             bottomRight: Radius.circular(24),
           ),
-          border: Border.all(color: AppTheme.slate100),
-          // ignore: deprecated_member_use
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 2))],
+          border: Border.all(color: context.colors.border),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 2))],
         ),
         child: child,
       ),
@@ -289,10 +281,9 @@ class _UserMessage extends StatelessWidget {
             bottomLeft: Radius.circular(24),
             bottomRight: Radius.circular(24),
           ),
-          // ignore: deprecated_member_use
-          boxShadow: [BoxShadow(color: AppTheme.orange600.withOpacity(0.2), blurRadius: 12, offset: const Offset(0, 4))],
+          boxShadow: [BoxShadow(color: AppTheme.orange600.withValues(alpha: 0.2), blurRadius: 12, offset: const Offset(0, 4))],
         ),
-        child: Text(text, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500, fontSize: 14, height: 1.5)),
+        child: Text(text, style: TextStyle(color: context.colors.cardBackground, fontWeight: FontWeight.w500, fontSize: 14, height: 1.5)),
       ),
     );
   }

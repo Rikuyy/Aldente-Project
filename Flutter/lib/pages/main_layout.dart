@@ -22,7 +22,7 @@ class MainLayout extends StatelessWidget {
       body: child,
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: AppTheme.slate50,
+          color: context.colors.surface,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           boxShadow: [
             BoxShadow(
@@ -80,7 +80,7 @@ class _NavItem extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 22, color: isActive ? AppTheme.orange600 : AppTheme.slate400),
+            Icon(icon, size: 22, color: isActive ? AppTheme.orange600 : context.colors.textHint),
             const SizedBox(height: 3),
             Text(
               label,
@@ -88,7 +88,7 @@ class _NavItem extends StatelessWidget {
                 fontSize: 9,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.3,
-                color: isActive ? AppTheme.orange600 : AppTheme.slate400,
+                color: isActive ? AppTheme.orange600 : context.colors.textHint,
               ),
             ),
           ],
