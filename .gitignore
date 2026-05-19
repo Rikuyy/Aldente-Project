@@ -80,6 +80,8 @@ app.*.map.json
 /Flutter/android/key.properties
 /Flutter/android/*.keystore
 /Flutter/android/*.jks
+/Flutter/build/*.cache.dill.track.dill
+/Flutter/build/*.dill
 
 # ----------------------------------------------------------------------------
 # GENERAL / IDE
