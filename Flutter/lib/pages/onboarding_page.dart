@@ -42,10 +42,17 @@ class _OnboardingPageState extends State<OnboardingPage> {
     if (_step > 1) {
       setState(() => _step--);
     } else {
+      // JIKA DI LANGKAH PERTAMA LALU DITEKAN BACK, KEMBALI KE GUEST MODE
       context.go('/');
     }
   }
 
+  void _toggleItem(
+      String item, List<String> list, Function(List<String>) setList) {
+    if (list.contains(item)) {
+      setList(List.from(list)..remove(item));
+    } else {
+      setList(List.from(list)..add(item));
   void _toggleFood(String item) {
     setState(() {
       _favFoods.contains(item) ? _favFoods.remove(item) : _favFoods.add(item);
@@ -94,6 +101,22 @@ class _OnboardingPageState extends State<OnboardingPage> {
               children: [
                 GestureDetector(
                   onTap: _back,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.slate50,
+                      borderRadius: BorderRadius.circular(50),
+                    ),
+                    child: const Icon(Icons.chevron_left,
+                        size: 22, color: AppTheme.slate600),
+                  ),
+                ),
+                Text(
+                  'Langkah $_step dari $_totalSteps',
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.slate800,
+                      fontSize: 14),
                   child: Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: context.colors.surface, borderRadius: BorderRadius.circular(50)), child: Icon(Icons.chevron_left, size: 22, color: context.colors.textSecondary)),
                 ),
                 Column(children: [
@@ -146,6 +169,24 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 onPressed: _canContinue ? _next : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.orange600,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20)),
+                  elevation: 0,
+                  shadowColor: Colors.transparent,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      _step == _totalSteps ? 'Selesai' : 'Lanjut',
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.chevron_right, size: 20),
+                  ],
                   disabledBackgroundColor: context.colors.border,
                   foregroundColor: context.colors.cardBackground,
                   padding: const EdgeInsets.symmetric(vertical: 17),
@@ -166,6 +207,115 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   Widget _buildStep() {
     switch (_step) {
+      case 1:
+        return _StepIdentity(controller: _nameController);
+      case 2:
+        return _StepFoodPreferences(
+          selected: _favFoods,
+          onToggle: (item) => setState(
+              () => _toggleItem(item, _favFoods, (v) => _favFoods = v)),
+        );
+      case 3:
+        return _StepAllergies(
+          selected: _allergies,
+          onToggle: (item) => setState(
+              () => _toggleItem(item, _allergies, (v) => _allergies = v)),
+        );
+      case 4:
+        return _StepBudgetCycle(
+          cycle: _budgetCycle,
+          onCycleChanged: (v) => setState(() => _budgetCycle = v),
+          budgetController: _budgetController,
+        );
+      case 5:
+        return _StepKitchenTools(
+          selected: _missingTools,
+          onToggle: (item) => setState(
+              () => _toggleItem(item, _missingTools, (v) => _missingTools = v)),
+        );
+      case 6:
+        return _StepMealFrequency(
+          freq: _eatFrequency,
+          onChanged: (v) => setState(() => _eatFrequency = v),
+        );
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+}
+
+// Step 1: Identity
+class _StepIdentity extends StatelessWidget {
+  final TextEditingController controller;
+  const _StepIdentity({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Kenalan Dulu Yuk!',
+                style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    color: AppTheme.slate900,
+                    letterSpacing: -0.5)),
+            SizedBox(width: 8),
+            Icon(Icons.waving_hand, size: 24, color: AppTheme.slate900),
+          ],
+        ),
+        const SizedBox(height: 8),
+        const Text('Isi namamu agar CookCase+ bisa menyapamu dengan akrab.',
+            style: TextStyle(
+                fontSize: 14,
+                color: AppTheme.slate500,
+                fontWeight: FontWeight.w500,
+                height: 1.5)),
+        const SizedBox(height: 24),
+        const Text('Nama Panggilan',
+            style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.slate700)),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          decoration: InputDecoration(
+            hintText: 'Misal: Budi',
+            hintStyle: const TextStyle(
+                color: AppTheme.slate300, fontWeight: FontWeight.w500),
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide:
+                    const BorderSide(color: AppTheme.slate200, width: 2)),
+            enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide:
+                    const BorderSide(color: AppTheme.slate200, width: 2)),
+            focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide:
+                    const BorderSide(color: AppTheme.orange500, width: 2)),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+          ),
+          style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w500,
+              color: AppTheme.slate800),
+        ),
+      ],
+    );
+  }
+}
+
+// Step 2: Food Preferences
+class _StepFoodPreferences extends StatelessWidget {
       case 1: return _StepFoodPrefs(selected: _favFoods, onToggle: _toggleFood);
       case 2: return _StepAllergies(selected: _allergies, noAllergy: _noAllergy, controller: _allergyCtrl, onToggle: _toggleAllergy, onCustomAdd: _addCustomAllergy, onNoAllergy: () => setState(() { _noAllergy = !_noAllergy; if (_noAllergy) _allergies.clear(); }));
       case 3: return _StepBudget(controller: _budgetCtrl);
@@ -181,6 +331,15 @@ class _StepFoodPrefs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const tags = [
+      Tag('Pedas', FontAwesomeIcons.pepperHot),
+      Tag('Manis', FontAwesomeIcons.candyCane),
+      Tag('Gurih', FontAwesomeIcons.utensils),
+      Tag('Asin', FontAwesomeIcons.mortarPestle),
+      Tag('Ayam', FontAwesomeIcons.drumstickBite),
+      Tag('Sapi', FontAwesomeIcons.cow),
+      Tag('Seafood', FontAwesomeIcons.fish),
+      Tag('Sayuran', FontAwesomeIcons.carrot)
     const groups = [
       {'label': 'Rasa', 'tags': ['Pedas', 'Manis', 'Gurih', 'Asin', 'Asam', 'Umami']},
       {'label': 'Bahan Utama', 'tags': ['Ayam', 'Sapi', 'Ikan', 'Seafood', 'Sayuran', 'Tahu/Tempe', 'Telur']},
@@ -189,6 +348,71 @@ class _StepFoodPrefs extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Makanan Favoritmu?',
+                style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    color: AppTheme.slate900,
+                    letterSpacing: -0.5)),
+            SizedBox(width: 8),
+            Icon(Icons.sentiment_satisfied, size: 24, color: AppTheme.slate900),
+          ],
+        ),
+        const SizedBox(height: 8),
+        const Text('Pilih beberapa rasa dan bahan makanan yang kamu sukai.',
+            style: TextStyle(
+                fontSize: 14,
+                color: AppTheme.slate500,
+                fontWeight: FontWeight.w500,
+                height: 1.5)),
+        const SizedBox(height: 24),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: tags.map((tag) {
+            final isSelected = selected.contains(tag.text);
+            return GestureDetector(
+              onTap: () => onToggle(tag.text),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppTheme.orange100 : Colors.white,
+                  borderRadius: BorderRadius.circular(50),
+                  border: Border.all(
+                    color: isSelected ? AppTheme.orange500 : AppTheme.slate200,
+                    width: 2,
+                  ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                              color: AppTheme.orange500.withValues(alpha: 51),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2))
+                        ]
+                      : null,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    FaIcon(tag.icon,
+                        size: 14,
+                        color: isSelected
+                            ? AppTheme.orange700
+                            : AppTheme.slate600),
+                    const SizedBox(width: 8),
+                    Text(tag.text,
+                        style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                            color: isSelected
+                                ? AppTheme.orange700
+                                : AppTheme.slate600)),
+                  ],
         const Text('Makanan Favoritmu?', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppTheme.slate900, letterSpacing: -0.5)),
         const SizedBox(height: 6),
          Text('Pilih minimal 1. CookCase+ akan merekomendasikan menu sesuai seleramu.', style: TextStyle(fontSize: 13, color: context.colors.surface, fontWeight: FontWeight.w500, height: 1.5)),
@@ -237,6 +461,64 @@ class _StepAllergies extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const tags = [
+      Tag('Kacang', FontAwesomeIcons.seedling),
+      Tag('Susu', FontAwesomeIcons.whiskeyGlass),
+      Tag('Telur', FontAwesomeIcons.egg),
+      Tag('Seafood', FontAwesomeIcons.fish),
+      Tag('Gluten', FontAwesomeIcons.breadSlice),
+      Tag('Kedelai', FontAwesomeIcons.seedling)
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+              color: AppTheme.red50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFFECDD3))),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.error_outline, color: AppTheme.red500, size: 18),
+              SizedBox(width: 6),
+              Text('PENTING',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                      color: AppTheme.red600,
+                      letterSpacing: 1)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Ada Alergi Bahan Makanan?',
+                style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    color: AppTheme.slate900,
+                    letterSpacing: -0.5)),
+            SizedBox(width: 8),
+            Icon(Icons.warning, size: 24, color: AppTheme.slate900),
+          ],
+        ),
+        const SizedBox(height: 8),
+        const Text('Bantu kami menghindari bahan yang berbahaya untukmu.',
+            style: TextStyle(
+                fontSize: 14,
+                color: AppTheme.slate500,
+                fontWeight: FontWeight.w500,
+                height: 1.5)),
+        const SizedBox(height: 24),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: tags.map((tag) {
+            final isSelected = selected.contains(tag.text);
     const presets = ['Kacang ??', 'Susu ??', 'Telur ??', 'Seafood ??', 'Gluten ??', 'Kedelai ??', 'Wijen ??', 'Udang ??'];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -279,11 +561,34 @@ class _StepAllergies extends StatelessWidget {
             return GestureDetector(
               onTap: () => onToggle(tag),
               child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                 duration: const Duration(milliseconds: 180),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   color: isSel ? AppTheme.red50 : context.colors.cardBackground,
                   borderRadius: BorderRadius.circular(50),
+                  border: Border.all(
+                      color: isSelected ? AppTheme.red500 : AppTheme.slate200,
+                      width: 2),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    FaIcon(tag.icon as FaIconData?,
+                        size: 14,
+                        color:
+                            isSelected ? AppTheme.red600 : AppTheme.slate600),
+                    const SizedBox(width: 8),
+                    Text(tag.text,
+                        style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                            color: isSelected
+                                ? AppTheme.red600
+                                : AppTheme.slate600)),
+                  ],
                   border: Border.all(color: isSel ? AppTheme.red500 : context.colors.border, width: 1.5),
                 ),
                 child: Text(tag, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: isSel ? AppTheme.red600 : context.colors.textSecondary)),
@@ -292,6 +597,134 @@ class _StepAllergies extends StatelessWidget {
           }).toList()),
           const SizedBox(height: 16),
 
+// Step 4: Budget Cycle
+class _StepBudgetCycle extends StatelessWidget {
+  final String cycle;
+  final Function(String) onCycleChanged;
+  final TextEditingController budgetController;
+  const _StepBudgetCycle(
+      {required this.cycle,
+      required this.onCycleChanged,
+      required this.budgetController});
+
+  @override
+  Widget build(BuildContext context) {
+    const options = ['Harian', 'Mingguan', 'Bulanan'];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Atur Budget Makan',
+                style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    color: AppTheme.slate900,
+                    letterSpacing: -0.5)),
+            SizedBox(width: 8),
+            Icon(Icons.attach_money, size: 24, color: AppTheme.slate900),
+          ],
+        ),
+        const SizedBox(height: 8),
+        const Text('Pilih siklus pengaturan uang makanmu.',
+            style: TextStyle(
+                fontSize: 14,
+                color: AppTheme.slate500,
+                fontWeight: FontWeight.w500,
+                height: 1.5)),
+        const SizedBox(height: 24),
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppTheme.slate200, width: 2),
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.black.withValues(alpha: 10.2),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2))
+            ],
+          ),
+          child: Row(
+            children: options.map((opt) {
+              final isSelected = cycle == opt;
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => onCycleChanged(opt),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color:
+                          isSelected ? AppTheme.orange500 : Colors.transparent,
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                  color: AppTheme.orange500
+                                      .withValues(alpha: 76.5),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3))
+                            ]
+                          : null,
+                    ),
+                    child: Text(
+                      opt,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                          color: isSelected ? Colors.white : AppTheme.slate500),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        const SizedBox(height: 24),
+        Text('Budget $cycle',
+            style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.slate700)),
+        const SizedBox(height: 8),
+        TextField(
+          controller: budgetController,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            prefixText: 'Rp  ',
+            prefixStyle: const TextStyle(
+                color: AppTheme.slate400,
+                fontWeight: FontWeight.w700,
+                fontSize: 17),
+            hintText: '0',
+            hintStyle: const TextStyle(
+                color: AppTheme.slate300, fontWeight: FontWeight.w700),
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide:
+                    const BorderSide(color: AppTheme.slate200, width: 2)),
+            enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide:
+                    const BorderSide(color: AppTheme.slate200, width: 2)),
+            focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide:
+                    const BorderSide(color: AppTheme.orange500, width: 2)),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+          ),
+          style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.slate800),
+        ),
           Text('Atau ketik sendiri:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: context.colors.textHint, letterSpacing: 0.5)),
           const SizedBox(height: 8),
           Row(children: [
@@ -350,6 +783,89 @@ class _StepBudget extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Alat Masak yang TIDAK Kamu Miliki?',
+                style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    color: AppTheme.slate900,
+                    letterSpacing: -0.5)),
+            SizedBox(width: 8),
+            FaIcon(FontAwesomeIcons.utensils,
+                size: 24, color: AppTheme.slate900),
+          ],
+        ),
+        const SizedBox(height: 8),
+        RichText(
+          text: const TextSpan(
+            style: TextStyle(
+                fontSize: 14,
+                color: AppTheme.slate500,
+                fontWeight: FontWeight.w500,
+                height: 1.5),
+            children: [
+              TextSpan(text: 'Centang alat yang '),
+              TextSpan(
+                  text: 'tidak ada',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      decoration: TextDecoration.underline,
+                      color: AppTheme.slate700)),
+              TextSpan(text: ' di dapur atau kosmu.'),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: 1.4,
+          children: tools.map((tool) {
+            final isSelected = selected.contains(tool.text);
+            return GestureDetector(
+              onTap: () => onToggle(tool.text),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppTheme.slate100 : Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                      color: isSelected ? AppTheme.slate300 : AppTheme.slate200,
+                      width: 2),
+                  boxShadow: isSelected
+                      ? null
+                      : [
+                          BoxShadow(
+                              color: Colors.black.withValues(alpha: 10.2),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2))
+                        ],
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    FaIcon(tool.icon as FaIconData?,
+                        size: 28,
+                        color:
+                            isSelected ? AppTheme.slate500 : AppTheme.slate700),
+                    const SizedBox(height: 8),
+                    Text(
+                      tool.text,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                        color:
+                            isSelected ? AppTheme.slate500 : AppTheme.slate700,
+                        decoration:
+                            isSelected ? TextDecoration.lineThrough : null,
+                      ),
+                    ),
+                  ],
         const Text('Budget Makan Bulanan ??', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppTheme.slate900, letterSpacing: -0.5)),
         const SizedBox(height: 6),
          Text('Berapa total budget makan kamu dalam sebulan? CookCase+ akan memantau pengeluaran agar kamu tidak defisit.', style: TextStyle(fontSize: 13, color: context.colors.surface, fontWeight: FontWeight.w500, height: 1.5)),
@@ -423,6 +939,88 @@ class _StepMealFreq extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Seberapa Sering Kamu Makan?',
+                style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    color: AppTheme.slate900,
+                    letterSpacing: -0.5)),
+            SizedBox(width: 8),
+            Icon(Icons.restaurant, size: 24, color: AppTheme.slate900),
+          ],
+        ),
+        const SizedBox(height: 8),
+        const Text('Termasuk sarapan, makan siang, dan makan malam.',
+            style: TextStyle(
+                fontSize: 14,
+                color: AppTheme.slate500,
+                fontWeight: FontWeight.w500,
+                height: 1.5)),
+        const SizedBox(height: 24),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 40),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(color: AppTheme.slate100, width: 2),
+            // ignore: deprecated_member_use
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.black.withValues(alpha: 10.2),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4))
+            ],
+          ),
+          child: Column(
+            children: [
+              Text(
+                '$freq',
+                style: const TextStyle(
+                    fontSize: 64,
+                    fontWeight: FontWeight.w900,
+                    color: AppTheme.orange500,
+                    letterSpacing: -2),
+              ),
+              const Text('kali sehari',
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.slate600,
+                      letterSpacing: 0.5)),
+              const SizedBox(height: 32),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.slate100,
+                  borderRadius: BorderRadius.circular(50),
+                  border: Border.all(color: AppTheme.slate200),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _CounterButton(
+                      label: '−',
+                      color: Colors.white,
+                      textColor: AppTheme.slate700,
+                      onTap: () {
+                        if (freq > 1) onChanged(freq - 1);
+                      },
+                    ),
+                    const SizedBox(width: 36),
+                    _CounterButton(
+                      label: '+',
+                      color: AppTheme.orange500,
+                      textColor: Colors.white,
+                      onTap: () {
+                        if (freq < 6) onChanged(freq + 1);
+                      },
+                    ),
+                  ],
+                ),
         const Text('Jadwal Makan Sehari ???', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppTheme.slate900, letterSpacing: -0.5)),
         const SizedBox(height: 6),
          Text('Berapa kali kamu biasanya makan dalam sehari? Ini membantu kami membagi budget dan rekomendasi menu.', style: TextStyle(fontSize: 13, color: context.colors.surface, fontWeight: FontWeight.w500, height: 1.5)),
@@ -457,6 +1055,45 @@ class _StepMealFreq extends StatelessWidget {
           );
         }).toList()),
       ],
+    );
+  }
+}
+
+class _CounterButton extends StatelessWidget {
+  final String label;
+  final Color color;
+  final Color textColor;
+  final VoidCallback onTap;
+  const _CounterButton(
+      {required this.label,
+      required this.color,
+      required this.textColor,
+      required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 52,
+        height: 52,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withValues(alpha: 20.4),
+                blurRadius: 4,
+                offset: const Offset(0, 2))
+          ],
+          border: Border.all(color: AppTheme.slate200),
+        ),
+        child: Center(
+          child: Text(label,
+              style: TextStyle(
+                  fontSize: 24, fontWeight: FontWeight.w900, color: textColor)),
+        ),
+      ),
     );
   }
 }

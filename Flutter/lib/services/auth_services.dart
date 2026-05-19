@@ -7,7 +7,7 @@ import '../api_config.dart';
 class AuthService {
   final String baseUrl = ApiConfig.baseUrl;
 
-  // 1. REGISTER
+  // 1. DAFTAR AKUN (REGISTER)
   Future<Map<String, dynamic>> register(String username, String email,
       String password, String passwordConfirmation) async {
     try {
@@ -21,13 +21,20 @@ class AuthService {
           'password_confirmation': passwordConfirmation,
         }),
       );
-      return jsonDecode(response.body);
+
+      final Map<String, dynamic> data = jsonDecode(response.body);
+
+      if (data['success'] == true && data['access_token'] != null) {
+        await saveToken(data['access_token']);
+      }
+
+      return data;
     } catch (e) {
       return {'success': false, 'message': 'Gagal terhubung ke server: $e'};
     }
   }
 
-  // 2. LOGIN
+  // 2. MASUK AKUN (LOGIN)
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
       final response = await http.post(
@@ -38,13 +45,20 @@ class AuthService {
           'password': password,
         }),
       );
-      return jsonDecode(response.body);
+
+      final Map<String, dynamic> data = jsonDecode(response.body);
+
+      if (data['success'] == true && data['access_token'] != null) {
+        await saveToken(data['access_token']);
+      }
+
+      return data;
     } catch (e) {
       return {'success': false, 'message': 'Gagal terhubung ke server: $e'};
     }
   }
 
-  // 3. FORGOT PASSWORD (Fitur Baru)
+  // 3. LUPA PASSWORD - KIRIM KODE OTP KE EMAIL
   Future<Map<String, dynamic>> forgotPassword(String email) async {
     try {
       final response = await http.post(
@@ -52,13 +66,52 @@ class AuthService {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email}),
       );
+
       return jsonDecode(response.body);
     } catch (e) {
-      return {'success': false, 'message': 'Gagal mengirim permintaan: $e'};
+      return {'success': false, 'message': 'Gagal mengirim OTP: $e'};
     }
   }
 
-  // 4. GET PROFILE (ME) - Dengan pengecekan Token Expired
+  // 4. VERIFIKASI KODE OTP (REVISI TAMBAHAN)
+  Future<Map<String, dynamic>> verifyOtp(String email, String otpCode) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/verify-otp'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'otp': otpCode,
+        }),
+      );
+
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': 'Gagal memverifikasi OTP: $e'};
+    }
+  }
+
+  // 5. ATUR ULANG PASSWORD BARU (REVISI TAMBAHAN)
+  Future<Map<String, dynamic>> resetPassword(
+      String email, String password, String passwordConfirmation) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/reset-password'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'password': password,
+          'password_confirmation': passwordConfirmation,
+        }),
+      );
+
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': 'Gagal mengatur ulang sandi: $e'};
+    }
+  }
+
+  // 6. AMBIL DATA PROFIL USER (ME)
   Future<Map<String, dynamic>> getProfile() async {
     final token = await getToken();
     try {
@@ -70,7 +123,6 @@ class AuthService {
         },
       );
 
-      // Jika token tidak valid atau expired (401), hapus token di HP
       if (response.statusCode == 401) {
         await removeToken();
         return {
@@ -85,7 +137,7 @@ class AuthService {
     }
   }
 
-  // 5. LOGOUT
+  // 7. KELUAR AKUN (LOGOUT)
   Future<void> logout() async {
     final token = await getToken();
     try {
@@ -97,14 +149,13 @@ class AuthService {
         },
       );
     } catch (e) {
-      debugPrint("Error during logout: $e");
+      print("Error saat logout: $e");
     } finally {
-      // Apapun yang terjadi, hapus token dari memori lokal
       await removeToken();
     }
   }
 
-  // --- TOKEN MANAGEMENT ---
+  // --- MANAGEMENT ENKRIPSI TOKEN ---
 
   Future<void> saveToken(String token) async {
     final prefs = await SharedPreferences.getInstance();

@@ -5,8 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\DashboardController as ApiDashboardController;
 use App\Http\Controllers\API\StockController;
-<<<<<<< HEAD
-use App\Http\Controllers\API\SetupController;
+aAuse App\Http\Controllers\API\SetupController;
 use App\Http\Controllers\API\ConsultationController;
 use App\Http\Controllers\DashboardController;
 =======
@@ -26,30 +25,26 @@ use Illuminate\Support\Facades\Password;
 |--------------------------------------------------------------------------
 */
 
-// Auth routes (tidak perlu login)
+// ── AUTH PUBLIC (Tidak Perlu Login) ─────────────────────────────
 Route::prefix('auth')->group(function () {
-    Route::post('/register', [AuthController::class, 'register']);
-    Route::post('/login',    [AuthController::class, 'login']);
-    
-    // API Forgot Password
-    Route::post('/forgot-password', function (Request $request) {
-        $request->validate(['email' => 'required|email']);
-        
-        // Menggunakan fitur bawaan Laravel untuk kirim link reset via Gmail
-        $status = Password::sendResetLink($request->only('email'));
+    Route::post('/register',        [AuthController::class, 'register']);
+    Route::post('/login',           [AuthController::class, 'login']);
+    Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+    Route::post('/verify-otp',      [AuthController::class, 'verifyOtp']);
+    Route::post('/reset-password',  [AuthController::class, 'resetPassword']);
 
-        return $status === Password::RESET_LINK_SENT
-            ? response()->json(['message' => 'Link reset password telah dikirim ke email kamu!'])
-            : response()->json(['message' => 'Gagal mengirim email reset'], 400);
-    });
-
-    // Routes yang memerlukan token JWT
+    // Routes auth yang memerlukan token JWT
     Route::middleware('auth:api')->group(function () {
         Route::get('/me',      [AuthController::class, 'me']);
         Route::post('/logout', [AuthController::class, 'logout']);
     });
 });
 
+// Rute Konsultasi (Publik - Dari Versi Atas)
+Route::post('/consultation', [ConsultationController::class, 'send']);
+
+
+// ── PROTECTED ROUTES (Wajib Login & Menggunakan JWT) ─────────────
 // PROTECTED ROUTES (Wajib Login & Full Menggunakan JWT)
 Route::middleware('auth:api')->group(function () {
 
@@ -75,10 +70,10 @@ Route::middleware('auth:api')->group(function () {
 
     // ── Resep ──────────────────────────────────
     Route::prefix('resep')->group(function () {
-        Route::get('/',         [ResepController::class, 'index']);
-        Route::post('/',        [ResepController::class, 'store']);
-        Route::put('/{id}',     [ResepController::class, 'update']);
-        Route::delete('/{id}',  [ResepController::class, 'destroy']);
+        Route::get('/',     [ResepController::class, 'index']);
+        Route::post('/',    [ResepController::class, 'store']);
+        Route::put('/{id}', [ResepController::class, 'update']);
+        Route::delete('/{id}', [ResepController::class, 'destroy']);
     });
 
     // ── Chatbot AI ─────────────────────────────
@@ -88,14 +83,15 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/evaluasi',    [ChatbotController::class, 'evaluasi']);
     });
 
-<<<<<<< HEAD
     
 });
 
 Route::post('/consultation', [ConsultationController::class, 'send']);
-=======
     // ── Laporan Keuangan ────────────────────────
     Route::prefix('keuangan')->group(function () {
+        Route::get('/ringkasan', [KeuanganController::class, 'ringkasan']);
+        Route::get('/grafik',    [KeuanganController::class, 'grafik']);
+        Route::get('/mutasi',    [KeuanganController::class, 'mutasi']);
         // Ringkasan bulan: total, rata2, prediksi, komposisi
         Route::get('/ringkasan', [KeuanganController::class, 'ringkasan']);
         // Data grafik tren harian
