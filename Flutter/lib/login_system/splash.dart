@@ -1,6 +1,7 @@
 import '../theme/app_theme.dart';
 import 'package:flutter/material.dart';
-import 'sign_in.dart';
+import 'package:go_router/go_router.dart';
+import '../services/auth_services.dart'; // Import service yang kamu buat tadi
 
 class SplashScreen extends StatefulWidget {
   static const String routeName = '/splash';
@@ -13,6 +14,8 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen> {
   int currentPage = 0;
+  final AuthService _authService = AuthService();
+
   List<Map<String, String>> splashData = [
     {
       "text": "Welcome to CookCash, Time to cook!",
@@ -27,6 +30,27 @@ class _SplashScreenState extends State<SplashScreen> {
       "image": "https://i.postimg.cc/3x3ZzL8C/splash-2.png"
     },
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _checkLoginStatus();
+  }
+
+  void _checkLoginStatus() async {
+    String? token = await _authService.getToken();
+
+    // Jeda 3 detik agar animasi splash terlihat
+    await Future.delayed(const Duration(seconds: 3));
+
+    if (!mounted) return;
+
+    if (token != null) {
+      // Jika sudah ada token, langsung ke Home
+      context.go('/app/home');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -44,9 +68,26 @@ class _SplashScreenState extends State<SplashScreen> {
                     });
                   },
                   itemCount: splashData.length,
-                  itemBuilder: (context, index) => SplashContent(
-                    image: splashData[index]["image"],
-                    text: splashData[index]['text'],
+                  itemBuilder: (context, index) => Column(
+                    children: <Widget>[
+                      const Spacer(),
+                      const Text(
+                        "COOKMATE",
+                        style: TextStyle(
+                          fontSize: 36,
+                          color: Color(0xFFFF7643),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(splashData[index]["text"]!,
+                          textAlign: TextAlign.center),
+                      const Spacer(flex: 2),
+                      Image.network(
+                        splashData[index]["image"]!,
+                        height: 265,
+                        width: 235,
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -62,7 +103,7 @@ class _SplashScreenState extends State<SplashScreen> {
                         children: List.generate(
                           splashData.length,
                           (index) => AnimatedContainer(
-                            duration: const Duration(milliseconds: 250),
+                            duration: const Duration(milliseconds: 200),
                             margin: const EdgeInsets.only(right: 5),
                             height: 6,
                             width: currentPage == index ? 20 : 6,
@@ -78,8 +119,7 @@ class _SplashScreenState extends State<SplashScreen> {
                       const Spacer(flex: 3),
                       ElevatedButton(
                         onPressed: () {
-                          Navigator.pushReplacementNamed(
-                              context, SignInScreen.routeName);
+                          context.push('/sign_in');
                         },
                         style: ElevatedButton.styleFrom(
                           elevation: 0,
@@ -101,48 +141,6 @@ class _SplashScreenState extends State<SplashScreen> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class SplashContent extends StatefulWidget {
-  const SplashContent({
-    super.key,
-    this.text,
-    this.image,
-  });
-  final String? text, image;
-
-  @override
-  State<SplashContent> createState() => _SplashContentState();
-}
-
-class _SplashContentState extends State<SplashContent> {
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: <Widget>[
-        const Spacer(),
-        const Text(
-          "WELCOME",
-          style: TextStyle(
-            fontSize: 32,
-            color: Color(0xFFFF7643),
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        Text(
-          widget.text!,
-          textAlign: TextAlign.center,
-        ),
-        const Spacer(flex: 2),
-        Image.network(
-          widget.image!,
-          fit: BoxFit.contain,
-          height: 265,
-          width: 235,
-        ),
-      ],
     );
   }
 }

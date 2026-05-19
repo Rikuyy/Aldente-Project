@@ -52,29 +52,24 @@
                     <span class="ml-3 whitespace-nowrap">Manajemen Resep</span>
                 </a>
 
-                <a href="{{ url('/testing') }}" wire:navigate
-                   class="flex items-center rounded-xl transition-colors duration-200 {{ request()->is('testing') ? 'bg-[#FF723A]/10 text-[#FF723A] border border-[#FF723A]/20 font-bold' : 'text-neutral-400 border border-transparent hover:text-white hover:bg-neutral-800 font-medium' }} w-full px-4 py-3 justify-start">
+                <a href="{{ route('users.index') }}" wire:navigate
+                   class="flex items-center rounded-xl transition-colors duration-200 {{ request()->routeIs('users.*') ? 'bg-[#FF723A]/10 text-[#FF723A] border border-[#FF723A]/20 font-bold' : 'text-neutral-400 border border-transparent hover:text-white hover:bg-neutral-800 font-medium' }} w-full px-4 py-3 justify-start">
+                    <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                    </svg>
+                    <span class="ml-3 whitespace-nowrap">Manajemen User</span>
+                </a>
+
+                <a href="{{ route('testing') }}" wire:navigate
+                   class="flex items-center rounded-xl transition-colors duration-200 {{ request()->routeIs('testing') ? 'bg-[#FF723A]/10 text-[#FF723A] border border-[#FF723A]/20 font-bold' : 'text-neutral-400 border border-transparent hover:text-white hover:bg-neutral-800 font-medium' }} w-full px-4 py-3 justify-start">
                     <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
                     </svg>
-                    <span class="ml-3 whitespace-nowrap">Evaluasi Algoritma</span>
+                    <span class="ml-3 whitespace-nowrap">Halaman Testing</span>
                 </a>
 
             </nav>
 
-            <div class="mt-auto mb-6 flex flex-col px-4">
-                <form method="POST" action="{{ route('logout') }}" class="w-full">
-                    @csrf
-                    <button type="submit" 
-                            class="flex items-center rounded-xl transition-colors duration-200 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-300 hover:text-white w-full px-4 py-3 justify-start">
-                        <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-                        </svg>
-                        <span class="ml-3 text-sm font-bold whitespace-nowrap">Log Out</span>
-                    </button>
-                </form>
-            </div>
-            
         </aside>
 
         <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -89,11 +84,11 @@
 
                 <a href="{{ route('profile.edit') }}" wire:navigate class="flex items-center gap-4 hover:bg-neutral-800 p-2 rounded-2xl transition-colors border border-transparent hover:border-neutral-700 shrink-0">
                     <div class="text-right hidden md:block">
-                        <p class="text-sm font-bold text-white">{{ Auth::user()->name }}</p>
-                        <p class="text-xs text-neutral-400 font-medium">{{ Auth::user()->email }}</p>
+                        <p class="text-sm font-bold text-white">{{ Auth::user()->Username }}</p>
+                        <p class="text-xs text-neutral-400 font-medium">{{ Auth::user()->Email }}</p>
                     </div>
                     <div class="w-10 h-10 rounded-full bg-[#FF723A] flex items-center justify-center text-white font-bold shrink-0">
-                        {{ substr(Auth::user()->name, 0, 2) }}
+                        {{ substr(Auth::user()->Username, 0, 2) }}
                     </div>
                 </a>
             </header>

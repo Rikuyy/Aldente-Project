@@ -23,19 +23,20 @@ class ConfirmablePasswordController extends Controller
     /**
      * Confirm the user's password.
      */
-    public function store(Request $request): RedirectResponse
-    {
-        if (! Auth::guard('web')->validate([
-            'email' => $request->user()->email,
-            'password' => $request->password,
-        ])) {
-            throw ValidationException::withMessages([
-                'password' => __('auth.password'),
-            ]);
-        }
-
-        $request->session()->put('auth.password_confirmed_at', time());
-
-        return redirect()->intended(RouteServiceProvider::HOME);
+   public function store(Request $request): RedirectResponse
+{
+    // Ganti 'email' menjadi 'Email' sesuai field di model Admin
+    if (! Auth::guard('web')->validate([
+        'Email' => $request->user()->Email, // Pakai 'Email' kapital
+        'password' => $request->password,   // Tetap 'password' karena Laravel otomatis lari ke getAuthPassword()
+    ])) {
+        throw ValidationException::withMessages([
+            'password' => __('auth.password'),
+        ]);
     }
+
+    $request->session()->put('auth.password_confirmed_at', time());
+
+    return redirect()->intended(RouteServiceProvider::HOME);
+}
 }
