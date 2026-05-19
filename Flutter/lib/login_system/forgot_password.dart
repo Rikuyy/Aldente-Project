@@ -145,6 +145,11 @@ class ForgotPasswordForm extends StatelessWidget {
   }
 }
 
+
+class NoAccountText extends StatelessWidget {
+  const NoAccountText({
+    super.key,
+  });
 // --- Komponen Pendukung ---
 const authOutlineInputBorder = OutlineInputBorder(
   borderSide: BorderSide(color: Color(0xFF757575)),
