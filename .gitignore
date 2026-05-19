@@ -88,4 +88,4 @@ app.*.map.json
 .idea/
 .vscode/
 *.swp
-*.lock
+*.lockFlutter/build/
