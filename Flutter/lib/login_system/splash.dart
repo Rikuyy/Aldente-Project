@@ -1,3 +1,4 @@
+import '../theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../services/auth_services.dart';
@@ -18,6 +19,7 @@ class _SplashScreenState extends State<SplashScreen> {
   List<Map<String, String>> splashData = [
     {
       "text": "Selamat Datang di CookCase+, Waktunya Memasak!",
+      "text": "Welcome to CookCash, Time to cook!",
       "image": "https://i.postimg.cc/mhhVywp9/splash-1.png"
     },
     {
@@ -141,7 +143,7 @@ class _SplashScreenState extends State<SplashScreen> {
                         style: ElevatedButton.styleFrom(
                           elevation: 0,
                           backgroundColor: const Color(0xFFFF7643),
-                          foregroundColor: Colors.white,
+                          foregroundColor: context.colors.cardBackground,
                           minimumSize: const Size(double.infinity, 48),
                           shape: const RoundedRectangleBorder(
                             borderRadius: BorderRadius.all(Radius.circular(16)),

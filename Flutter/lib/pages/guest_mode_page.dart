@@ -34,6 +34,14 @@ class _GuestModePageState extends State<GuestModePage> {
   }
 
   bool _shouldShowCTA(int botCount) => botCount % 2 == 0 && botCount > 0;
+  final List<Map<String, dynamic>> _messages = [];
+  bool _isLoading = false;
+  int _botMessageCount = 0; // counter pesan bot
+
+  static const String _baseUrl = 'http://127.0.0.1:8000/api';
+
+  // CTA muncul setiap kelipatan 2 pesan bot
+  bool _shouldShowCTA(int botCount) => botCount % 2 == 0;
 
   Future<void> _sendMessage() async {
     final userMessage = _messageController.text.trim();
@@ -42,11 +50,13 @@ class _GuestModePageState extends State<GuestModePage> {
     setState(() {
       _messages.add({'role': 'user', 'text': userMessage});
       _messages.add({'role': 'loading'});
+      _messages.add({'role': 'loading', 'text': ''});
       _isLoading = true;
     });
     _messageController.clear();
     _scrollToBottom();
 
+    // History tanpa pesan loading terakhir
     final history = _messages
         .where((m) => m['role'] == 'user' || m['role'] == 'model')
         .map((m) => {'role': m['role'], 'text': m['text']})
@@ -81,6 +91,7 @@ class _GuestModePageState extends State<GuestModePage> {
 
       setState(() {
         _messages.removeLast();
+        _messages.removeLast(); // hapus loading
         _messages.add({
           'role': 'model',
           'text': botReply,
@@ -126,12 +137,12 @@ class _GuestModePageState extends State<GuestModePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.slate50,
+      backgroundColor: context.colors.surface,
       body: Column(
         children: [
           // HEADER
           Container(
-            color: Colors.white,
+            color: context.colors.cardBackground,
             padding: EdgeInsets.only(
               top: MediaQuery.of(context).padding.top + 12,
               left: 24,
@@ -140,6 +151,8 @@ class _GuestModePageState extends State<GuestModePage> {
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -205,11 +218,31 @@ class _GuestModePageState extends State<GuestModePage> {
                       ),
                     ),
                   ],
+                      'CookCash',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        color: context.colors.textPrimary,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.auto_awesome, color: AppTheme.orange500, size: 20),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Ruang Konsultasi Cerdas',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: context.colors.surface,
+                  ),
                 ),
               ],
             ),
           ),
-          const Divider(height: 1, color: AppTheme.slate100),
+          Divider(height: 1, color: context.colors.border),
 
           // CHAT AREA
           Expanded(
@@ -291,6 +324,141 @@ class _GuestModePageState extends State<GuestModePage> {
                             fontWeight: FontWeight.w500,
                             height: 1.5,
                             fontSize: 14,
+          Expanded(
+            child: ListView.builder(
+              controller: _scrollController,
+              padding: const EdgeInsets.all(24),
+              children: [
+                _ChatBubble(
+                  isBot: true,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Halo!',
+                        style: TextStyle(fontWeight: FontWeight.w700, color: AppTheme.slate900),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Saya asisten CookCash kamu. Ada yang bisa saya bantu untuk rencana makan hari ini?',
+                        style: TextStyle(color: context.colors.textPrimary, height: 1.5),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    constraints: BoxConstraints(
+                      maxWidth: MediaQuery.of(context).size.width * 0.85,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFF97316), AppTheme.orange600],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(4),
+                        bottomLeft: Radius.circular(20),
+                        bottomRight: Radius.circular(20),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.orange600.withValues(alpha: 51),
+                          blurRadius: 15,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      'Rekomendasi menu untuk makan siang dengan budget 15 ribu',
+                      style: TextStyle(color: context.colors.cardBackground, fontWeight: FontWeight.w500, height: 1.5),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _ChatBubble(
+                  isBot: true,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Tentu! Dengan budget Rp15.000, kamu bisa mempertimbangkan menu berikut:',
+                        style: TextStyle(color: context.colors.textPrimary, height: 1.5),
+                      ),
+                      const SizedBox(height: 12),
+                      const _MenuOption(icon: Icons.restaurant, title: 'Nasi Telur Pontianak + Es Teh', subtitle: '(Masak di kos)'),
+                      const SizedBox(height: 6),
+                      const _MenuOption(icon: Icons.ramen_dining, title: 'Mie Dok-Dok Ala Warkop'),
+                      const SizedBox(height: 6),
+                      const _MenuOption(icon: Icons.rice_bowl, title: 'Beli Nasi Warteg', subtitle: '(Sayur 2 macem, Telur, dan Tempe Orek)'),
+                      const SizedBox(height: 16),
+                      GestureDetector(
+                        onTap: () => context.go('/onboarding'),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppTheme.orange50,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: AppTheme.orange200, width: 2),
+                          ),
+                          child: Column(
+                            children: [
+                              const Text(
+                                'Butuh rekomendasi lebih akurat?',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF431407),
+                                  fontSize: 14,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 4),
+                              const Text(
+                                'Dapatkan rencana makan yang disesuaikan dengan isi kulkas dan seleramu.',
+                                style: TextStyle(
+                                  color: Color(0xFF9A3412),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 12),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.orange600,
+                                  borderRadius: BorderRadius.circular(50),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppTheme.orange600.withValues(alpha: 76.5),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'Yuk, Login!',
+                                      style: TextStyle(
+                                        color: context.colors.cardBackground,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Icon(Icons.arrow_forward, color: context.colors.cardBackground, size: 16),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -347,7 +515,7 @@ class _GuestModePageState extends State<GuestModePage> {
 
           // INPUT AREA
           Container(
-            color: Colors.white,
+            color: context.colors.cardBackground,
             padding: EdgeInsets.only(
               left: 16,
               right: 16,
@@ -358,8 +526,9 @@ class _GuestModePageState extends State<GuestModePage> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               decoration: BoxDecoration(
                 color: AppTheme.slate100.withValues(alpha: 0.8),
+                color: context.colors.border,
                 borderRadius: BorderRadius.circular(50),
-                border: Border.all(color: AppTheme.slate200),
+                border: Border.all(color: context.colors.border),
               ),
               child: Row(
                 children: [
@@ -373,6 +542,7 @@ class _GuestModePageState extends State<GuestModePage> {
                           color: AppTheme.slate400,
                           fontWeight: FontWeight.w500,
                         ),
+                        hintStyle: TextStyle(color: context.colors.textHint, fontWeight: FontWeight.w500),
                         border: InputBorder.none,
                       ),
                     ),
@@ -405,6 +575,7 @@ class _GuestModePageState extends State<GuestModePage> {
                       ),
                     ),
                   ),
+                  const Icon(Icons.send_rounded, color: AppTheme.orange500, size: 22),
                 ],
               ),
             ),
@@ -497,18 +668,20 @@ class _ChatBubble extends StatelessWidget {
             BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.85),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.colors.cardBackground,
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(4),
             topRight: Radius.circular(20),
             bottomLeft: Radius.circular(20),
             bottomRight: Radius.circular(20),
           ),
-          border: Border.all(color: AppTheme.slate100),
+          border: Border.all(color: context.colors.border),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 10.2),
-              blurRadius: 10,
+              color: isBot
+                  ? Colors.black.withValues(alpha: 0.04)
+                  : AppTheme.orange600.withValues(alpha: 0.2),
+              blurRadius: isBot ? 10 : 12,
               offset: const Offset(0, 2),
             ),
           ],
@@ -531,6 +704,7 @@ class _MenuOption extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(icon, size: 16, color: AppTheme.slate600),
+        Icon(icon, size: 16, color: context.colors.textSecondary),
         const SizedBox(width: 8),
         Expanded(
           child: Column(
@@ -552,6 +726,9 @@ class _MenuOption extends StatelessWidget {
                     color: AppTheme.slate500,
                   ),
                 ),
+              Text(title, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: context.colors.textPrimary)),
+              if (subtitle != null)
+                Text(subtitle!, style:  TextStyle(fontSize: 12, color: context.colors.surface)),
             ],
           ),
         ),

@@ -11,8 +11,6 @@ public function rekomendasi(Request $request)
 {
     $query = $request->input('query');
     
-    // MENGAMBIL DATA DARI DATABASE (User yang lagi login)
-    // Misalnya nama kolom di database kamu adalah 'riwayat_alergi'
     $user = auth()->user(); 
     $alergi = $user->riwayat_alergi; 
 

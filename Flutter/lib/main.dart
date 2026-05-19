@@ -11,6 +11,7 @@ import 'pages/finance_page.dart';
 import 'pages/inventory_page.dart';
 import 'pages/profile_page.dart';
 import 'pages/notifications_page.dart';
+import 'pages/todo_page.dart';
 
 // IMPORT Sistem Autentikasi
 import 'login_system/splash.dart';
@@ -28,6 +29,16 @@ void main() async {
 
 final GoRouter _router = GoRouter(
   initialLocation: '/splash',
+import '../login_system/splash.dart';
+import '../login_system/sign_in.dart';
+import '../login_system/sign_up.dart';
+import '../login_system/forgot_password.dart';
+
+void main() {
+  runApp(const CookCashApp());
+}
+final _router = GoRouter(
+  initialLocation: '/splash', // Mulai dari Splash Screen untuk cek login
   routes: [
     // Splash Screen (halaman awal aplikasi)
     GoRoute(
@@ -80,6 +91,9 @@ final GoRouter _router = GoRouter(
       path: '/notifications',
       builder: (context, state) => const NotificationsPage(),
     ),
+        path: '/notifications',
+        builder: (ctx, state) => const NotificationsPage()),
+    GoRoute(path: '/todo', builder: (ctx, state) => const TodoPage()),
 
     // ShellRoute untuk Bottom Navigation Bar (setelah login)
     ShellRoute(
@@ -113,18 +127,34 @@ final GoRouter _router = GoRouter(
     if (state.matchedLocation == '/app') return '/app/home';
     return null;
   },
+            path: '/app/profile', builder: (ctx, state) => const ProfilePage()),
+        GoRoute(path: '/app/todo', builder: (ctx, state) => const TodoPage()),
+      ],
+    ),
+  ],
 );
 
-class CookCasePlusApp extends StatelessWidget {
-  const CookCasePlusApp({super.key});
+final themeNotifier = ValueNotifier<ThemeMode>(ThemeMode.light);
+
+
+
+class CookCashApp extends StatelessWidget {
+  const CookCashApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: 'CookCase+',
-      theme: AppTheme.theme,
-      routerConfig: _router,
-      debugShowCheckedModeBanner: false,
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: themeNotifier,
+      builder: (context, mode, _) {
+        return MaterialApp.router(
+          title: 'CookCash',
+          theme: AppTheme.theme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: mode,
+          routerConfig: _router,
+          debugShowCheckedModeBanner: false,
+        );
+      },
     );
   }
 }

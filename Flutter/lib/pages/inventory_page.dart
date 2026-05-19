@@ -1,7 +1,17 @@
-import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../theme/app_theme.dart';
 import '../services/stock_service.dart';
+
+class _InventoryItem {
+  String name;
+  String unit;
+  double qty;
+  final String category;
+  final IconData icon;  // ← was: String emoji
+
+  _InventoryItem({required this.name, required this.unit, required this.qty, required this.category, required this.icon});
+}
 
 class InventoryPage extends StatefulWidget {
   const InventoryPage({super.key});
@@ -287,6 +297,39 @@ class _InventoryPageState extends State<InventoryPage> {
                 ),
               ),
             ],
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(95.5),
+              child: Column(children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                    decoration: BoxDecoration(color: context.colors.border, borderRadius: BorderRadius.circular(14), border: Border.all(color: context.colors.border)),
+                    child: Row(children: [
+                      Icon(Icons.search_rounded, color: context.colors.textHint, size: 18),
+                      const SizedBox(width: 8),
+                      Expanded(child: TextField(
+                        controller: _searchCtrl,
+                        onChanged: (v) => setState(() => _searchQuery = v),
+                        decoration: InputDecoration(hintText: 'Cari bahan...', hintStyle: TextStyle(color: context.colors.textHint, fontSize: 14), border: InputBorder.none, isDense: true),
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                      )),
+                      if (_searchQuery.isNotEmpty) GestureDetector(onTap: () => setState(() { _searchCtrl.clear(); _searchQuery = ''; }), child: Icon(Icons.close_rounded, size: 16, color: context.colors.textHint)),
+                    ]),
+                  ),
+                ),
+                TabBar(
+                  controller: _tabCtrl,
+                  indicatorColor: AppTheme.orange600,
+                  indicatorWeight: 2.5,
+                  labelColor: AppTheme.orange600,
+                  unselectedLabelColor: context.colors.textHint,
+                  labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                  unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                  tabs: const [Tab(text: 'Stok'), Tab(text: 'Masuk'), Tab(text: 'Keluar')],
+                ),
+              ]),
+            ),
           ),
         ),
       ),
@@ -593,7 +636,7 @@ class _StokItem extends StatelessWidget {
                 color: AppTheme.slate400, size: 20),
           ),
         ],
-      ),
+      )).toList(),
     );
   }
 }
@@ -633,7 +676,7 @@ class _InventoryChip extends StatelessWidget {
             child: const Icon(Icons.close, size: 14, color: AppTheme.slate300),
           ),
         ],
-      ),
+      )).toList(),
     );
   }
 }
@@ -704,8 +747,16 @@ class _CookingDonePopupState extends State<_CookingDonePopup> {
 
   @override
   Widget build(BuildContext context) {
-    return Positioned.fill(
-      child: Stack(
+    final color = widget.isInput ? AppTheme.green600 : AppTheme.red500;
+    final bgColor = widget.isInput ? AppTheme.green50 : AppTheme.red50;
+    final label = widget.isInput ? 'Stok Masuk' : 'Stok Keluar';
+
+    return Container(
+      decoration: BoxDecoration(color: context.colors.cardBackground, borderRadius: const BorderRadius.vertical(top: Radius.circular(28))),
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom + 24, left: 24, right: 24, top: 16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           GestureDetector(
             onTap: widget.onClose,
@@ -929,8 +980,85 @@ class _CookingDonePopupState extends State<_CookingDonePopup> {
                 ],
               ),
             ),
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: () => setState(() { _isNewItem = true; _selectedItem = null; }),
+              child: const Row(children: [Icon(Icons.add_circle_outline_rounded, size: 16, color: AppTheme.orange600), SizedBox(width: 6), Text('Tambah bahan baru', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.orange600))]),
+            ),
+          ] else ...[
+            Text('Nama Bahan Baru', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: context.colors.surface, letterSpacing: 0.3)),
+            const SizedBox(height: 8),
+            Row(children: [
+              Expanded(child: _inputField(controller: _newItemCtrl, hint: 'Nama bahan')),
+              const SizedBox(width: 8),
+              SizedBox(width: 90, child: _inputField(controller: _newUnitCtrl, hint: 'Satuan')),
+            ]),
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: () => setState(() { _isNewItem = false; _newItemCtrl.clear(); _newUnitCtrl.clear(); }),
+              child: const Text('Pilih dari daftar', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.orange600)),
+            ),
+          ],
+          const SizedBox(height: 16),
+          Text('Jumlah', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: context.colors.surface, letterSpacing: 0.3)),
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(child: _inputField(controller: _qtyCtrl, hint: '0', inputType: TextInputType.number, formatter: FilteringTextInputFormatter.allow(RegExp(r'[\d.]')))),
+            if (_unit.isNotEmpty) ...[
+              const SizedBox(width: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                decoration: BoxDecoration(color: context.colors.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: context.colors.border)),
+                child: Text(_unit, style: TextStyle(fontWeight: FontWeight.w700, color: context.colors.textSecondary)),
+              ),
+            ],
+          ]),
+          const SizedBox(height: 16),
+          Text('Keterangan (opsional)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: context.colors.surface, letterSpacing: 0.3)),
+          const SizedBox(height: 8),
+          _inputField(controller: _noteCtrl, hint: widget.isInput ? 'Contoh: Beli di warung Bu Sari' : 'Contoh: Dipakai masak nasi goreng'),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _canSubmit ? () {
+                final itemName = _isNewItem ? _newItemCtrl.text.trim() : _selectedItem!;
+                final qty = double.tryParse(_qtyCtrl.text) ?? 0;
+                final note = _noteCtrl.text.trim().isEmpty ? (widget.isInput ? 'Stok ditambahkan' : 'Stok digunakan') : _noteCtrl.text.trim();
+                widget.onSubmit(itemName, qty, note);
+                Navigator.pop(context);
+              } : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: color,
+                disabledBackgroundColor: context.colors.border,
+                foregroundColor: context.colors.cardBackground,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                elevation: 0,
+              ),
+              child: Text('${widget.isInput ? 'Tambah' : 'Kurangi'} Stok', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _inputField({required TextEditingController controller, required String hint, TextInputType? inputType, TextInputFormatter? formatter}) {
+    return TextField(
+      controller: controller,
+      keyboardType: inputType,
+      inputFormatters: formatter != null ? [formatter] : null,
+      onChanged: (_) => setState(() {}),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: TextStyle(color: context.colors.textHint, fontWeight: FontWeight.w500),
+        filled: true,
+        fillColor: context.colors.surface,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: context.colors.border)),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: context.colors.border)),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppTheme.orange500, width: 2)),
       ),
     );
   }

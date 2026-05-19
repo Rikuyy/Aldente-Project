@@ -5,11 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\DashboardController as ApiDashboardController;
 use App\Http\Controllers\API\StockController;
-<<<<<<< HEAD
-
-// Import semua controller yang dibutuhkan 
-use App\Http\Controllers\API\Auth\AuthController;
-use App\Http\Controllers\API\SetupController;
+aAuse App\Http\Controllers\API\SetupController;
 use App\Http\Controllers\API\ConsultationController;
 use App\Http\Controllers\DashboardController;
 =======
@@ -22,11 +18,6 @@ use App\Http\Controllers\ChatbotController;
 use Illuminate\Support\Facades\Password;
 
 // AUTH PUBLIC
-<<<<<<< HEAD
-=======
-use App\Http\Controllers\API\ConsultationController;
-
->>>>>>> 80a03bc (backend auth flutter)
 
 /*
 |--------------------------------------------------------------------------
@@ -34,11 +25,7 @@ use App\Http\Controllers\API\ConsultationController;
 |--------------------------------------------------------------------------
 */
 
-<<<<<<< HEAD
-// Auth routes (tidak perlu login)
-=======
 // ── AUTH PUBLIC (Tidak Perlu Login) ─────────────────────────────
->>>>>>> 80a03bc (backend auth flutter)
 Route::prefix('auth')->group(function () {
     Route::post('/register',        [AuthController::class, 'register']);
     Route::post('/login',           [AuthController::class, 'login']);
@@ -58,10 +45,12 @@ Route::post('/consultation', [ConsultationController::class, 'send']);
 
 
 // ── PROTECTED ROUTES (Wajib Login & Menggunakan JWT) ─────────────
+// PROTECTED ROUTES (Wajib Login & Full Menggunakan JWT)
 Route::middleware('auth:api')->group(function () {
 
     // ── Dashboard ─────────────────────────────
     Route::prefix('dashboard')->group(function () {
+        // Menggunakan ApiDashboardController agar sesuai dengan alias import di atas
         Route::get('/summary', [ApiDashboardController::class, 'summary']);
         Route::get('/laporan', [ApiDashboardController::class, 'laporan']);
         Route::get('/',        [ApiDashboardController::class, 'index']);
@@ -70,6 +59,7 @@ Route::middleware('auth:api')->group(function () {
 
     // ── Inventory / Stock ──────────────────────
     Route::prefix('inventory')->group(function () {
+        // Pastikan StockController kamu ada di folder App\Http\Controllers\API\StockController
         Route::get('/',               [StockController::class, 'index']);
         Route::get('/search',         [StockController::class, 'search']);
         Route::post('/',              [StockController::class, 'store']);
@@ -93,17 +83,22 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/evaluasi',    [ChatbotController::class, 'evaluasi']);
     });
 
-<<<<<<< HEAD
     
 });
 
 Route::post('/consultation', [ConsultationController::class, 'send']);
-=======
     // ── Laporan Keuangan ────────────────────────
     Route::prefix('keuangan')->group(function () {
         Route::get('/ringkasan', [KeuanganController::class, 'ringkasan']);
         Route::get('/grafik',    [KeuanganController::class, 'grafik']);
         Route::get('/mutasi',    [KeuanganController::class, 'mutasi']);
+        // Ringkasan bulan: total, rata2, prediksi, komposisi
+        Route::get('/ringkasan', [KeuanganController::class, 'ringkasan']);
+        // Data grafik tren harian
+        Route::get('/grafik',    [KeuanganController::class, 'grafik']);
+        // List mutasi (pagination)
+        Route::get('/mutasi',    [KeuanganController::class, 'mutasi']);
+        // Detail 1 transaksi
         Route::get('/{id}',      [KeuanganController::class, 'detail']);
     });
 

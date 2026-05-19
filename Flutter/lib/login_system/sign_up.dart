@@ -1,3 +1,4 @@
+import '../theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../services/auth_services.dart';
@@ -64,9 +65,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.cardBackground,
       appBar: AppBar(
           backgroundColor: Colors.white, title: const Text("Daftar Akun")),
+        backgroundColor: context.colors.cardBackground,
+        title: const Text("Sign Up"),
+      ),
       body: SafeArea(
         child: SizedBox(
           width: double.infinity,
@@ -210,6 +214,83 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   const SizedBox(height: 30),
                 ],
               ),
+  @override
+  Widget build(BuildContext context) {
+    return Form(
+      child: Column(
+        children: [
+          TextFormField(
+            controller: _usernameController,
+            decoration: InputDecoration(
+                hintText: "Enter your username",
+                labelText: "Username",
+                floatingLabelBehavior: FloatingLabelBehavior.always,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                suffixIcon: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: SvgPicture.string(userIcon),
+                ),
+                border: authOutlineInputBorder),
+          ),
+          const SizedBox(height: 20),
+          TextFormField(
+            controller: _emailController,
+            keyboardType: TextInputType.emailAddress,
+            decoration: InputDecoration(
+                hintText: "Enter your email",
+                labelText: "Email",
+                floatingLabelBehavior: FloatingLabelBehavior.always,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                suffixIcon: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: SvgPicture.string(mailIcon),
+                ),
+                border: authOutlineInputBorder),
+          ),
+          const SizedBox(height: 20),
+          TextFormField(
+            controller: _passwordController,
+            obscureText: true,
+            decoration: InputDecoration(
+                hintText: "Enter your password",
+                labelText: "Password",
+                floatingLabelBehavior: FloatingLabelBehavior.always,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                suffixIcon: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: SvgPicture.string(lockIcon),
+                ),
+                border: authOutlineInputBorder),
+          ),
+          const SizedBox(height: 20),
+          TextFormField(
+            controller: _confirmPasswordController,
+            obscureText: true,
+            decoration: InputDecoration(
+                hintText: "Re-enter your password",
+                labelText: "Confirm Password",
+                floatingLabelBehavior: FloatingLabelBehavior.always,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                suffixIcon: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: SvgPicture.string(lockIcon),
+                ),
+                border: authOutlineInputBorder),
+          ),
+          const SizedBox(height: 30),
+          ElevatedButton(
+            onPressed: _isLoading ? null : _handleRegister,
+            style: ElevatedButton.styleFrom(
+              elevation: 0,
+              backgroundColor: const Color(0xFFFF7643),
+              foregroundColor: context.colors.cardBackground,
+              minimumSize: const Size(double.infinity, 48),
+              shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(16))),
             ),
           ),
         ),

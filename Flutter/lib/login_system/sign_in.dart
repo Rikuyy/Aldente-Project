@@ -1,8 +1,8 @@
+import '../theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import '../services/auth_services.dart';
-import 'sign_up.dart';
 
 class SignInScreen extends StatefulWidget {
   static const String routeName = '/sign_in';
@@ -65,7 +65,7 @@ class _SignInScreenState extends State<SignInScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.cardBackground,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -78,6 +78,8 @@ class _SignInScreenState extends State<SignInScreen> {
           style: TextStyle(color: Color(0xFF757575), fontSize: 18),
         ),
         centerTitle: true,
+        backgroundColor: context.colors.cardBackground,
+        title: const Text("Sign In"),
       ),
       body: SafeArea(
         child: SizedBox(
@@ -220,6 +222,108 @@ class _SignInScreenState extends State<SignInScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class SignInForm extends StatefulWidget {
+  const SignInForm({super.key});
+
+  @override
+  State<SignInForm> createState() => _SignInFormState();
+}
+
+class _SignInFormState extends State<SignInForm> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final AuthService _authService = AuthService();
+  bool _isLoading = false;
+
+  void _handleLogin() async {
+    setState(() => _isLoading = true);
+
+    final response = await _authService.login(
+      _emailController.text.trim(),
+      _passwordController.text.trim(),
+    );
+
+    setState(() => _isLoading = false);
+
+    if (response['access_token'] != null) {
+      await _authService.saveToken(response['access_token']);
+      if (!mounted) return;
+      context.go('/app/home');
+    } else {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(response['message'] ?? "Login Failed")),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Form(
+      child: Column(
+        children: [
+          TextFormField(
+            controller: _emailController,
+            decoration: InputDecoration(
+                hintText: "Enter your email",
+                labelText: "Email",
+                floatingLabelBehavior: FloatingLabelBehavior.always,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                suffixIcon: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: SvgPicture.string(mailIcon),
+                ),
+                border: authOutlineInputBorder,
+                enabledBorder: authOutlineInputBorder,
+                focusedBorder: authOutlineInputBorder.copyWith(
+                    borderSide: const BorderSide(color: Color(0xFFFF7643)))),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: TextFormField(
+              controller: _passwordController,
+              obscureText: true,
+              decoration: InputDecoration(
+                  hintText: "Enter your password",
+                  labelText: "Password",
+                  floatingLabelBehavior: FloatingLabelBehavior.always,
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  suffixIcon: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: SvgPicture.string(lockIcon),
+                  ),
+                  border: authOutlineInputBorder,
+                  enabledBorder: authOutlineInputBorder,
+                  focusedBorder: authOutlineInputBorder.copyWith(
+                      borderSide: const BorderSide(color: Color(0xFFFF7643)))),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: _isLoading ? null : _handleLogin,
+            style: ElevatedButton.styleFrom(
+              elevation: 0,
+              backgroundColor: const Color(0xFFFF7643),
+              foregroundColor: context.colors.cardBackground,
+              minimumSize: const Size(double.infinity, 48),
+              shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(16))),
+            ),
+            child: _isLoading
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                        color: Colors.white, strokeWidth: 2))
+                : const Text("Continue"),
+          )
+        ],
       ),
     );
   }

@@ -150,6 +150,103 @@ class _HomePageState extends State<HomePage> {
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                   color: AppTheme.slate500,
+      backgroundColor: context.colors.surface,
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            pinned: true,
+            backgroundColor: context.colors.cardBackground,
+            elevation: 0,
+            expandedHeight: 0,
+            toolbarHeight: 72,
+            flexibleSpace: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'CookCash',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                            color: context.colors.textPrimary,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            Text(
+                              'Hai, Budi!',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: context.colors.surface,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(Icons.waving_hand, size: 12, color: context.colors.surface),
+                          ],
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () => context.push('/notifications'),
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: context.colors.surface,
+                              borderRadius: BorderRadius.circular(50),
+                            ),
+                            child: Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                Icon(Icons.notifications_rounded, size: 22, color: context.colors.textHint),
+                                if (unreadCount > 0)
+                                  Positioned(
+                                    top: -6,
+                                    right: -6,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.orange500,
+                                        borderRadius: BorderRadius.circular(50),
+                                        border: Border.all(color: context.colors.cardBackground, width: 1.5),
+                                      ),
+                                      child: Text(
+                                        '$unreadCount',
+                                        style: TextStyle(color: context.colors.cardBackground, fontSize: 9, fontWeight: FontWeight.w900),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        GestureDetector(
+                          onTap: () => context.go('/app/profile'),
+                          child: Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: AppTheme.orange100,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: AppTheme.orange200, width: 2),
+                            ),
+                            child: const Center(
+                              child: Text(
+                                'B',
+                                style: TextStyle(
+                                  color: AppTheme.orange600,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 16,
                                 ),
                               ),
                               const SizedBox(width: 4),
@@ -200,6 +297,73 @@ class _HomePageState extends State<HomePage> {
                                       ),
                                     ),
                                 ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(1),
+              child: Container(color: context.colors.border, height: 1),
+            ),
+          ),
+
+          SliverPadding(
+            padding: const EdgeInsets.all(20),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF7ED),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: AppTheme.orange200,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 10.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: context.colors.cardBackground,
+                          borderRadius: BorderRadius.circular(50),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 20.4),
+                              blurRadius: 4,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.warning_amber_rounded,
+                          color: AppTheme.orange600,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Status Budget: Waspada',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w900,
+                                fontSize: 14,
+                                color: Color(0xFF9A3412),
+                                letterSpacing: -0.3,
                               ),
                             ),
                           ),
@@ -284,6 +448,37 @@ class _HomePageState extends State<HomePage> {
                                   : Icons.warning_amber_rounded,
                               color: AppTheme.orange600,
                               size: 20,
+                const SizedBox(height: 16),
+                GestureDetector(
+                  onTap: () => context.go('/app/finance'),
+                  child: Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF0F172A), Color(0xFF1E293B), Color(0xFF0F172A)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(28),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.slate900.withValues(alpha: 76.5),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Stack(
+                      children: [
+                        Positioned(
+                          top: -30,
+                          right: -20,
+                          child: Container(
+                            width: 120,
+                            height: 120,
+                            decoration: BoxDecoration(
+                              color: context.colors.cardBackground.withValues(alpha: 12.75),
+                              shape: BoxShape.circle,
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -378,6 +573,84 @@ class _HomePageState extends State<HomePage> {
                                           fontSize: 12,
                                           fontWeight: FontWeight.w700,
                                           letterSpacing: 1,
+                                const Row(
+                                  children: [
+                                    Icon(Icons.account_balance_wallet_rounded, color: Color(0xFFCBD5E1), size: 16),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'SISA BUDGET',
+                                      style: TextStyle(
+                                        color: Color(0xFFCBD5E1),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 1,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: context.colors.cardBackground.withValues(alpha: 25.5),
+                                    borderRadius: BorderRadius.circular(50),
+                                    border: Border.all(color: context.colors.cardBackground.withValues(alpha: 25.5)),
+                                  ),
+                                  child: Text(
+                                    'Minggu Ini',
+                                    style: TextStyle(
+                                      color: context.colors.cardBackground,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+                            const Text(
+                              'HARI INI',
+                              style: TextStyle(
+                                color: Color(0xFF94A3B8),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 2,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Rp 15.000',
+                              style: TextStyle(
+                                color: context.colors.cardBackground,
+                                fontSize: 36,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -1,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            Container(
+                              height: 1,
+                              color: context.colors.cardBackground.withValues(alpha: 25.5),
+                            ),
+                            const SizedBox(height: 20),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                const Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(Icons.calendar_month_rounded, color: Color(0xFF94A3B8), size: 12),
+                                        SizedBox(width: 4),
+                                        Text(
+                                          'SISA BULAN INI',
+                                          style: TextStyle(
+                                            color: Color(0xFF94A3B8),
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.w700,
+                                            letterSpacing: 1.5,
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -421,6 +694,15 @@ class _HomePageState extends State<HomePage> {
                                   fontSize: 36,
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: -1,
+                                  ],
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: context.colors.cardBackground.withValues(alpha: 25.5),
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  child: Icon(Icons.arrow_forward, color: context.colors.cardBackground, size: 20),
                                 ),
                               ),
                               const SizedBox(height: 20),
@@ -491,10 +773,15 @@ class _HomePageState extends State<HomePage> {
                   if (_rekomendasi.isNotEmpty) ...[
                     const Text(
                       'Rekomendasi Resep',
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'To-Do List Hari Ini',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w900,
-                        color: AppTheme.slate800,
+                        color: context.colors.textPrimary,
                         letterSpacing: -0.5,
                       ),
                     ),
@@ -504,6 +791,29 @@ class _HomePageState extends State<HomePage> {
                   ],
                 ]),
               ),
+                ),
+
+                const SizedBox(height: 12),
+
+                const _TodoItem(
+                  title: 'Rencana Makan Malam',
+                  subtitle: 'Nasi Goreng Sosis (Budget sisa: Rp 15.000)',
+                  isDone: false,
+                ),
+                const SizedBox(height: 10),
+                const _TodoItem(
+                  title: 'Beli Telur di Warung',
+                  subtitle: 'Stok menipis, sisa 1 butir',
+                  isDone: false,
+                ),
+                const SizedBox(height: 10),
+                const _TodoItem(
+                  title: 'Makan Siang',
+                  subtitle: 'Soto Ayam (Rp 12.000)',
+                  isDone: true,
+                ),
+                const SizedBox(height: 24),
+              ]),
             ),
           ],
         ),
@@ -527,6 +837,10 @@ class _ResepCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppTheme.slate100),
         boxShadow: [
+        color: isDone ? context.colors.surface : context.colors.cardBackground,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: context.colors.border),
+        boxShadow: isDone ? null : [
           BoxShadow(
             color: Colors.black.withValues(alpha: 10.2),
             blurRadius: 6,
@@ -545,6 +859,10 @@ class _ResepCard extends StatelessWidget {
             ),
             child: const Icon(Icons.restaurant_menu_rounded,
                 color: AppTheme.orange600, size: 22),
+          Icon(
+            isDone ? Icons.check_circle_rounded : Icons.circle_outlined,
+            color: isDone ? AppTheme.green500 : context.colors.textHint,
+            size: 24,
           ),
           const SizedBox(width: 12),
           // Nama + info
@@ -558,6 +876,9 @@ class _ResepCard extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
                     color: AppTheme.slate800,
+                    color: isDone ? context.colors.surface : context.colors.textPrimary,
+                    decoration: isDone ? TextDecoration.lineThrough : null,
+                    letterSpacing: -0.3,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -567,6 +888,12 @@ class _ResepCard extends StatelessWidget {
                   '${resep['Total Ingredients']} bahan  ·  ${resep['Total Steps']} langkah',
                   style:
                       const TextStyle(fontSize: 12, color: AppTheme.slate500),
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDone ? context.colors.textHint : context.colors.surface,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ],
             ),

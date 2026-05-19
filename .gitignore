@@ -48,38 +48,40 @@ app.*.map.json
 # ----------------------------------------------------------------------------
 # LARAVEL SPECIFIC
 # ----------------------------------------------------------------------------
-/backend/.env
-/backend/.env.backup
-/backend/vendor/
-/backend/node_modules/
-/backend/public/storage
-/backend/storage/*.key
-/backend/storage/framework/cache/data/*
-/backend/storage/framework/sessions/*
-/backend/storage/framework/views/*
-/backend/storage/logs/*
-/backend/bootstrap/cache/*
+/Laravel/.env
+/Laravel/.env.backup
+/Laravel/vendor/
+/Laravel/node_modules/
+/Laravel/public/storage
+/Laravel/storage/*.key
+/Laravel/storage/framework/cache/data/*
+/Laravel/storage/framework/sessions/*
+/Laravel/storage/framework/views/*
+/Laravel/storage/logs/*
+/Laravel/bootstrap/cache/*
 
 # ----------------------------------------------------------------------------
 # FLUTTER SPECIFIC
 # ----------------------------------------------------------------------------
-/mobile/.dart_tool/
-/mobile/.flutter-plugins
-/mobile/.flutter-plugins-dependencies
-/mobile/.packages
-/mobile/.pub-cache/
-/mobile/.pub/
-/mobile/build/
-/mobile/ios/.generated/
-/mobile/ios/Flutter/Ephemeral/
-/mobile/ios/Flutter/Generated.xcconfig
-/mobile/ios/Flutter/flutter_export_environment.sh
-/mobile/ios/ServiceDefinitions.json
-/mobile/ios/Pods/
-/mobile/android/local.properties
-/mobile/android/key.properties
-/mobile/android/*.keystore
-/mobile/android/*.jks
+/Flutter/.dart_tool/
+/Flutter/.flutter-plugins
+/Flutter/.flutter-plugins-dependencies
+/Flutter/.packages
+/Flutter/.pub-cache/
+/Flutter/.pub/
+/Flutter/build/
+/Flutter/ios/.generated/
+/Flutter/ios/Flutter/Ephemeral/
+/Flutter/ios/Flutter/Generated.xcconfig
+/Flutter/ios/Flutter/flutter_export_environment.sh
+/Flutter/ios/ServiceDefinitions.json
+/Flutter/ios/Pods/
+/Flutter/android/local.properties
+/Flutter/android/key.properties
+/Flutter/android/*.keystore
+/Flutter/android/*.jks
+/Flutter/build/*.cache.dill.track.dill
+/Flutter/build/*.dill
 
 # ----------------------------------------------------------------------------
 # GENERAL / IDE
@@ -88,4 +90,23 @@ app.*.map.json
 .idea/
 .vscode/
 *.swp
-*.lockFlutter/build/
+*.lock
+Flutter/build/8730b13ca0249799964d0a71255a8f3b.cache.dill.track.dill
+Flutter/build/cad8bc574173e3b82967335f8b934dcc/.filecache
+Flutter/build/cad8bc574173e3b82967335f8b934dcc/_composite.stamp
+Flutter/build/cad8bc574173e3b82967335f8b934dcc/dart_build.d
+Flutter/build/cad8bc574173e3b82967335f8b934dcc/dart_build.stamp
+Flutter/build/cad8bc574173e3b82967335f8b934dcc/dart_build_result.json
+Flutter/build/cad8bc574173e3b82967335f8b934dcc/gen_dart_plugin_registrant.stamp
+Flutter/build/cad8bc574173e3b82967335f8b934dcc/gen_localizations.stamp
+Flutter/build/cad8bc574173e3b82967335f8b934dcc/outputs.json
+Flutter/build/flutter_assets/AssetManifest.bin
+Flutter/build/flutter_assets/AssetManifest.bin.json
+Flutter/build/flutter_assets/FontManifest.json
+Flutter/build/flutter_assets/fonts/MaterialIcons-Regular.otf
+Flutter/build/flutter_assets/NOTICES
+Flutter/build/flutter_assets/packages/cupertino_icons/assets/CupertinoIcons.ttf
+Flutter/build/flutter_assets/shaders/ink_sparkle.frag
+Flutter/build/flutter_assets/shaders/stretch_effect.frag
+Flutter/build/native_hooks/.last_build_id
+Flutter/build/reports/problems/problems-report.html
