@@ -1,4 +1,4 @@
-import 'package:cook_cash/theme/app_theme.dart';
+import '../theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
 class ThemeToggle extends StatelessWidget {
