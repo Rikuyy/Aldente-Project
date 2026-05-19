@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../services/auth_services.dart'; // Import service yang kamu buat tadi
+import '../services/auth_services.dart';
 
 class SplashScreen extends StatefulWidget {
   static const String routeName = '/splash';
@@ -17,15 +17,16 @@ class _SplashScreenState extends State<SplashScreen> {
 
   List<Map<String, String>> splashData = [
     {
-      "text": "Welcome to CookMate, Time to cook!",
+      "text": "Selamat Datang di CookCase+, Waktunya Memasak!",
       "image": "https://i.postimg.cc/mhhVywp9/splash-1.png"
     },
     {
-      "text": "We help people to find best recipe",
+      "text": "Kami membantu Anda menemukan resep hidangan terbaik",
       "image": "https://i.postimg.cc/3x3ZzL8C/splash-2.png"
     },
     {
-      "text": "We show the easy way to cook. Just stay at home with us",
+      "text":
+          "Cara memasak praktis dan mudah. Cukup santai di rumah bersama kami",
       "image": "https://i.postimg.cc/3x3ZzL8C/splash-2.png"
     },
   ];
@@ -38,26 +39,28 @@ class _SplashScreenState extends State<SplashScreen> {
 
   void _checkLoginStatus() async {
     String? token = await _authService.getToken();
-
-    // Jeda 3 detik agar animasi splash terlihat
     await Future.delayed(const Duration(seconds: 3));
 
     if (!mounted) return;
 
     if (token != null) {
-      // Jika sudah ada token, langsung ke Home
+      // Jika token aktif, langsung bypass masuk ke beranda
       context.go('/app/home');
+    } else {
+      // URUTAN REVISI: Jika belum login, otomatis arahkan ke Guest Mode Page
+      context.go('/');
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: SizedBox(
           width: double.infinity,
           child: Column(
-            children: [
+            children: <Widget>[
               Expanded(
                 flex: 3,
                 child: PageView.builder(
@@ -71,20 +74,34 @@ class _SplashScreenState extends State<SplashScreen> {
                     children: <Widget>[
                       const Spacer(),
                       const Text(
-                        "COOKMATE",
+                        "CookCase+",
                         style: TextStyle(
-                          fontSize: 36,
+                          fontSize: 32,
                           color: Color(0xFFFF7643),
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      Text(splashData[index]["text"]!,
-                          textAlign: TextAlign.center),
+                      Text(
+                        splashData[index]["text"]!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Color(0xFF757575)),
+                      ),
                       const Spacer(flex: 2),
                       Image.network(
                         splashData[index]["image"]!,
                         height: 265,
                         width: 235,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const SizedBox(
+                            height: 265,
+                            width: 235,
+                            child: Icon(
+                              Icons.restaurant_menu,
+                              size: 100,
+                              color: Color(0xFFFF7643),
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -118,7 +135,8 @@ class _SplashScreenState extends State<SplashScreen> {
                       const Spacer(flex: 3),
                       ElevatedButton(
                         onPressed: () {
-                          context.push('/sign_in');
+                          // URUTAN REVISI: Tombol dialihkan manual langsung menuju Guest Mode Page
+                          context.go('/');
                         },
                         style: ElevatedButton.styleFrom(
                           elevation: 0,
@@ -129,7 +147,7 @@ class _SplashScreenState extends State<SplashScreen> {
                             borderRadius: BorderRadius.all(Radius.circular(16)),
                           ),
                         ),
-                        child: const Text("Continue"),
+                        child: const Text("Lanjutkan Ke Aplikasi"),
                       ),
                       const Spacer(),
                     ],

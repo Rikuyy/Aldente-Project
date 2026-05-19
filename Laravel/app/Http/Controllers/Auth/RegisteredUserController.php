@@ -58,9 +58,10 @@ class RegisteredUserController extends Controller
                 'Password' => Hash::make($request->password), // Hash manual
             ]);
 
-            Auth::login($admin);
+            // REVISI: Auth::login($admin); DIHAPUS agar tidak langsung masuk login otomatis
 
-            return redirect()->route('dashboard'); 
+            // REVISI: Redirect dialihkan ke halaman login dengan pesan status sukses
+            return redirect()->route('login')->with('status', 'Registrasi admin berhasil! Silakan login.'); 
 
         } catch (\Exception $e) {
             return back()->withErrors(['email' => 'Gagal menyimpan data: ' . $e->getMessage()]);

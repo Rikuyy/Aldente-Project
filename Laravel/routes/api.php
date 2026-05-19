@@ -22,6 +22,11 @@ use App\Http\Controllers\ChatbotController;
 use Illuminate\Support\Facades\Password;
 
 // AUTH PUBLIC
+<<<<<<< HEAD
+=======
+use App\Http\Controllers\API\ConsultationController;
+
+>>>>>>> 80a03bc (backend auth flutter)
 
 /*
 |--------------------------------------------------------------------------
@@ -29,36 +34,34 @@ use Illuminate\Support\Facades\Password;
 |--------------------------------------------------------------------------
 */
 
+<<<<<<< HEAD
 // Auth routes (tidak perlu login)
+=======
+// ── AUTH PUBLIC (Tidak Perlu Login) ─────────────────────────────
+>>>>>>> 80a03bc (backend auth flutter)
 Route::prefix('auth')->group(function () {
-    Route::post('/register', [AuthController::class, 'register']);
-    Route::post('/login',    [AuthController::class, 'login']);
-    
-    // API Forgot Password
-    Route::post('/forgot-password', function (Request $request) {
-        $request->validate(['email' => 'required|email']);
-        
-        // Menggunakan fitur bawaan Laravel untuk kirim link reset via Gmail
-        $status = Password::sendResetLink($request->only('email'));
+    Route::post('/register',        [AuthController::class, 'register']);
+    Route::post('/login',           [AuthController::class, 'login']);
+    Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+    Route::post('/verify-otp',      [AuthController::class, 'verifyOtp']);
+    Route::post('/reset-password',  [AuthController::class, 'resetPassword']);
 
-        return $status === Password::RESET_LINK_SENT
-            ? response()->json(['message' => 'Link reset password telah dikirim ke email kamu!'])
-            : response()->json(['message' => 'Gagal mengirim email reset'], 400);
-    });
-
-    // Routes yang memerlukan token JWT
+    // Routes auth yang memerlukan token JWT
     Route::middleware('auth:api')->group(function () {
         Route::get('/me',      [AuthController::class, 'me']);
         Route::post('/logout', [AuthController::class, 'logout']);
     });
 });
 
-// PROTECTED ROUTES (Wajib Login & Full Menggunakan JWT)
+// Rute Konsultasi (Publik - Dari Versi Atas)
+Route::post('/consultation', [ConsultationController::class, 'send']);
+
+
+// ── PROTECTED ROUTES (Wajib Login & Menggunakan JWT) ─────────────
 Route::middleware('auth:api')->group(function () {
 
     // ── Dashboard ─────────────────────────────
     Route::prefix('dashboard')->group(function () {
-        // Menggunakan ApiDashboardController agar sesuai dengan alias import di atas
         Route::get('/summary', [ApiDashboardController::class, 'summary']);
         Route::get('/laporan', [ApiDashboardController::class, 'laporan']);
         Route::get('/',        [ApiDashboardController::class, 'index']);
@@ -67,7 +70,6 @@ Route::middleware('auth:api')->group(function () {
 
     // ── Inventory / Stock ──────────────────────
     Route::prefix('inventory')->group(function () {
-        // Pastikan StockController kamu ada di folder App\Http\Controllers\API\StockController
         Route::get('/',               [StockController::class, 'index']);
         Route::get('/search',         [StockController::class, 'search']);
         Route::post('/',              [StockController::class, 'store']);
@@ -78,10 +80,10 @@ Route::middleware('auth:api')->group(function () {
 
     // ── Resep ──────────────────────────────────
     Route::prefix('resep')->group(function () {
-        Route::get('/',         [ResepController::class, 'index']);
-        Route::post('/',        [ResepController::class, 'store']);
-        Route::put('/{id}',     [ResepController::class, 'update']);
-        Route::delete('/{id}',  [ResepController::class, 'destroy']);
+        Route::get('/',     [ResepController::class, 'index']);
+        Route::post('/',    [ResepController::class, 'store']);
+        Route::put('/{id}', [ResepController::class, 'update']);
+        Route::delete('/{id}', [ResepController::class, 'destroy']);
     });
 
     // ── Chatbot AI ─────────────────────────────
@@ -99,13 +101,9 @@ Route::post('/consultation', [ConsultationController::class, 'send']);
 =======
     // ── Laporan Keuangan ────────────────────────
     Route::prefix('keuangan')->group(function () {
-        // Ringkasan bulan: total, rata2, prediksi, komposisi
         Route::get('/ringkasan', [KeuanganController::class, 'ringkasan']);
-        // Data grafik tren harian
         Route::get('/grafik',    [KeuanganController::class, 'grafik']);
-        // List mutasi (pagination)
         Route::get('/mutasi',    [KeuanganController::class, 'mutasi']);
-        // Detail 1 transaksi
         Route::get('/{id}',      [KeuanganController::class, 'detail']);
     });
 
