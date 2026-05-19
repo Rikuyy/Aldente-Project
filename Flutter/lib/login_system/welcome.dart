@@ -1,3 +1,4 @@
+import 'package:cook_cash/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -9,7 +10,7 @@ class WelcomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.cardBackground,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -28,7 +29,7 @@ class WelcomeScreen extends StatelessWidget {
               ),
               const Spacer(flex: 2),
               ErrorInfo(
-                title: "Welcome to CookMate",
+                title: "Welcome to CookCash",
                 description:
                     "We're setting things up for you. This will only take a moment.",
                 button: Transform.scale(
@@ -93,7 +94,7 @@ class ErrorInfo extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                       minimumSize: const Size(double.infinity, 48),
                       backgroundColor: Colors.black,
-                      foregroundColor: Colors.white,
+                      foregroundColor: context.colors.cardBackground,
                       shape: const RoundedRectangleBorder(
                           borderRadius: BorderRadius.all(Radius.circular(8)))),
                   child: Text(btnText ?? "Retry".toUpperCase()),

@@ -76,12 +76,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.slate50,
+      backgroundColor: context.colors.surface,
       body: Column(
         children: [
-          // Header
           Container(
-            color: Colors.white,
+            color: context.colors.cardBackground,
             padding: EdgeInsets.only(
               top: MediaQuery.of(context).padding.top + 8,
               left: 20, right: 20, bottom: 12,
@@ -94,8 +93,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
                       onTap: () => context.pop(),
                       child: Container(
                         padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(color: AppTheme.slate50, borderRadius: BorderRadius.circular(50)),
-                        child: const Icon(Icons.chevron_left, size: 24, color: AppTheme.slate800),
+                        decoration: BoxDecoration(color: context.colors.surface, borderRadius: BorderRadius.circular(50)),
+                        child: Icon(Icons.chevron_left, size: 24, color: context.colors.textPrimary),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -103,9 +102,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Notifikasi', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppTheme.slate800, letterSpacing: -0.5)),
+                          Text('Notifikasi', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: context.colors.textPrimary, letterSpacing: -0.5)),
                           if (_unreadCount > 0)
-                            Text('$_unreadCount belum dibaca', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.slate500)),
+                            Text('$_unreadCount belum dibaca', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: context.colors.surface)),
                         ],
                       ),
                     ),
@@ -131,10 +130,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
                           duration: const Duration(milliseconds: 200),
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           decoration: BoxDecoration(
-                            color: isSelected ? AppTheme.orange500 : AppTheme.slate100,
+                            color: isSelected ? AppTheme.orange500 : context.colors.border,
                             borderRadius: BorderRadius.circular(14),
                           ),
-                          child: Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: isSelected ? Colors.white : AppTheme.slate600)),
+                          child: Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: isSelected ? context.colors.cardBackground : context.colors.textSecondary)),
                         ),
                       ),
                     );
@@ -143,9 +142,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
               ],
             ),
           ),
-          const Divider(height: 1, color: AppTheme.slate100),
+          Divider(height: 1, color: context.colors.border),
 
-          // Content
           Expanded(
             child: _filtered.isEmpty
                 ? Center(
@@ -154,13 +152,13 @@ class _NotificationsPageState extends State<NotificationsPage> {
                       children: [
                         Container(
                           padding: const EdgeInsets.all(24),
-                          decoration: const BoxDecoration(color: AppTheme.slate100, shape: BoxShape.circle),
-                          child: const Icon(Icons.check_circle_outline_rounded, size: 48, color: AppTheme.slate400),
+                          decoration: BoxDecoration(color: context.colors.border, shape: BoxShape.circle),
+                          child: Icon(Icons.check_circle_outline_rounded, size: 48, color: context.colors.textHint),
                         ),
                         const SizedBox(height: 16),
-                        const Text('Semua Sudah Dibaca!', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18, color: AppTheme.slate700)),
+                        Text('Semua Sudah Dibaca!', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18, color: context.colors.textPrimary)),
                         const SizedBox(height: 8),
-                        const Text('Tidak ada notifikasi yang belum dibaca.', style: TextStyle(fontSize: 13, color: AppTheme.slate500, fontWeight: FontWeight.w500)),
+                         Text('Tidak ada notifikasi yang belum dibaca.', style: TextStyle(fontSize: 13, color: context.colors.surface, fontWeight: FontWeight.w500)),
                       ],
                     ),
                   )
@@ -174,7 +172,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                             padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
                             child: Text(
                               entry.key.toUpperCase(),
-                              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: AppTheme.slate500, letterSpacing: 1),
+                              style:  TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: context.colors.surface, letterSpacing: 1),
                             ),
                           ),
                           ...entry.value.map((notif) => Padding(
@@ -196,9 +194,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                   duration: const Duration(milliseconds: 200),
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
-                                    color: notif.isRead ? Colors.white : const Color(0xFFFFF7ED),
+                                    color: notif.isRead ? context.colors.cardBackground : const Color(0xFFFFF7ED),
                                     borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: notif.isRead ? AppTheme.slate100 : AppTheme.orange200),
+                                    border: Border.all(color: notif.isRead ? context.colors.border : AppTheme.orange200),
                                     boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 10.2), blurRadius: 6, offset: const Offset(0, 2))],
                                   ),
                                   child: Row(
@@ -207,7 +205,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                       Container(
                                         padding: const EdgeInsets.all(10),
                                         decoration: BoxDecoration(color: _getColor(notif.type), borderRadius: BorderRadius.circular(14)),
-                                        child: Icon(_getIcon(notif.type), color: Colors.white, size: 18),
+                                        child: Icon(_getIcon(notif.type), color: context.colors.cardBackground, size: 18),
                                       ),
                                       const SizedBox(width: 12),
                                       Expanded(
@@ -222,7 +220,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                                     style: TextStyle(
                                                       fontWeight: FontWeight.w900,
                                                       fontSize: 13,
-                                                      color: notif.isRead ? AppTheme.slate700 : AppTheme.slate900,
+                                                      color: notif.isRead ? context.colors.textPrimary : AppTheme.slate900,
                                                     ),
                                                   ),
                                                 ),
@@ -240,16 +238,16 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                               style: TextStyle(
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.w500,
-                                                color: notif.isRead ? AppTheme.slate500 : AppTheme.slate700,
+                                                color: notif.isRead ? context.colors.surface : context.colors.textPrimary,
                                                 height: 1.5,
                                               ),
                                             ),
                                             const SizedBox(height: 6),
                                             Row(
                                               children: [
-                                                const Icon(Icons.access_time_rounded, size: 11, color: AppTheme.slate400),
+                                                Icon(Icons.access_time_rounded, size: 11, color: context.colors.textHint),
                                                 const SizedBox(width: 4),
-                                                Text(notif.time, style: const TextStyle(fontSize: 11, color: AppTheme.slate400, fontWeight: FontWeight.w700)),
+                                                Text(notif.time, style: TextStyle(fontSize: 11, color: context.colors.textHint, fontWeight: FontWeight.w700)),
                                               ],
                                             ),
                                           ],

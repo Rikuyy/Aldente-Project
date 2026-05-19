@@ -1,3 +1,4 @@
+import 'package:cook_cash/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../services/auth_services.dart';
@@ -43,80 +44,102 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.cardBackground,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        title: const Text("Forgot Password"),
+        backgroundColor: context.colors.cardBackground,
+        title: const Text(
+          "Forgot Password",
+          style: TextStyle(color: Color(0xFF757575)),
+        ),
       ),
-      body: SizedBox(
-        width: double.infinity,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                SizedBox(height: MediaQuery.of(context).size.height * 0.04),
-                const Text(
-                  "Forgot Password",
-                  style: TextStyle(
-                    fontSize: 28,
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
+      body: SafeArea(
+        child: SizedBox(
+          width: double.infinity,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  const SizedBox(height: 16),
+                  const Text(
+                    "Forgot Password",
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                const Text(
-                  "Please enter your email and we will send \nyou a link to return to your account",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Color(0xFF757575)),
-                ),
-                SizedBox(height: MediaQuery.of(context).size.height * 0.1),
-                Form(
-                  child: Column(
-                    children: [
-                      TextFormField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: InputDecoration(
-                          labelText: "Email",
-                          hintText: "Enter your email",
-                          floatingLabelBehavior: FloatingLabelBehavior.always,
-                          suffixIcon: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: SvgPicture.string(mailIcon),
-                          ),
-                          border: authOutlineInputBorder,
-                        ),
-                      ),
-                      SizedBox(
-                          height: MediaQuery.of(context).size.height * 0.1),
-                      ElevatedButton(
-                        onPressed: _isLoading ? null : _handleForgot,
-                        style: ElevatedButton.styleFrom(
-                          elevation: 0,
-                          backgroundColor: const Color(0xFFFF7643),
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size(double.infinity, 48),
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(16)),
-                          ),
-                        ),
-                        child: _isLoading
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                    color: Colors.white, strokeWidth: 2))
-                            : const Text("Continue"),
-                      ),
-                    ],
+                  const SizedBox(height: 8),
+                  const Text(
+                    "Please enter your email and we will send \nyou a link to return to your account",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Color(0xFF757575)),
                   ),
-                ),
-                SizedBox(height: MediaQuery.of(context).size.height * 0.1),
-                const NoAccountText(),
-              ],
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.15),
+                  const ForgotPasswordForm(),
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+
+                  const NoAccountText(),
+                ],
+              ),
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+const authOutlineInputBorder = OutlineInputBorder(
+  borderSide: BorderSide(color: Color(0xFF757575)),
+  borderRadius: BorderRadius.all(Radius.circular(100)),
+);
+
+class ForgotPasswordForm extends StatelessWidget {
+  const ForgotPasswordForm({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Form(
+      child: Column(
+        children: [
+          TextFormField(
+            onSaved: (email) {},
+            onChanged: (email) {},
+            decoration: InputDecoration(
+                hintText: "Enter your email",
+                labelText: "Email",
+                floatingLabelBehavior: FloatingLabelBehavior.always,
+                hintStyle: const TextStyle(color: Color(0xFF757575)),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
+                suffix: SvgPicture.string(
+                  mailIcon,
+                ),
+                border: authOutlineInputBorder,
+                enabledBorder: authOutlineInputBorder,
+                focusedBorder: authOutlineInputBorder.copyWith(
+                    borderSide: const BorderSide(color: Color(0xFFFF7643)))),
+          ),
+          SizedBox(height: MediaQuery.of(context).size.height * 0.1),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pushNamed(context, OtpScreen.routeName);
+            },
+            style: ElevatedButton.styleFrom(
+              elevation: 0,
+              backgroundColor: const Color(0xFFFF7643),
+              foregroundColor: context.colors.cardBackground,
+              minimumSize: const Size(double.infinity, 48),
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(16)),
+              ),
+            ),
+            child: const Text("Continue"),
+          )
+        ],
       ),
     );
   }

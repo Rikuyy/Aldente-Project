@@ -1,3 +1,3 @@
-# cook_mate
+# CookCash
 
 A new Flutter project.

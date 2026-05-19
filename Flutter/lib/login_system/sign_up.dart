@@ -1,3 +1,4 @@
+import 'package:cook_cash/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -11,9 +12,9 @@ class SignUpScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.cardBackground,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.colors.cardBackground,
         title: const Text("Sign Up"),
       ),
       body: SafeArea(
@@ -194,7 +195,7 @@ class _SignUpFormState extends State<SignUpForm> {
             style: ElevatedButton.styleFrom(
               elevation: 0,
               backgroundColor: const Color(0xFFFF7643),
-              foregroundColor: Colors.white,
+              foregroundColor: context.colors.cardBackground,
               minimumSize: const Size(double.infinity, 48),
               shape: const RoundedRectangleBorder(
                   borderRadius: BorderRadius.all(Radius.circular(16))),
