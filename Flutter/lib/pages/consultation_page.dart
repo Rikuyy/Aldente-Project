@@ -197,6 +197,7 @@ class _ConsultationPageState extends State<ConsultationPage> {
             child: ListView.builder(
               controller: _scrollController,
               padding: const EdgeInsets.all(20),
+<<<<<<< HEAD
               children: [
                 _BotMessage(
                   child: Column(
@@ -207,6 +208,150 @@ class _ConsultationPageState extends State<ConsultationPage> {
                           Text('Halo Budi!', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: AppTheme.slate900, letterSpacing: -0.3)),
                           SizedBox(width: 4),
                           Icon(Icons.waving_hand, size: 14, color: AppTheme.slate900),
+=======
+              itemCount: _messages.length,
+              itemBuilder: (context, index) {
+                final msg = _messages[index];
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: msg.isUser
+                      ? _UserMessage(text: msg.text)
+                      : _BotMessage(
+                          child: _buildBotContent(msg),
+                        ),
+                );
+              },
+            ),
+          ),
+
+          _buildQuickChips(),
+          _buildInputBar(context),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBotContent(ChatMessage msg) {
+    // 1. Jika bot masih loading / sedang berpikir
+    if (msg.status == MessageStatus.loading) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: AppTheme.orange500,
+            ),
+          ),
+          const SizedBox(width: 10),
+          const Text(
+            'ChefBot sedang mengetik...',
+            style: TextStyle(
+              fontSize: 12,
+              color: AppTheme.slate400,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      );
+    }
+
+    // 2. Jika bot sudah selesai loading, tampilkan isi pesannya
+    // Sesuaikan 'msg.content' dengan nama variabel teks di model ChatMessage kamu (misal: msg.text atau msg.message)
+    return Text(
+      msg.content ?? '',
+      style: const TextStyle(
+        fontSize: 14,
+        color: Colors.black, // Sesuaikan dengan warna tema aplikasi kamu
+      ),
+    );
+
+    // Pesan error
+    if (msg.status == MessageStatus.error) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.error_outline, color: Colors.red, size: 16),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              msg.text,
+              style: const TextStyle(
+                color: Colors.red,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Text(
+      msg.text,
+      style: const TextStyle(
+        color: AppTheme.slate700,
+        fontSize: 13,
+        fontWeight: FontWeight.w500,
+        height: 1.6,
+      ),
+    );
+  }
+
+// ─────────────────────────────────────────
+// Helper: Input bar
+// ─────────────────────────────────────────
+  Widget _buildInputBar(BuildContext context) {
+    return Container(
+      color: Colors.white,
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 12,
+        bottom: MediaQuery.of(context).padding.bottom + 12,
+      ),
+      child: Container(
+        padding: const EdgeInsets.only(left: 20, right: 6, top: 4, bottom: 4),
+        decoration: BoxDecoration(
+          color: AppTheme.slate100.withOpacity(0.8),
+          borderRadius: BorderRadius.circular(50),
+          border: Border.all(color: AppTheme.slate200, width: 2),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _textController,
+                onSubmitted: _sendMessage,
+                textInputAction: TextInputAction.send,
+                decoration: const InputDecoration(
+                  hintText: 'Ketik pertanyaan...',
+                  hintStyle: TextStyle(
+                      color: AppTheme.slate400, fontWeight: FontWeight.w500),
+                  border: InputBorder.none,
+                ),
+              ),
+            ),
+            // ✅ Tombol kirim — sekarang fungsional
+            GestureDetector(
+              onTap: () => _sendMessage(_textController.text),
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: _isLoading ? AppTheme.slate300 : AppTheme.orange500,
+                  shape: BoxShape.circle,
+                  boxShadow: _isLoading
+                      ? []
+                      : [
+                          BoxShadow(
+                            color: AppTheme.orange500.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          )
+>>>>>>> d0ef53e (perubahan testing model dan resep web)
                         ],
                       ),
                       const SizedBox(height: 6),

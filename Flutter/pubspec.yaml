@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 name: cook_cash
+=======
+name: cookcash
+>>>>>>> d0ef53e (perubahan testing model dan resep web)
 description: CookCash Aplikasi Rekomendasi Resep Masakan
 version: 1.0.0+1
 

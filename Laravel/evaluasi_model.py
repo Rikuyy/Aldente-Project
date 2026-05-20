@@ -3,100 +3,164 @@ import pandas as pd
 import pickle
 import os
 import sys
+import io
+import re
+import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.metrics import classification_report, accuracy_score
+from collections import Counter
+
+# Opsional: Stemming (install Sastrawi dulu)
+try:
+    from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
+    factory = StemmerFactory()
+    stemmer = factory.create_stemmer()
+    USE_STEMMING = True
+except ImportError:
+    USE_STEMMING = False
+    print("⚠️ Sastrawi tidak terinstall, stemming di-skip", file=sys.stderr)
 
 def run_evaluation():
+    if sys.platform == 'win32':
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+    
     try:
-        # 1. Setup Path File secara Dinamis
-        # Menggunakan lokasi script sebagai titik acuan agar tidak error saat dipanggil Laravel
+        # ---------- 1. PATH & LOAD ----------
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
         path_model = os.path.join(BASE_DIR, 'model_cookcash.pkl')
-        path_csv = os.path.join(BASE_DIR, 'Cookcash_Data_Test.csv')
-        
-        # Cek apakah file model dan data test ada
-        if not os.path.exists(path_model):
-            raise FileNotFoundError(f"Model pkl tidak ditemukan di: {path_model}")
-        if not os.path.exists(path_csv):
-            raise FileNotFoundError(f"File CSV data test tidak ditemukan di: {path_csv}")
+        path_csv   = os.path.join(BASE_DIR, 'Cookcash_Data_Test.csv')
 
-        # 2. Load Model AI
-        # tfidf: Kamus kata, tfidf_matrix: Vektor database resep, df_train: Data mentah resep
         with open(path_model, 'rb') as f:
-            tfidf, tfidf_matrix, df_train = pickle.load(f)
+            model_data = pickle.load(f)
             
-        # 3. Baca Data Test
-        df_test = pd.read_csv(path_csv)
-        
-        # Validasi kolom CSV
-        required_cols = ['Title Cleaned', 'Ingredients Cleaned', 'Category']
-        for col in required_cols:
-            if col not in df_test.columns:
-                raise ValueError(f"Kolom '{col}' tidak ditemukan dalam CSV data test.")
+        if isinstance(model_data, tuple) and len(model_data) == 3:
+            tfidf, tfidf_matrix, df_train = model_data
+        elif isinstance(model_data, dict):
+            tfidf = model_data.get('tfidf') or model_data.get('vectorizer')
+            tfidf_matrix = model_data.get('tfidf_matrix') or model_data.get('matrix')
+            df_train = model_data.get('df_train') or model_data.get('dataframe')
 
-        benar = 0
+        # Baca CSV
+        encodings_to_try = ['utf-8', 'latin1', 'iso-8859-1', 'cp1252']
+        df_test = None
+        for encoding in encodings_to_try:
+            try:
+                df_test = pd.read_csv(path_csv, encoding=encoding)
+                break
+            except (UnicodeDecodeError, UnicodeError):
+                continue
+
+        # ---------- 2. PARAMETER EVALUASI ----------
+        K = 5  #  UBAH SESUAI KEBUTUHAN (1, 3, 5, 7)
+        SIMILARITY_THRESHOLD = 0.25  #  Threshold minimal
+        
+        def clean_text(text):
+            if not isinstance(text, str):
+                text = str(text)
+            text = re.sub(r'[^\x20-\x7E\x0A\x0D\u00A0-\u024F]', ' ', text)
+            text = re.sub(r'\s+', ' ', text)
+            text = text.strip().lower()
+            
+            # Stemming (kalau Sastrawi tersedia)
+            if USE_STEMMING and len(text) > 3:
+                try:
+                    text = stemmer.stem(text)
+                except:
+                    pass
+            return text
+
+        # ---------- 3. PROSES EVALUASI ----------
+        y_true = []
+        y_pred = []
         detail_hasil = []
         
-        # 4. Proses Evaluasi (Looping Data Test)
         for index, row in df_test.iterrows():
-            # PENTING: Penggabungan teks harus SAMA dengan skrip training (Title + Ingredients)
-            judul = str(row['Title Cleaned']).strip()
-            bahan = str(row['Ingredients Cleaned']).strip()
-            query_soal = f"{judul} {bahan}"
+            query = clean_text(row['Ingredients Cleaned'])
+            target_asli = clean_text(row['Category'])
             
-            # Label asli (target)
-            target_asli = str(row['Category']).lower().strip()
-            
-            # AI Menebak: Ubah teks soal jadi vektor, lalu hitung kemiripan dengan database
-            query_vec = tfidf.transform([query_soal])
-            sim = cosine_similarity(query_vec, tfidf_matrix).flatten()
-            
-            # Cari indeks dengan nilai kemiripan (similarity) tertinggi
-            if len(sim) > 0 and sim.max() > 0:
-                best_idx = sim.argmax()
-                # Ambil kategori dari database training berdasarkan hasil paling mirip
-                prediksi_kategori = str(df_train.iloc[best_idx].get('Category', '')).lower().strip()
-                skor_kemiripan = f"{sim.max() * 100:.1f}%"
-            else:
-                prediksi_kategori = "tidak ditemukan"
-                skor_kemiripan = "0%"
+            if not query or pd.isna(query):
+                continue
                 
-            # Cek akurasi tebakan
-            status = "Benar" if prediksi_kategori == target_asli else "Salah"
-            if status == "Benar":
-                benar += 1
+            try:
+                vec = tfidf.transform([query])
+                sim = cosine_similarity(vec, tfidf_matrix).flatten()
                 
-            # Simpan detail untuk tabel di Laravel
-            detail_hasil.append({
-                "soal": judul,
-                "target": target_asli.upper(),
-                "prediksi": prediksi_kategori.upper(),
-                "kemiripan": skor_kemiripan,
-                "status": status
-            })
-            
-        # 5. Hitung Skor Akhir
-        total_data = len(df_test)
-        akurasi = (benar / total_data) * 100 if total_data > 0 else 0
+                #  K-NN (bukan 1-NN)
+                top_k_indices = sim.argsort()[-K:][::-1]
+                top_k_categories = [clean_text(df_train['Category'].iloc[i]) 
+                                   for i in top_k_indices]
+                top_k_similarities = sim[top_k_indices]
+                
+                # Ambil similarity tertinggi
+                best_similarity = top_k_similarities[0]
+                
+                # Voting
+                category_votes = Counter(top_k_categories)
+                prediksi_kategori = category_votes.most_common(1)[0][0]
+                
+                #  Threshold: kalau terlalu rendah, anggap "Tidak Diketahui"
+                if best_similarity < SIMILARITY_THRESHOLD:
+                    prediksi_kategori = "tidak diketahui"
+                
+                y_true.append(target_asli)
+                y_pred.append(prediksi_kategori)
+                
+                detail_hasil.append({
+                    "no": len(detail_hasil) + 1,
+                    "soal": query[:100],
+                    "target": target_asli,
+                    "prediksi": prediksi_kategori,
+                    "similarity": round(float(best_similarity) * 100, 2),
+                    "status": "Benar" if prediksi_kategori == target_asli else "Salah"
+                })
+                
+            except Exception as e:
+                continue
+
+        # ---------- 4. METRIK ----------
+        akurasi = accuracy_score(y_true, y_pred) * 100
+        report = classification_report(y_true, y_pred, output_dict=True, zero_division=0)
         
-        # Format Output untuk Laravel
+        benar = sum(1 for a, b in zip(y_true, y_pred) if a == b)
+        salah = sum(1 for a, b in zip(y_true, y_pred) if a != b)
+
         output = {
             "status": "success",
-            "akurasi": round(akurasi, 2),
-            "total_uji": total_data,
-            "prediksi_benar": benar,
-            "detail_hasil": detail_hasil
+            "konfigurasi": {
+                "K_value": K,
+                "similarity_threshold": SIMILARITY_THRESHOLD,
+                "gunakan_stemming": USE_STEMMING
+            },
+            "ringkasan": {
+                "akurasi": round(akurasi, 2),
+                "total_data_diproses": len(y_true),
+                "prediksi_benar": benar,
+                "prediksi_salah": salah
+            },
+            "per_kategori": {
+                kategori: {
+                    "precision": round(metrics['precision'] * 100, 2),
+                    "recall": round(metrics['recall'] * 100, 2),
+                    "f1_score": round(metrics['f1-score'] * 100, 2),
+                    "support": int(metrics['support'])
+                }
+                for kategori, metrics in report.items()
+                if kategori not in ['accuracy', 'macro avg', 'weighted avg']
+            },
+            "detail_hasil": detail_hasil,
+            "rekomendasi": [
+                f" Gunakan K={K} (bukan K=1) untuk voting",
+                " Tambah data latih kategori dengan F1 < 70%",
+                " Coba ngram_range=(1,2) untuk tangkap bigram",
+                "Jika akurasi masih < 75%, pertimbangkan metode lain (SVM/Random Forest)"
+            ]
         }
         
-        # Kirimkan hasil ke stdout sebagai JSON
-        print(json.dumps(output))
+        print(json.dumps(output, ensure_ascii=False, indent=2))
 
     except Exception as e:
-        # Jika ada error (misal: Pandas error atau Pickle error)
-        error_output = {
-            "status": "error",
-            "message": str(e)
-        }
-        print(json.dumps(error_output))
+        print(json.dumps({"status": "error", "message": str(e)}, ensure_ascii=False))
 
 if __name__ == "__main__":
     run_evaluation()

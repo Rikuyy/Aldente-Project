@@ -68,14 +68,16 @@ final _router = GoRouter(
     GoRoute(
       path: '/otp',
       builder: (context, state) {
-        final email = state.extra as String?;
+        // Validasi tipe data ekstra agar tidak error cast
+        final email = state.extra is String ? state.extra as String : '';
         return OtpScreen(email: email);
       },
     ),
     GoRoute(
       path: '/reset_password',
       builder: (context, state) {
-        final email = state.extra as String?;
+        // Validasi tipe data ekstra agar tidak error cast
+        final email = state.extra is String ? state.extra as String : '';
         return ResetPasswordScreen(email: email);
       },
     ),
