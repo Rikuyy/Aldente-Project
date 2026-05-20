@@ -1,49 +1,52 @@
-# Miscellaneous
+# =========================
+# GENERAL
+# =========================
 *.class
 *.log
 *.pyc
 *.swp
 .DS_Store
-.atom/
-.build/
-.buildlog/
 .history
 .svn/
-.swiftpm/
-migrate_working_dir/
 
-# IntelliJ related
+# IDE
+.idea/
+.vscode/
 *.iml
 *.ipr
 *.iws
-.idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
+# =========================
+# FLUTTER (GLOBAL)
+# =========================
 .dart_tool/
+.flutter-plugins
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
-/build/
-/coverage/
+build/
+coverage/
 
-# Symbolication related
-app.*.symbols
+# Flutter generated
+**/build/
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
 
-# Obfuscation related
-app.*.map.json
+# iOS
+ios/Flutter/.last_build_id
+ios/Flutter/Ephemeral/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+ios/Pods/
 
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
+# Android
+android/local.properties
+android/key.properties
+android/*.keystore
+android/*.jks
 
+<<<<<<< HEAD
 # tambahan (rifky)
 # ----------------------------------------------------------------------------
 # LARAVEL SPECIFIC
@@ -110,3 +113,32 @@ Flutter/build/flutter_assets/shaders/ink_sparkle.frag
 Flutter/build/flutter_assets/shaders/stretch_effect.frag
 Flutter/build/native_hooks/.last_build_id
 Flutter/build/reports/problems/problems-report.html
+=======
+# =========================
+# LARAVEL
+# =========================
+.env
+.env.backup
+vendor/
+node_modules/
+public/storage
+
+# Laravel storage
+storage/*.key
+storage/framework/cache/data/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/logs/*
+bootstrap/cache/*
+
+# =========================
+# OPTIONAL (PILIH SESUAI)
+# =========================
+# Kalau ini aplikasi → biasanya DI-COMMIT
+# composer.lock
+# pubspec.lock
+
+# Kalau mau di-ignore → buka komentar
+# composer.lock
+# pubspec.lock
+>>>>>>> 81efba2 (fix: clean gitignore and remove unwanted files)

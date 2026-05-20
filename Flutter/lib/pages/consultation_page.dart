@@ -197,7 +197,6 @@ class _ConsultationPageState extends State<ConsultationPage> {
             child: ListView.builder(
               controller: _scrollController,
               padding: const EdgeInsets.all(20),
-<<<<<<< HEAD
               children: [
                 _BotMessage(
                   child: Column(
@@ -208,7 +207,6 @@ class _ConsultationPageState extends State<ConsultationPage> {
                           Text('Halo Budi!', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: AppTheme.slate900, letterSpacing: -0.3)),
                           SizedBox(width: 4),
                           Icon(Icons.waving_hand, size: 14, color: AppTheme.slate900),
-=======
               itemCount: _messages.length,
               itemBuilder: (context, index) {
                 final msg = _messages[index];
@@ -351,7 +349,6 @@ class _ConsultationPageState extends State<ConsultationPage> {
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           )
->>>>>>> d0ef53e (perubahan testing model dan resep web)
                         ],
                       ),
                       const SizedBox(height: 6),

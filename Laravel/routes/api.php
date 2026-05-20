@@ -5,24 +5,18 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\DashboardController as ApiDashboardController;
 use App\Http\Controllers\API\StockController;
-<<<<<<< HEAD
 aAuse App\Http\Controllers\API\SetupController;
 use App\Http\Controllers\API\ConsultationController;
 use App\Http\Controllers\DashboardController;
 =======
-=======
->>>>>>> d0ef53e (perubahan testing model dan resep web)
 use App\Http\Controllers\API\KeuanganController;
 use App\Http\Controllers\API\ProfileController;
 use App\Http\Controllers\API\ConsultationController;
 use App\Http\Controllers\ResepController;
 use App\Http\Controllers\ChatbotController;
-<<<<<<< HEAD
 use Illuminate\Support\Facades\Password;
 
 // AUTH PUBLIC
-=======
->>>>>>> d0ef53e (perubahan testing model dan resep web)
 
 /*
 |--------------------------------------------------------------------------
@@ -30,11 +24,8 @@ use Illuminate\Support\Facades\Password;
 |--------------------------------------------------------------------------
 */
 
-<<<<<<< HEAD
 // ── AUTH PUBLIC (Tidak Perlu Login) ─────────────────────────────
-=======
 // AUTH PUBLIC
->>>>>>> d0ef53e (perubahan testing model dan resep web)
 Route::prefix('auth')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
@@ -51,13 +42,10 @@ Route::prefix('auth')->group(function () {
 
 Route::post('/consultation', [ConsultationController::class, 'send']);
 
-<<<<<<< HEAD
 
 // ── PROTECTED ROUTES (Wajib Login & Menggunakan JWT) ─────────────
 // PROTECTED ROUTES (Wajib Login & Full Menggunakan JWT)
-=======
 // PROTECTED ROUTES (JWT)
->>>>>>> d0ef53e (perubahan testing model dan resep web)
 Route::middleware('auth:api')->group(function () {
 
     Route::prefix('dashboard')->group(function () {
@@ -69,20 +57,17 @@ Route::middleware('auth:api')->group(function () {
     });
 
     Route::prefix('inventory')->group(function () {
-<<<<<<< HEAD
         // Pastikan StockController kamu ada di folder App\Http\Controllers\API\StockController
         Route::get('/',               [StockController::class, 'index']);
         Route::get('/search',         [StockController::class, 'search']);
         Route::post('/',              [StockController::class, 'store']);
         Route::put('/{id}',           [StockController::class, 'update']);
         Route::delete('/{id}',        [StockController::class, 'deleteStock']);
-=======
         Route::get('/', [StockController::class, 'index']);
         Route::get('/search', [StockController::class, 'search']);
         Route::post('/', [StockController::class, 'store']);
         Route::put('/{id}', [StockController::class, 'update']);
         Route::delete('/{id}', [StockController::class, 'deleteStock']);
->>>>>>> d0ef53e (perubahan testing model dan resep web)
         Route::post('/masak-selesai', [StockController::class, 'masakSelesai']);
     });
 
@@ -100,7 +85,6 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/evaluasi', [ChatbotController::class, 'evaluasi']); 
     });
 
-<<<<<<< HEAD
     
 });
 
@@ -118,13 +102,11 @@ Route::post('/consultation', [ConsultationController::class, 'send']);
         Route::get('/mutasi',    [KeuanganController::class, 'mutasi']);
         // Detail 1 transaksi
         Route::get('/{id}',      [KeuanganController::class, 'detail']);
-=======
     Route::prefix('keuangan')->group(function () {
         Route::get('/ringkasan', [KeuanganController::class, 'ringkasan']);
         Route::get('/grafik', [KeuanganController::class, 'grafik']);
         Route::get('/mutasi', [KeuanganController::class, 'mutasi']);
         Route::get('/{id}', [KeuanganController::class, 'detail']);
->>>>>>> d0ef53e (perubahan testing model dan resep web)
     });
 
     Route::prefix('profile')->group(function () {
