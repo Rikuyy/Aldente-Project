@@ -3,33 +3,42 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\ResepController;
+use App\Http\Controllers\ChatbotController; // <--- WAJIB IMPORT
 use Illuminate\Support\Facades\Route;
 
+// 1. Arahkan halaman utama ke login
 Route::redirect('/', '/login');
 
-// Semua route yang butuh login masukkan ke dalam group ini
+// 2. Semua route yang butuh login (Sesi/Web)
 Route::middleware(['auth', 'verified'])->group(function () {
     
-    // Dashboard
+    // Dashboard Utama
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Manajemen Resep
-    Route::get('/resep', function () {
-        return view('resep');
-    })->name('resep.index');
+    // Halaman Utama Manajemen Resep
+    Route::get('/resep', function () { return view('resep'); })->name('resep.index');
+
+    // Routing Endpoint API Berbasis JSON untuk Data Resep (Web-based)
+    Route::get('/api/resep', [ResepController::class, 'index']);
+    Route::post('/api/resep', [ResepController::class, 'store']);
+    Route::put('/api/resep/{id}', [ResepController::class, 'update']);
+    Route::delete('/api/resep/{id}', [ResepController::class, 'destroy']);
+
+    // --- PENTING: Route Evaluasi untuk Testing Page ---
+    // Dipindahkan ke web agar menggunakan Session Login, bukan JWT
+    Route::post('/api/chatbot/evaluasi', [ChatbotController::class, 'evaluasi']);
 
     // Manajemen Bahan
-    Route::get('/bahan', function () {
-        return view('bahan');
-    })->name('bahan.index');
+    Route::get('/bahan', function () { return view('bahan'); })->name('bahan.index');
 
-    // Manajemen User (User Flutter)
+    // Manajemen User
     Route::get('/manajemen-user', [UserController::class, 'index'])->name('users.index');
     Route::delete('/manajemen-user/{id}', [UserController::class, 'destroy'])->name('users.destroy');
 
-    // Evaluasi Algoritma / Testing
+    // Halaman Uji Algoritma
     Route::get('/testing', function () {
-        $routes = collect(\Route::getRoutes())->filter(function($route) {
+        $routes = collect(Route::getRoutes())->filter(function($route) {
             return str_contains($route->uri, 'api/') && !str_contains($route->uri, 'sanctum');
         })->map(function($route) {
             return [
@@ -41,7 +50,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return view('testing', compact('routes'));
     })->name('testing');
 
-    // Profile
+    // Profile Manajemen Akun Admin
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');

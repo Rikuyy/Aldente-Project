@@ -5,7 +5,7 @@
 
 <x-app-layout>
     <x-slot name="header">
-        Manajemen Resep Makanan 
+        Manajemen Resep Makanan & AI
     </x-slot>
 
     <div x-data="{ 
@@ -43,6 +43,7 @@
             },
 
             getCategoryColor(cat) {
+                if (!cat) return 'bg-purple-500/10 text-purple-400 border-purple-500/20';
                 const category = cat.toLowerCase();
                 if (category.includes('sapi')) return 'bg-red-500/10 text-red-500 border-red-500/20';
                 if (category.includes('ayam')) return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20';
@@ -57,19 +58,20 @@
                     .then(res => res.json())
                     .then(data => {
                         this.reseps = data.map(item => {
-                            let bahanClean = item['Ingredients Cleaned'] 
+                            let bClean = item['Ingredients Cleaned'] 
                                 ? item['Ingredients Cleaned'].split(',').map(s => s.trim()).join('\n') 
                                 : '';
-                            let langkahClean = item['Steps'] || '';
+                            let sClean = item['Steps'] || '';
 
                             return {
-                                id: item.id || item._id,
+                                // Pastikan ID dikunci ke properti 'id' string murni
+                                id: item.id || item._id || String(Math.random()),
                                 judul: item['Title Cleaned'] || 'Tanpa Judul',
                                 kategori: item.Category ? item.Category.toUpperCase() : 'LAINNYA',
-                                bahan: bahanClean,
-                                steps: langkahClean,
-                                totalBahan: item['Total Ingredients'] || bahanClean.split('\n').filter(b=>b.trim()).length,
-                                totalLangkah: item['Total Steps'] || langkahClean.split('\n').filter(s=>s.trim()).length,
+                                bahan: bClean,
+                                steps: sClean,
+                                totalBahan: item['Total Ingredients'] || bClean.split('\n').filter(b=>b.trim()).length,
+                                totalLangkah: item['Total Steps'] || sClean.split('\n').filter(s=>s.trim()).length,
                                 loves: item.Loves || 0
                             };
                         });
@@ -109,11 +111,16 @@
                 }
             },
 
-            get totalPages() { return Math.ceil(this.filteredReseps.length / this.itemsPerPage) || 1; },
+            get totalPages() { 
+                return Math.ceil(this.filteredReseps.length / this.itemsPerPage) || 1; 
+            },
+
+            // Sinkronisasi Sempurna: Dipakai di looping tabel x-for HTML
             get paginatedResep() {
                 let start = (this.currentPage - 1) * this.itemsPerPage;
                 return this.filteredReseps.slice(start, start + this.itemsPerPage);
             },
+
             nextPage() { if (this.currentPage < this.totalPages) this.currentPage++; },
             prevPage() { if (this.currentPage > 1) this.currentPage--; },
 
@@ -164,7 +171,7 @@
                 }
                 
                 let finalKategori = this.formResep.kategoriSelect === 'Lainnya' ? this.formResep.kategoriCustom : this.formResep.kategoriSelect;
-                if(finalKategori.trim() === '') finalKategori = 'Lainnya';
+                if(!finalKategori || finalKategori.trim() === '') finalKategori = 'Lainnya';
 
                 let bahanArray = this.formResep.bahan.split('\n').filter(b => b.trim() !== '');
                 let langkahArray = this.formResep.steps.split('\n').filter(s => s.trim() !== '');
@@ -177,7 +184,7 @@
                     'Steps': this.formResep.steps,
                     'Total Ingredients': bahanArray.length,
                     'Total Steps': langkahArray.length,
-                    'Loves': this.formResep.loves
+                    'Loves': parseInt(this.formResep.loves) || 0
                 };
 
                 let url = this.formResep.id ? `/api/resep/${this.formResep.id}` : '/api/resep';
@@ -193,7 +200,7 @@
                     if(data.status === 'success') {
                         this.showNotification(data.message, 'success');
                         this.fetchResep(); 
-                        this.triggerModelUpdate(); // OTOMATIS JALAN SAAT TAMBAH ATAU EDIT
+                        this.triggerModelUpdate();
                         this.isModalEditOpen = false;
                         this.isModalTambahOpen = false;
                     }
@@ -215,7 +222,7 @@
                         if(data.status === 'success') {
                             this.showNotification(data.message, 'success');
                             this.fetchResep(); 
-                            this.triggerModelUpdate(); // OTOMATIS JALAN SAAT HAPUS
+                            this.triggerModelUpdate();
                             if (this.paginatedResep.length === 1 && this.currentPage > 1) this.currentPage--;
                         }
                     });
@@ -234,7 +241,7 @@
 
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-                <h1 class="text-2xl font-bold text-white">Rincian Resep</h1>
+                <h1 class="text-2xl font-bold text-white">Database Resep & AI</h1>
                 <p class="text-neutral-400 text-sm mt-1">Sistem Otomatis: Sinkronasi Database dan Retrain Model ML CookCash.</p>
             </div>
 
@@ -278,7 +285,7 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-neutral-700/50">
-                        <template x-show="filteredReseps.length > 0" x-for="resep in paginatedResep" :key="resep.id">
+                        <template x-for="resep in paginatedResep" :key="resep.id">
                             <tr class="hover:bg-neutral-700/20 transition-colors group">
                                 <td class="px-6 py-4">
                                     <span class="text-white font-bold block" x-text="resep.judul"></span>
