@@ -11,7 +11,7 @@ class _Transaction {
   final double amount;
   final bool isDebit;
   final TransactionCategory category;
-  final int month; // 1-12
+  final int month;
   final int year;
 
   const _Transaction({
@@ -41,14 +41,14 @@ class _FinancePageState extends State<FinancePage> {
   String _period = 'Bulan Ini';
   int _touchedIndex = -1;
   String _mutationMonth = 'Semua';
-  int _mutationYear = 0; // 0 = Semua
+  int _mutationYear = 0;
 
   static const _monthOptions = [
     'Semua', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
     'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
   ];
 
-  static const _yearOptions = [0, 2025, 2024, 2023]; // 0 = Semua
+  static const _yearOptions = [0, 2025, 2024, 2023];
 
   final List<_Transaction> _transactions = const [
     _Transaction(id: '1', title: 'Pengisian Budget', subtitle: 'Budget masuk dari dompet', time: '08.00', date: 'Hari ini', amount: 500000, isDebit: false, category: TransactionCategory.topup, month: 5, year: 2025),
@@ -107,7 +107,6 @@ class _FinancePageState extends State<FinancePage> {
     }
   }
 
-  /// Transactions filtered by selected mutation month + year
   List<_Transaction> get _filteredTransactions {
     return _transactions.where((t) {
       final monthMatch = _mutationMonth == 'Semua' || t.month == _monthOptions.indexOf(_mutationMonth);
@@ -200,7 +199,6 @@ class _FinancePageState extends State<FinancePage> {
           SliverList(
             delegate: SliverChildListDelegate([
 
-              // ── Balance Card ──
               Container(
                 margin: const EdgeInsets.fromLTRB(20, 20, 20, 0),
                 padding: const EdgeInsets.all(22),
@@ -240,8 +238,6 @@ class _FinancePageState extends State<FinancePage> {
               ),
 
               const SizedBox(height: 20),
-
-              // ── Summary chips ──
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
@@ -254,8 +250,6 @@ class _FinancePageState extends State<FinancePage> {
               ),
 
               const SizedBox(height: 16),
-
-              // ── Warning banner ──
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 20),
                 padding: const EdgeInsets.all(16),
@@ -288,7 +282,6 @@ class _FinancePageState extends State<FinancePage> {
 
               const SizedBox(height: 16),
 
-              // ── Spending trend chart ──
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 20),
                 padding: const EdgeInsets.all(20),
@@ -371,8 +364,6 @@ class _FinancePageState extends State<FinancePage> {
               ),
 
               const SizedBox(height: 16),
-
-              // ── Composition pie ──
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 20),
                 padding: const EdgeInsets.all(20),
@@ -428,8 +419,6 @@ class _FinancePageState extends State<FinancePage> {
               ),
 
               const SizedBox(height: 20),
-
-              // ── Mutation header with month filter ──
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
@@ -438,7 +427,6 @@ class _FinancePageState extends State<FinancePage> {
                     Text('Mutasi', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: context.colors.textPrimary, letterSpacing: -0.3)),
                     Row(
                       children: [
-                        // Month filter chip
                         GestureDetector(
                           onTap: _showMonthPicker,
                           child: Container(
@@ -479,7 +467,6 @@ class _FinancePageState extends State<FinancePage> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        // Filter chip
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
@@ -500,8 +487,6 @@ class _FinancePageState extends State<FinancePage> {
               ),
 
               const SizedBox(height: 12),
-
-              // ── Empty state for mutation when no data ──
               if (_grouped.isEmpty)
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -568,7 +553,7 @@ class _FinancePageState extends State<FinancePage> {
                     ),
                     const SizedBox(height: 12),
                   ],
-                )).toList(),
+                )),
 
               const SizedBox(height: 80),
             ]),
@@ -579,7 +564,6 @@ class _FinancePageState extends State<FinancePage> {
   }
 }
 
-// ── Mutation Filter Picker Bottom Sheet (Year + Month) ──
 class _MutationFilterPicker extends StatefulWidget {
   final String currentMonth;
   final int currentYear;
@@ -616,21 +600,18 @@ class _MutationFilterPickerState extends State<_MutationFilterPicker> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Handle bar
         Center(
           child: Padding(
             padding: const EdgeInsets.only(top: 12, bottom: 16),
             child: Container(width: 36, height: 4, decoration: BoxDecoration(color: context.colors.border, borderRadius: BorderRadius.circular(2))),
           ),
         ),
-        // Title
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Text('Filter Mutasi', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: context.colors.textPrimary)),
         ),
         const SizedBox(height: 20),
 
-        // ── Year section ──
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Text('Tahun', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: context.colors.textSecondary, letterSpacing: 0.5)),
@@ -667,8 +648,6 @@ class _MutationFilterPickerState extends State<_MutationFilterPicker> {
         ),
 
         const SizedBox(height: 20),
-
-        // ── Month section ──
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Text('Bulan', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: context.colors.textSecondary, letterSpacing: 0.5)),
@@ -705,12 +684,10 @@ class _MutationFilterPickerState extends State<_MutationFilterPicker> {
 
         const SizedBox(height: 24),
 
-        // ── Apply button ──
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Row(
             children: [
-              // Reset
               GestureDetector(
                 onTap: () {
                   widget.onSelect('Semua', 0);
@@ -726,7 +703,6 @@ class _MutationFilterPickerState extends State<_MutationFilterPicker> {
                 ),
               ),
               const SizedBox(width: 10),
-              // Terapkan
               Expanded(
                 child: GestureDetector(
                   onTap: () {

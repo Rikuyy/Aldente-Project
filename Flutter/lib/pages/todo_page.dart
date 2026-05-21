@@ -150,8 +150,6 @@ class _TodoPageState extends State<TodoPage> {
           SliverPadding(
             padding: const EdgeInsets.all(20),
             sliver: SliverList(delegate: SliverChildListDelegate([
-
-              // Progress bar
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(color: AppTheme.white, borderRadius: BorderRadius.circular(18), border: Border.all(color: context.colors.border),
@@ -176,7 +174,6 @@ class _TodoPageState extends State<TodoPage> {
 
               const SizedBox(height: 16),
 
-              // Filter chips
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(children: ['Semua', 'Aktif', 'Selesai'].map((f) {

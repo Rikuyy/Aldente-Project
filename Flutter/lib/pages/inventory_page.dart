@@ -7,7 +7,7 @@ class _InventoryItem {
   String unit;
   double qty;
   final String category;
-  final IconData icon;  // ← was: String emoji
+  final IconData icon; 
 
   _InventoryItem({required this.name, required this.unit, required this.qty, required this.category, required this.icon});
 }

@@ -1,6 +1,6 @@
-import '../theme/app_theme.dart';
 import 'package:flutter/material.dart';
-import 'sign_in.dart';
+import 'package:go_router/go_router.dart';
+import '../services/auth_services.dart';
 
 class SplashScreen extends StatefulWidget {
   static const String routeName = '/splash';
@@ -13,28 +13,52 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen> {
   int currentPage = 0;
+  final AuthService _authService = AuthService();
+
   List<Map<String, String>> splashData = [
     {
-      "text": "Welcome to CookCash, Time to cook!",
+      "text": "Selamat Datang di CookCase+, Waktunya Memasak!",
       "image": "https://i.postimg.cc/mhhVywp9/splash-1.png"
     },
     {
-      "text": "We help people to find best recipe",
+      "text": "Kami membantu Anda menemukan resep hidangan terbaik",
       "image": "https://i.postimg.cc/3x3ZzL8C/splash-2.png"
     },
     {
-      "text": "We show the easy way to cook. Just stay at home with us",
+      "text":
+          "Cara memasak praktis dan mudah. Cukup santai di rumah bersama kami",
       "image": "https://i.postimg.cc/3x3ZzL8C/splash-2.png"
     },
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _checkLoginStatus();
+  }
+
+  void _checkLoginStatus() async {
+    String? token = await _authService.getToken();
+    await Future.delayed(const Duration(seconds: 3));
+
+    if (!mounted) return;
+
+    if (token != null) {
+      context.go('/app/home');
+    } else {
+      context.go('/');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: SizedBox(
           width: double.infinity,
           child: Column(
-            children: [
+            children: <Widget>[
               Expanded(
                 flex: 3,
                 child: PageView.builder(
@@ -44,9 +68,40 @@ class _SplashScreenState extends State<SplashScreen> {
                     });
                   },
                   itemCount: splashData.length,
-                  itemBuilder: (context, index) => SplashContent(
-                    image: splashData[index]["image"],
-                    text: splashData[index]['text'],
+                  itemBuilder: (context, index) => Column(
+                    children: <Widget>[
+                      const Spacer(),
+                      const Text(
+                        "CookCase+",
+                        style: TextStyle(
+                          fontSize: 32,
+                          color: Color(0xFFFF7643),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        splashData[index]["text"]!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Color(0xFF757575)),
+                      ),
+                      const Spacer(flex: 2),
+                      Image.network(
+                        splashData[index]["image"]!,
+                        height: 265,
+                        width: 235,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const SizedBox(
+                            height: 265,
+                            width: 235,
+                            child: Icon(
+                              Icons.restaurant_menu,
+                              size: 100,
+                              color: Color(0xFFFF7643),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -62,7 +117,7 @@ class _SplashScreenState extends State<SplashScreen> {
                         children: List.generate(
                           splashData.length,
                           (index) => AnimatedContainer(
-                            duration: const Duration(milliseconds: 250),
+                            duration: const Duration(milliseconds: 200),
                             margin: const EdgeInsets.only(right: 5),
                             height: 6,
                             width: currentPage == index ? 20 : 6,
@@ -78,19 +133,18 @@ class _SplashScreenState extends State<SplashScreen> {
                       const Spacer(flex: 3),
                       ElevatedButton(
                         onPressed: () {
-                          Navigator.pushReplacementNamed(
-                              context, SignInScreen.routeName);
+                          context.go('/');
                         },
                         style: ElevatedButton.styleFrom(
                           elevation: 0,
                           backgroundColor: const Color(0xFFFF7643),
-                          foregroundColor: context.colors.cardBackground,
+                          foregroundColor: Colors.white,
                           minimumSize: const Size(double.infinity, 48),
                           shape: const RoundedRectangleBorder(
                             borderRadius: BorderRadius.all(Radius.circular(16)),
                           ),
                         ),
-                        child: const Text("Continue"),
+                        child: const Text("Lanjutkan Ke Aplikasi"),
                       ),
                       const Spacer(),
                     ],
@@ -101,48 +155,6 @@ class _SplashScreenState extends State<SplashScreen> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class SplashContent extends StatefulWidget {
-  const SplashContent({
-    super.key,
-    this.text,
-    this.image,
-  });
-  final String? text, image;
-
-  @override
-  State<SplashContent> createState() => _SplashContentState();
-}
-
-class _SplashContentState extends State<SplashContent> {
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: <Widget>[
-        const Spacer(),
-        const Text(
-          "WELCOME",
-          style: TextStyle(
-            fontSize: 32,
-            color: Color(0xFFFF7643),
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        Text(
-          widget.text!,
-          textAlign: TextAlign.center,
-        ),
-        const Spacer(flex: 2),
-        Image.network(
-          widget.image!,
-          fit: BoxFit.contain,
-          height: 265,
-          width: 235,
-        ),
-      ],
     );
   }
 }
