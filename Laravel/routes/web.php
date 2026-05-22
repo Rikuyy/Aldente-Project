@@ -1,38 +1,47 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
-
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "web" middleware group. Make something great!
-|
-*/
 
 Route::redirect('/', '/login');
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+// Semua route yang butuh login masukkan ke dalam group ini
+Route::middleware(['auth', 'verified'])->group(function () {
+    
+    // Dashboard
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-Route::get('/bahan', function () {
-    return view('bahan'); // Memanggil file resources/views/bahan.blade.php
-})->middleware(['auth', 'verified'])->name('bahan.index');
+    // Manajemen Resep
+    Route::get('/resep', function () {
+        return view('resep');
+    })->name('resep.index');
 
-Route::get('/resep', function () {
-    return view('resep'); // Panggil fail resep.blade.php secara terus
-})->name('resep.index');
+    // Manajemen Bahan
+    Route::get('/bahan', function () {
+        return view('bahan');
+    })->name('bahan.index');
 
-Route::get('/testing', function () {
-    return view('testing');
-});
+    // Manajemen User (User Flutter)
+    Route::get('/manajemen-user', [UserController::class, 'index'])->name('users.index');
+    Route::delete('/manajemen-user/{id}', [UserController::class, 'destroy'])->name('users.destroy');
 
-Route::middleware('auth')->group(function () {
+    // Evaluasi Algoritma / Testing
+    Route::get('/testing', function () {
+        $routes = collect(\Route::getRoutes())->filter(function($route) {
+            return str_contains($route->uri, 'api/') && !str_contains($route->uri, 'sanctum');
+        })->map(function($route) {
+            return [
+                'method' => $route->methods[0],
+                'uri' => '/' . ltrim($route->uri, '/')
+            ];
+        })->values();
+
+        return view('testing', compact('routes'));
+    })->name('testing');
+
+    // Profile
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');

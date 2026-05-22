@@ -1,13 +1,113 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../theme/app_theme.dart';
+import '../services/dashboard_service.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  final DashboardService _service = DashboardService();
+
+  bool _isLoading = true;
+  String? _errorMsg;
+
+  // User
+  String _nama = '';
+  String _inisial = '';
+
+  // Budget
+  double _sisaHariIni = 0;
+  double _sisaBulan = 0;
+  String _statusBudget = 'Aman';
+  String? _warningMsg;
+
+  // Rekomendasi resep
+  List<dynamic> _rekomendasi = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDashboard();
+  }
+
+  Future<void> _loadDashboard() async {
+    setState(() {
+      _isLoading = true;
+      _errorMsg = null;
+    });
+
+    final result = await _service.getDashboard();
+
+    if (!mounted) return;
+
+    if (result['success'] == true) {
+      final data = result['data'];
+      setState(() {
+        _nama = data['user']['nama'] ?? '';
+        _inisial = data['user']['inisial'] ?? '';
+        _sisaHariIni = (data['budget']['sisa_hari_ini'] ?? 0).toDouble();
+        _sisaBulan = (data['budget']['sisa_bulan'] ?? 0).toDouble();
+        _statusBudget = data['budget']['status'] ?? 'Aman';
+        _warningMsg = data['budget']['warning_msg'];
+        _rekomendasi = data['rekomendasi_resep'] ?? [];
+        _isLoading = false;
+      });
+    } else {
+      setState(() {
+        _errorMsg = result['message'];
+        _isLoading = false;
+      });
+    }
+  }
+
+  String _formatRupiah(double value) {
+    if (value >= 1000000) {
+      return 'Rp ${(value / 1000000).toStringAsFixed(1)} jt';
+    } else if (value >= 1000) {
+      return 'Rp ${(value / 1000).toStringAsFixed(0)}.000';
+    }
+    return 'Rp ${value.toStringAsFixed(0)}';
+  }
 
   @override
   Widget build(BuildContext context) {
     const unreadCount = 3;
+
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: AppTheme.slate50,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_errorMsg != null) {
+      return Scaffold(
+        backgroundColor: AppTheme.slate50,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.wifi_off_rounded,
+                  size: 48, color: AppTheme.slate300),
+              const SizedBox(height: 12),
+              Text(_errorMsg!,
+                  style:
+                      const TextStyle(color: AppTheme.slate500, fontSize: 14)),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _loadDashboard,
+                child: const Text('Coba Lagi'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: context.colors.surface,
@@ -346,7 +446,7 @@ class HomePage extends StatelessWidget {
                   ),
                 ),
 
-                const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -412,15 +512,15 @@ class HomePage extends StatelessWidget {
   }
 }
 
-class _TodoItem extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final bool isDone;
-  const _TodoItem({required this.title, required this.subtitle, required this.isDone});
+// ── Kartu Resep ───────────────────────────────────────────────
+class _ResepCard extends StatelessWidget {
+  final Map<String, dynamic> resep;
+  const _ResepCard({required this.resep});
 
   @override
   Widget build(BuildContext context) {
     return Container(
+      margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDone ? context.colors.surface : context.colors.cardBackground,
@@ -435,7 +535,6 @@ class _TodoItem extends StatelessWidget {
         ],
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
             isDone ? Icons.check_circle_rounded : Icons.circle_outlined,
@@ -443,19 +542,22 @@ class _TodoItem extends StatelessWidget {
             size: 24,
           ),
           const SizedBox(width: 12),
+          // Nama + info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
-                  style: TextStyle(
+                  resep['Title Cleaned'] ?? '',
+                  style: const TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
                     color: isDone ? context.colors.surface : context.colors.textPrimary,
                     decoration: isDone ? TextDecoration.lineThrough : null,
                     letterSpacing: -0.3,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -468,6 +570,23 @@ class _TodoItem extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+          const SizedBox(width: 8),
+          // Loves count
+          Row(
+            children: [
+              const Icon(Icons.favorite_rounded,
+                  color: AppTheme.orange500, size: 14),
+              const SizedBox(width: 4),
+              Text(
+                '${resep['Loves']}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.slate600,
+                ),
+              ),
+            ],
           ),
         ],
       ),

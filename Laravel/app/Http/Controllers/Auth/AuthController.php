@@ -3,84 +3,42 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Models\Admin;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\Rules;
+use Illuminate\View\View;
 
-class AuthController extends Controller
+class RegisteredUserController extends Controller
 {
-    // ─── Login ───────────────────────────────────────────────────────────────
-
-    /** Tampilkan halaman login */
-    public function showLogin()
+    public function create(): View|RedirectResponse
     {
-        return view('auth.login');
-    }
-
-    /** Proses login */
-    public function login(Request $request)
-    {
-        $credentials = $request->validate([
-            'email'    => ['required', 'email'],
-            'password' => ['required'],
-        ]);
-
-        $remember = $request->boolean('remember');
-
-        if (Auth::attempt($credentials, $remember)) {
-            $request->session()->regenerate();
-
-            return redirect()->intended(route('dashboard'))
-                ->with('success', 'Selamat datang kembali, ' . Auth::user()->name . '!');
+        // KUNCI: Kalau admin sudah ada di MongoDB, jangan boleh buka halaman daftar
+        if (Admin::count() > 0) {
+            return redirect()->route('login');
         }
-
-        return back()
-            ->withInput($request->only('email'))
-            ->withErrors(['email' => 'Email atau password salah.']);
-    }
-
-    // ─── Register ─────────────────────────────────────────────────────────────
-
-    /** Tampilkan halaman register */
-    public function showRegister()
-    {
         return view('auth.register');
     }
 
-    /** Proses register */
-    public function register(Request $request)
+    public function store(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'confirmed', Password::min(8)->letters()->numbers()],
+        if (Admin::count() > 0) return redirect()->route('login');
+
+        $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:admins,Email'],
+            'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        $user = User::create([
-            'name'     => $validated['name'],
-            'email'    => $validated['email'],
-            'password' => Hash::make($validated['password']),
+        $admin = Admin::create([
+            'Username' => $request->name,
+            'Email' => $request->email,
+            'Password' => Hash::make($request->password),
         ]);
 
-        Auth::login($user);
-
-        return redirect()->route('dashboard')
-            ->with('success', 'Akun berhasil dibuat. Selamat datang, ' . $user->name . '!');
-    }
-
-    // ─── Logout ───────────────────────────────────────────────────────────────
-
-    /** Proses logout */
-    public function logout(Request $request)
-    {
-        Auth::logout();
-
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-
-        return redirect()->route('login')
-            ->with('success', 'Kamu berhasil logout.');
+        Auth::login($admin);
+        return redirect()->route('dashboard');
     }
 }
