@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import '../api_config.dart';
+import '../services/api_service.dart';
 
 class StockService {
-  final String baseUrl = ApiConfig.baseUrl;
+  final String baseUrl = ApiService.baseUrl;
 
   Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
@@ -16,12 +16,11 @@ class StockService {
         'Authorization': 'Bearer $token',
       };
 
-  // ── GET /api/inventory ──────────────────────────────────────
-  // Return stok digroup by kategori
   Future<Map<String, dynamic>> getStok() async {
     final token = await _getToken();
-    if (token == null)
+    if (token == null) {
       return {'success': false, 'message': 'Token tidak ditemukan'};
+    }
 
     try {
       final response = await http.get(
@@ -45,11 +44,11 @@ class StockService {
     }
   }
 
-  // ── GET /api/inventory/search?q=... ────────────────────────
   Future<Map<String, dynamic>> searchStok(String query) async {
     final token = await _getToken();
-    if (token == null)
+    if (token == null) {
       return {'success': false, 'message': 'Token tidak ditemukan'};
+    }
 
     try {
       final response = await http.get(
@@ -68,7 +67,6 @@ class StockService {
     }
   }
 
-  // ── POST /api/inventory ─────────────────────────────────────
   Future<Map<String, dynamic>> tambahStok({
     required String namaBahan,
     required String kategoriBahan,
@@ -78,8 +76,9 @@ class StockService {
     required String tanggalKadaluarsa,
   }) async {
     final token = await _getToken();
-    if (token == null)
+    if (token == null) {
       return {'success': false, 'message': 'Token tidak ditemukan'};
+    }
 
     try {
       final response = await http.post(
@@ -109,12 +108,12 @@ class StockService {
     }
   }
 
-  // ── PUT /api/inventory/{id} ─────────────────────────────────
   Future<Map<String, dynamic>> updateStok(
       String id, Map<String, dynamic> data) async {
     final token = await _getToken();
-    if (token == null)
+    if (token == null) {
       return {'success': false, 'message': 'Token tidak ditemukan'};
+    }
 
     try {
       final response = await http.put(
@@ -133,11 +132,11 @@ class StockService {
     }
   }
 
-  // ── DELETE /api/inventory/{id} ──────────────────────────────
   Future<Map<String, dynamic>> hapusStok(String id) async {
     final token = await _getToken();
-    if (token == null)
+    if (token == null) {
       return {'success': false, 'message': 'Token tidak ditemukan'};
+    }
 
     try {
       final response = await http.delete(
@@ -155,13 +154,12 @@ class StockService {
     }
   }
 
-  // ── POST /api/inventory/masak-selesai ───────────────────────
-  // bahan: [{'id': '...', 'jumlah': 1}, ...]
   Future<Map<String, dynamic>> masakSelesai(
       List<Map<String, dynamic>> bahan) async {
     final token = await _getToken();
-    if (token == null)
+    if (token == null) {
       return {'success': false, 'message': 'Token tidak ditemukan'};
+    }
 
     try {
       final response = await http.post(

@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import '../api_config.dart';
+import '../services/api_service.dart';
 
 class FinanceService {
-  final String baseUrl = ApiConfig.baseUrl;
+  final String baseUrl = ApiService.baseUrl;
 
   Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
@@ -15,12 +15,11 @@ class FinanceService {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
       };
-
-  // ── GET /api/keuangan/ringkasan?bulan=2025-05 ───────────────
   Future<Map<String, dynamic>> getRingkasan(String bulan) async {
     final token = await _getToken();
-    if (token == null)
+    if (token == null) {
       return {'success': false, 'message': 'Token tidak ditemukan'};
+    }
 
     try {
       final response = await http.get(
@@ -43,11 +42,11 @@ class FinanceService {
     }
   }
 
-  // ── GET /api/keuangan/grafik?bulan=2025-05 ──────────────────
   Future<Map<String, dynamic>> getGrafik(String bulan) async {
     final token = await _getToken();
-    if (token == null)
+    if (token == null) {
       return {'success': false, 'message': 'Token tidak ditemukan'};
+    }
 
     try {
       final response = await http.get(
@@ -65,11 +64,11 @@ class FinanceService {
     }
   }
 
-  // ── GET /api/keuangan/mutasi?bulan=2025-05&page=1 ───────────
   Future<Map<String, dynamic>> getMutasi(String bulan, {int page = 1}) async {
     final token = await _getToken();
-    if (token == null)
+    if (token == null) {
       return {'success': false, 'message': 'Token tidak ditemukan'};
+    }
 
     try {
       final response = await http.get(

@@ -41,7 +41,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           backgroundColor: Colors.green,
         ),
       );
-      // Kembali ke halaman masuk setelah berhasil mengganti kata sandi
       context.go('/sign_in');
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -87,15 +86,16 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   ),
                   SizedBox(height: MediaQuery.of(context).size.height * 0.06),
 
-                  // Input Kata Sandi Baru
                   TextFormField(
                     controller: _passwordController,
                     obscureText: true,
                     validator: (value) {
-                      if (value == null || value.isEmpty)
+                      if (value == null || value.isEmpty) {
                         return "Masukkan kata sandi baru Anda";
-                      if (value.length < 6)
+                      }
+                      if (value.length < 6) {
                         return "Kata sandi minimal harus terdiri dari 6 karakter";
+                      }
                       return null;
                     },
                     decoration: const InputDecoration(
@@ -111,15 +111,16 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Input Konfirmasi Kata Sandi Baru
                   TextFormField(
                     controller: _confirmPasswordController,
                     obscureText: true,
                     validator: (value) {
-                      if (value == null || value.isEmpty)
+                      if (value == null || value.isEmpty) {
                         return "Silakan konfirmasi kata sandi Anda";
-                      if (value != _passwordController.text)
+                      }
+                      if (value != _passwordController.text) {
                         return "Konfirmasi kata sandi tidak cocok";
+                      }
                       return null;
                     },
                     decoration: const InputDecoration(
@@ -135,7 +136,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   ),
                   SizedBox(height: MediaQuery.of(context).size.height * 0.06),
 
-                  // Tombol Simpan Perubahan
                   ElevatedButton(
                     onPressed: _isLoading ? null : _handleResetPassword,
                     style: ElevatedButton.styleFrom(

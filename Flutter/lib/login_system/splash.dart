@@ -1,4 +1,3 @@
-import '../theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../services/auth_services.dart';
@@ -19,7 +18,6 @@ class _SplashScreenState extends State<SplashScreen> {
   List<Map<String, String>> splashData = [
     {
       "text": "Selamat Datang di CookCase+, Waktunya Memasak!",
-      "text": "Welcome to CookCash, Time to cook!",
       "image": "https://i.postimg.cc/mhhVywp9/splash-1.png"
     },
     {
@@ -46,10 +44,8 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
 
     if (token != null) {
-      // Jika token aktif, langsung bypass masuk ke beranda
       context.go('/app/home');
     } else {
-      // URUTAN REVISI: Jika belum login, otomatis arahkan ke Guest Mode Page
       context.go('/');
     }
   }
@@ -137,13 +133,12 @@ class _SplashScreenState extends State<SplashScreen> {
                       const Spacer(flex: 3),
                       ElevatedButton(
                         onPressed: () {
-                          // URUTAN REVISI: Tombol dialihkan manual langsung menuju Guest Mode Page
                           context.go('/');
                         },
                         style: ElevatedButton.styleFrom(
                           elevation: 0,
                           backgroundColor: const Color(0xFFFF7643),
-                          foregroundColor: context.colors.cardBackground,
+                          foregroundColor: Colors.white,
                           minimumSize: const Size(double.infinity, 48),
                           shape: const RoundedRectangleBorder(
                             borderRadius: BorderRadius.all(Radius.circular(16)),

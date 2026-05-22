@@ -5,13 +5,10 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\DashboardController as ApiDashboardController;
 use App\Http\Controllers\API\StockController;
-aAuse App\Http\Controllers\API\SetupController;
 use App\Http\Controllers\API\ConsultationController;
 use App\Http\Controllers\DashboardController;
-=======
 use App\Http\Controllers\API\KeuanganController;
 use App\Http\Controllers\API\ProfileController;
-use App\Http\Controllers\API\ConsultationController;
 use App\Http\Controllers\ResepController;
 use App\Http\Controllers\ChatbotController;
 use Illuminate\Support\Facades\Password;
@@ -56,18 +53,13 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/budget', [ApiDashboardController::class, 'setBudget']);
     });
 
-    Route::prefix('inventory')->group(function () {
+    Route::prefix('stok')->group(function () {
         // Pastikan StockController kamu ada di folder App\Http\Controllers\API\StockController
         Route::get('/',               [StockController::class, 'index']);
-        Route::get('/search',         [StockController::class, 'search']);
-        Route::post('/',              [StockController::class, 'store']);
-        Route::put('/{id}',           [StockController::class, 'update']);
-        Route::delete('/{id}',        [StockController::class, 'deleteStock']);
-        Route::get('/', [StockController::class, 'index']);
-        Route::get('/search', [StockController::class, 'search']);
-        Route::post('/', [StockController::class, 'store']);
-        Route::put('/{id}', [StockController::class, 'update']);
-        Route::delete('/{id}', [StockController::class, 'deleteStock']);
+        Route::get('/cari',           [StockController::class, 'cari']);
+        Route::post('/',              [StockController::class, 'simpan']);
+        Route::put('/{id}',           [StockController::class, 'perbarui']);
+        Route::delete('/{id}',        [StockController::class, 'hapus']);
         Route::post('/masak-selesai', [StockController::class, 'masakSelesai']);
     });
 
