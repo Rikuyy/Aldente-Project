@@ -11,23 +11,24 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final DashboardService _service = DashboardService();
+  final DashboardService _dashboardService = DashboardService();
 
   bool _isLoading = true;
-  String? _errorMsg;
+  String? _error;
 
-  // User
-  String _nama = '';
-  String _inisial = '';
+  // Data dari API
+  String _nama = 'Pengguna';
+  String _inisial = 'P';
+  int _unreadCount = 0;
 
-  // Budget
-  double _sisaHariIni = 0;
+  double _totalBudget = 0;
+  double _totalKeluar = 0;
   double _sisaBulan = 0;
+  double _sisaHariIni = 0;
   String _statusBudget = 'Aman';
-  String? _warningMsg;
+  String? _pesanPeringatan;
 
-  // Rekomendasi resep
-  List<dynamic> _rekomendasi = [];
+  List _rekomendasiResep = [];
 
   @override
   void initState() {
@@ -36,68 +37,55 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _loadDashboard() async {
-    setState(() {
-      _isLoading = true;
-      _errorMsg = null;
-    });
+    setState(() => _isLoading = true);
 
-    final result = await _service.getDashboard();
-
-    if (!mounted) return;
+    final result = await _dashboardService.getDashboard();
 
     if (result['success'] == true) {
-      final data = result['data'];
+      final data = result['data']['data'];
+      final pengguna = data['pengguna'];
+      final budget = data['budget'];
+
       setState(() {
-        _nama = data['user']['nama'] ?? '';
-        _inisial = data['user']['inisial'] ?? '';
-        _sisaHariIni = (data['budget']['sisa_hari_ini'] ?? 0).toDouble();
-        _sisaBulan = (data['budget']['sisa_bulan'] ?? 0).toDouble();
-        _statusBudget = data['budget']['status'] ?? 'Aman';
-        _warningMsg = data['budget']['warning_msg'];
-        _rekomendasi = data['rekomendasi_resep'] ?? [];
+        _nama = pengguna['nama'] ?? 'Pengguna';
+        _inisial = pengguna['inisial'] ?? 'P';
+        _totalBudget = (budget['total_budget'] ?? 0).toDouble();
+        _totalKeluar = (budget['total_keluar'] ?? 0).toDouble();
+        _sisaBulan = (budget['sisa_bulan'] ?? 0).toDouble();
+        _sisaHariIni = (budget['sisa_hari_ini'] ?? 0).toDouble();
+        _statusBudget = budget['status'] ?? 'Aman';
+        _pesanPeringatan = budget['pesan_peringatan'];
+        _rekomendasiResep = data['rekomendasi_resep'] ?? [];
         _isLoading = false;
       });
     } else {
       setState(() {
-        _errorMsg = result['message'];
+        _error = result['message'];
         _isLoading = false;
       });
     }
   }
 
-  String _formatRupiah(double value) {
-    if (value >= 1000000) {
-      return 'Rp ${(value / 1000000).toStringAsFixed(1)} jt';
-    } else if (value >= 1000) {
-      return 'Rp ${(value / 1000).toStringAsFixed(0)}.000';
-    }
-    return 'Rp ${value.toStringAsFixed(0)}';
-  }
+  String _formatRp(double v) => 'Rp ${v.toStringAsFixed(0).replaceAllMapped(
+        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+        (m) => '${m[1]}.',
+      )}';
 
   @override
   Widget build(BuildContext context) {
-    const unreadCount = 3;
-
     if (_isLoading) {
       return const Scaffold(
-        backgroundColor: AppTheme.slate50,
         body: Center(child: CircularProgressIndicator()),
       );
     }
 
-    if (_errorMsg != null) {
+    if (_error != null) {
       return Scaffold(
-        backgroundColor: AppTheme.slate50,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.wifi_off_rounded,
-                  size: 48, color: AppTheme.slate300),
-              const SizedBox(height: 12),
-              Text(_errorMsg!,
-                  style:
-                      const TextStyle(color: AppTheme.slate500, fontSize: 14)),
+              Text(_error!, style: const TextStyle(color: Colors.red)),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _loadDashboard,
@@ -110,15 +98,14 @@ class _HomePageState extends State<HomePage> {
     }
 
     return Scaffold(
-      backgroundColor: AppTheme.slate50,
+      backgroundColor: context.colors.surface,
       body: RefreshIndicator(
         onRefresh: _loadDashboard,
         child: CustomScrollView(
           slivers: [
-            // ── AppBar ──────────────────────────────────────────
             SliverAppBar(
               pinned: true,
-              backgroundColor: Colors.white,
+              backgroundColor: context.colors.cardBackground,
               elevation: 0,
               expandedHeight: 0,
               toolbarHeight: 72,
@@ -128,17 +115,16 @@ class _HomePageState extends State<HomePage> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Kiri: logo + sapaan
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text(
-                            'CookCase+',
+                          Text(
+                            'CookCash',
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w900,
-                              color: AppTheme.slate800,
+                              color: context.colors.textPrimary,
                               letterSpacing: -0.5,
                             ),
                           ),
@@ -146,117 +132,19 @@ class _HomePageState extends State<HomePage> {
                             children: [
                               Text(
                                 'Hai, $_nama!',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
-                                  color: AppTheme.slate500,
-      backgroundColor: context.colors.surface,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            pinned: true,
-            backgroundColor: context.colors.cardBackground,
-            elevation: 0,
-            expandedHeight: 0,
-            toolbarHeight: 72,
-            flexibleSpace: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'CookCash',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w900,
-                            color: context.colors.textPrimary,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            Text(
-                              'Hai, Budi!',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: context.colors.surface,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Icon(Icons.waving_hand, size: 12, color: context.colors.surface),
-                          ],
-                        ),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        GestureDetector(
-                          onTap: () => context.push('/notifications'),
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: context.colors.surface,
-                              borderRadius: BorderRadius.circular(50),
-                            ),
-                            child: Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                Icon(Icons.notifications_rounded, size: 22, color: context.colors.textHint),
-                                if (unreadCount > 0)
-                                  Positioned(
-                                    top: -6,
-                                    right: -6,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: AppTheme.orange500,
-                                        borderRadius: BorderRadius.circular(50),
-                                        border: Border.all(color: context.colors.cardBackground, width: 1.5),
-                                      ),
-                                      child: Text(
-                                        '$unreadCount',
-                                        style: TextStyle(color: context.colors.cardBackground, fontSize: 9, fontWeight: FontWeight.w900),
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        GestureDetector(
-                          onTap: () => context.go('/app/profile'),
-                          child: Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: AppTheme.orange100,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: AppTheme.orange200, width: 2),
-                            ),
-                            child: const Center(
-                              child: Text(
-                                'B',
-                                style: TextStyle(
-                                  color: AppTheme.orange600,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 16,
+                                  color: context.colors.surface,
                                 ),
                               ),
                               const SizedBox(width: 4),
-                              const Icon(Icons.waving_hand,
-                                  size: 12, color: AppTheme.slate500),
+                              Icon(Icons.waving_hand,
+                                  size: 12, color: context.colors.surface),
                             ],
                           ),
                         ],
                       ),
-                      // Kanan: notif + avatar
                       Row(
                         children: [
                           GestureDetector(
@@ -264,15 +152,15 @@ class _HomePageState extends State<HomePage> {
                             child: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: AppTheme.slate50,
+                                color: context.colors.surface,
                                 borderRadius: BorderRadius.circular(50),
                               ),
                               child: Stack(
                                 clipBehavior: Clip.none,
                                 children: [
-                                  const Icon(Icons.notifications_rounded,
-                                      size: 22, color: AppTheme.slate400),
-                                  if (unreadCount > 0)
+                                  Icon(Icons.notifications_rounded,
+                                      size: 22, color: context.colors.textHint),
+                                  if (_unreadCount > 0)
                                     Positioned(
                                       top: -6,
                                       right: -6,
@@ -284,86 +172,21 @@ class _HomePageState extends State<HomePage> {
                                           borderRadius:
                                               BorderRadius.circular(50),
                                           border: Border.all(
-                                              color: Colors.white, width: 1.5),
+                                              color:
+                                                  context.colors.cardBackground,
+                                              width: 1.5),
                                         ),
                                         child: Text(
-                                          '$unreadCount',
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 9,
-                                            fontWeight: FontWeight.w900,
-                                          ),
+                                          '$_unreadCount',
+                                          style: TextStyle(
+                                              color:
+                                                  context.colors.cardBackground,
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.w900),
                                         ),
                                       ),
                                     ),
                                 ],
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(1),
-              child: Container(color: context.colors.border, height: 1),
-            ),
-          ),
-
-          SliverPadding(
-            padding: const EdgeInsets.all(20),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFF7ED),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: AppTheme.orange200,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 10.2),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: context.colors.cardBackground,
-                          borderRadius: BorderRadius.circular(50),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 20.4),
-                              blurRadius: 4,
-                              offset: const Offset(0, 1),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.warning_amber_rounded,
-                          color: AppTheme.orange600,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Status Budget: Waspada',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w900,
-                                fontSize: 14,
-                                color: Color(0xFF9A3412),
-                                letterSpacing: -0.3,
                               ),
                             ),
                           ),
@@ -399,19 +222,15 @@ class _HomePageState extends State<HomePage> {
               ),
               bottom: PreferredSize(
                 preferredSize: const Size.fromHeight(1),
-                child: Container(color: AppTheme.slate100, height: 1),
+                child: Container(color: context.colors.border, height: 1),
               ),
             ),
-
-            // ── Content ─────────────────────────────────────────
             SliverPadding(
               padding: const EdgeInsets.all(20),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  const SizedBox(height: 8),
-
-                  // Warning Banner (hanya muncul kalau Waspada / Kritis)
-                  if (_warningMsg != null) ...[
+                  // ── Banner Peringatan ──────────────────────────────
+                  if (_pesanPeringatan != null)
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -432,54 +251,11 @@ class _HomePageState extends State<HomePage> {
                           Container(
                             padding: const EdgeInsets.all(6),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: context.colors.cardBackground,
                               borderRadius: BorderRadius.circular(50),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 20.4),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 1),
-                                ),
-                              ],
                             ),
-                            child: Icon(
-                              _statusBudget == 'Kritis'
-                                  ? Icons.error_rounded
-                                  : Icons.warning_amber_rounded,
-                              color: AppTheme.orange600,
-                              size: 20,
-                const SizedBox(height: 16),
-                GestureDetector(
-                  onTap: () => context.go('/app/finance'),
-                  child: Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF0F172A), Color(0xFF1E293B), Color(0xFF0F172A)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(28),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.slate900.withValues(alpha: 76.5),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Stack(
-                      children: [
-                        Positioned(
-                          top: -30,
-                          right: -20,
-                          child: Container(
-                            width: 120,
-                            height: 120,
-                            decoration: BoxDecoration(
-                              color: context.colors.cardBackground.withValues(alpha: 12.75),
-                              shape: BoxShape.circle,
-                            ),
+                            child: const Icon(Icons.warning_amber_rounded,
+                                color: AppTheme.orange600, size: 20),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -497,7 +273,7 @@ class _HomePageState extends State<HomePage> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  _warningMsg!,
+                                  _pesanPeringatan!,
                                   style: const TextStyle(
                                     fontSize: 12,
                                     color: Color(0xFFC2410C),
@@ -511,10 +287,10 @@ class _HomePageState extends State<HomePage> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 16),
-                  ],
 
-                  // Main Budget Card
+                  if (_pesanPeringatan != null) const SizedBox(height: 16),
+
+                  // ── Kartu Budget ───────────────────────────────────
                   GestureDetector(
                     onTap: () => context.go('/app/finance'),
                     child: Container(
@@ -538,227 +314,96 @@ class _HomePageState extends State<HomePage> {
                           ),
                         ],
                       ),
-                      child: Stack(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Decorative circle
-                          Positioned(
-                            top: -30,
-                            right: -20,
-                            child: Container(
-                              width: 120,
-                              height: 120,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 12.75),
-                                shape: BoxShape.circle,
+                          const Row(
+                            children: [
+                              Icon(Icons.account_balance_wallet_rounded,
+                                  color: Color(0xFFCBD5E1), size: 16),
+                              SizedBox(width: 8),
+                              Text(
+                                'SISA BUDGET',
+                                style: TextStyle(
+                                  color: Color(0xFFCBD5E1),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 1,
+                                ),
                               ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          const Text(
+                            'HARI INI',
+                            style: TextStyle(
+                              color: Color(0xFF94A3B8),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 2,
                             ),
                           ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          const SizedBox(height: 6),
+                          Text(
+                            _formatRp(_sisaHariIni),
+                            style: TextStyle(
+                              color: context.colors.cardBackground,
+                              fontSize: 36,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -1,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          Container(
+                            height: 1,
+                            color: context.colors.cardBackground
+                                .withValues(alpha: 25.5),
+                          ),
+                          const SizedBox(height: 20),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
-                              // Header card
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   const Row(
                                     children: [
-                                      Icon(Icons.account_balance_wallet_rounded,
-                                          color: Color(0xFFCBD5E1), size: 16),
-                                      SizedBox(width: 8),
+                                      Icon(Icons.calendar_month_rounded,
+                                          color: Color(0xFF94A3B8), size: 12),
+                                      SizedBox(width: 4),
                                       Text(
-                                        'SISA BUDGET',
+                                        'SISA BULAN INI',
                                         style: TextStyle(
-                                          color: Color(0xFFCBD5E1),
-                                          fontSize: 12,
+                                          color: Color(0xFF94A3B8),
+                                          fontSize: 9,
                                           fontWeight: FontWeight.w700,
-                                          letterSpacing: 1,
-                                const Row(
-                                  children: [
-                                    Icon(Icons.account_balance_wallet_rounded, color: Color(0xFFCBD5E1), size: 16),
-                                    SizedBox(width: 8),
-                                    Text(
-                                      'SISA BUDGET',
-                                      style: TextStyle(
-                                        color: Color(0xFFCBD5E1),
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w700,
-                                        letterSpacing: 1,
+                                          letterSpacing: 1.5,
+                                        ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: context.colors.cardBackground.withValues(alpha: 25.5),
-                                    borderRadius: BorderRadius.circular(50),
-                                    border: Border.all(color: context.colors.cardBackground.withValues(alpha: 25.5)),
+                                    ],
                                   ),
-                                  child: Text(
-                                    'Minggu Ini',
-                                    style: TextStyle(
-                                      color: context.colors.cardBackground,
-                                      fontSize: 11,
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    _formatRp(_sisaBulan),
+                                    style: const TextStyle(
+                                      color: Color(0xFFE2E8F0),
+                                      fontSize: 20,
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 20),
-                            const Text(
-                              'HARI INI',
-                              style: TextStyle(
-                                color: Color(0xFF94A3B8),
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 2,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              'Rp 15.000',
-                              style: TextStyle(
-                                color: context.colors.cardBackground,
-                                fontSize: 36,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -1,
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            Container(
-                              height: 1,
-                              color: context.colors.cardBackground.withValues(alpha: 25.5),
-                            ),
-                            const SizedBox(height: 20),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                const Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Icon(Icons.calendar_month_rounded, color: Color(0xFF94A3B8), size: 12),
-                                        SizedBox(width: 4),
-                                        Text(
-                                          'SISA BULAN INI',
-                                          style: TextStyle(
-                                            color: Color(0xFF94A3B8),
-                                            fontSize: 9,
-                                            fontWeight: FontWeight.w700,
-                                            letterSpacing: 1.5,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 12, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color:
-                                          Colors.white.withValues(alpha: 25.5),
-                                      borderRadius: BorderRadius.circular(50),
-                                      border: Border.all(
-                                          color: Colors.white
-                                              .withValues(alpha: 25.5)),
-                                    ),
-                                    child: const Text(
-                                      'Bulan Ini',
-                                      style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w700),
-                                    ),
-                                  ),
                                 ],
                               ),
-                              const SizedBox(height: 20),
-                              // Sisa hari ini
-                              const Text(
-                                'HARI INI',
-                                style: TextStyle(
-                                    color: Color(0xFF94A3B8),
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 2),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                _formatRupiah(_sisaHariIni),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 36,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: -1,
-                                  ],
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: context.colors.cardBackground.withValues(alpha: 25.5),
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                  child: Icon(Icons.arrow_forward, color: context.colors.cardBackground, size: 20),
-                                ),
-                              ),
-                              const SizedBox(height: 20),
                               Container(
-                                  height: 1,
-                                  color: Colors.white.withValues(alpha: 25.5)),
-                              const SizedBox(height: 20),
-                              // Sisa bulan + arrow
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Row(
-                                        children: [
-                                          Icon(Icons.calendar_month_rounded,
-                                              color: Color(0xFF94A3B8),
-                                              size: 12),
-                                          SizedBox(width: 4),
-                                          Text(
-                                            'SISA BULAN INI',
-                                            style: TextStyle(
-                                              color: Color(0xFF94A3B8),
-                                              fontSize: 9,
-                                              fontWeight: FontWeight.w700,
-                                              letterSpacing: 1.5,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        _formatRupiah(_sisaBulan),
-                                        style: const TextStyle(
-                                          color: Color(0xFFE2E8F0),
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(
-                                      color:
-                                          Colors.white.withValues(alpha: 25.5),
-                                      borderRadius: BorderRadius.circular(14),
-                                    ),
-                                    child: const Icon(Icons.arrow_forward,
-                                        color: Colors.white, size: 20),
-                                  ),
-                                ],
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: context.colors.cardBackground
+                                      .withValues(alpha: 25.5),
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                child: Icon(Icons.arrow_forward,
+                                    color: context.colors.cardBackground,
+                                    size: 20),
                               ),
                             ],
                           ),
@@ -769,51 +414,66 @@ class _HomePageState extends State<HomePage> {
 
                   const SizedBox(height: 24),
 
-                  // Rekomendasi Resep
-                  if (_rekomendasi.isNotEmpty) ...[
-                    const Text(
-                      'Rekomendasi Resep',
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'To-Do List Hari Ini',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900,
-                        color: context.colors.textPrimary,
-                        letterSpacing: -0.5,
+                  // ── To-Do List (masih dummy) ───────────────────────
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'To-Do List Hari Ini',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          color: context.colors.textPrimary,
+                          letterSpacing: -0.5,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    ..._rekomendasi.map((resep) => _ResepCard(resep: resep)),
-                    const SizedBox(height: 24),
-                  ],
+                      GestureDetector(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8)),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.add_circle_outline,
+                                  color: AppTheme.orange600, size: 16),
+                              SizedBox(width: 4),
+                              Text(
+                                'Tambah',
+                                style: TextStyle(
+                                  color: AppTheme.orange600,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 12),
+                  const _TodoItem(
+                    title: 'Rencana Makan Malam',
+                    subtitle: 'Nasi Goreng Sosis (Budget sisa: Rp 15.000)',
+                    isDone: false,
+                  ),
+                  const SizedBox(height: 10),
+                  const _TodoItem(
+                    title: 'Beli Telur di Warung',
+                    subtitle: 'Stok menipis, sisa 1 butir',
+                    isDone: false,
+                  ),
+                  const SizedBox(height: 10),
+                  const _TodoItem(
+                    title: 'Makan Siang',
+                    subtitle: 'Soto Ayam (Rp 12.000)',
+                    isDone: true,
+                  ),
+                  const SizedBox(height: 24),
                 ]),
               ),
-                ),
-
-                const SizedBox(height: 12),
-
-                const _TodoItem(
-                  title: 'Rencana Makan Malam',
-                  subtitle: 'Nasi Goreng Sosis (Budget sisa: Rp 15.000)',
-                  isDone: false,
-                ),
-                const SizedBox(height: 10),
-                const _TodoItem(
-                  title: 'Beli Telur di Warung',
-                  subtitle: 'Stok menipis, sisa 1 butir',
-                  isDone: false,
-                ),
-                const SizedBox(height: 10),
-                const _TodoItem(
-                  title: 'Makan Siang',
-                  subtitle: 'Soto Ayam (Rp 12.000)',
-                  isDone: true,
-                ),
-                const SizedBox(height: 24),
-              ]),
             ),
           ],
         ),
@@ -822,98 +482,69 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-// ── Kartu Resep ───────────────────────────────────────────────
-class _ResepCard extends StatelessWidget {
-  final Map<String, dynamic> resep;
-  const _ResepCard({required this.resep});
+class _TodoItem extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final bool isDone;
+  const _TodoItem(
+      {required this.title, required this.subtitle, required this.isDone});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppTheme.slate100),
-        boxShadow: [
         color: isDone ? context.colors.surface : context.colors.cardBackground,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: context.colors.border),
-        boxShadow: isDone ? null : [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 10.2),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: isDone
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 10.2),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Icon resep
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: AppTheme.orange100,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(Icons.restaurant_menu_rounded,
-                color: AppTheme.orange600, size: 22),
           Icon(
             isDone ? Icons.check_circle_rounded : Icons.circle_outlined,
             color: isDone ? AppTheme.green500 : context.colors.textHint,
             size: 24,
           ),
           const SizedBox(width: 12),
-          // Nama + info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  resep['Title Cleaned'] ?? '',
-                  style: const TextStyle(
+                  title,
+                  style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
-                    color: AppTheme.slate800,
-                    color: isDone ? context.colors.surface : context.colors.textPrimary,
+                    color: isDone
+                        ? context.colors.surface
+                        : context.colors.textPrimary,
                     decoration: isDone ? TextDecoration.lineThrough : null,
                     letterSpacing: -0.3,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${resep['Total Ingredients']} bahan  ·  ${resep['Total Steps']} langkah',
-                  style:
-                      const TextStyle(fontSize: 12, color: AppTheme.slate500),
                   subtitle,
                   style: TextStyle(
                     fontSize: 12,
-                    color: isDone ? context.colors.textHint : context.colors.surface,
+                    color: isDone
+                        ? context.colors.textHint
+                        : context.colors.surface,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(width: 8),
-          // Loves count
-          Row(
-            children: [
-              const Icon(Icons.favorite_rounded,
-                  color: AppTheme.orange500, size: 14),
-              const SizedBox(width: 4),
-              Text(
-                '${resep['Loves']}',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.slate600,
-                ),
-              ),
-            ],
           ),
         ],
       ),

@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import '../api_config.dart';
+import '../services/api_service.dart';
 
 class DashboardService {
-  final String baseUrl = ApiConfig.baseUrl;
+  final String baseUrl = ApiService.baseUrl;
 
   Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
@@ -16,7 +16,6 @@ class DashboardService {
         'Authorization': 'Bearer $token',
       };
 
-  // ── GET /api/dashboard ──────────────────────────────────────
   Future<Map<String, dynamic>> getDashboard() async {
     final token = await _getToken();
     if (token == null) {
@@ -45,7 +44,6 @@ class DashboardService {
     }
   }
 
-  // ── POST /api/dashboard/budget ──────────────────────────────
   Future<Map<String, dynamic>> setBudget(double totalBudget,
       {String? bulan}) async {
     final token = await _getToken();

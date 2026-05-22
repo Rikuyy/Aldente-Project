@@ -1,4 +1,3 @@
-import '../theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../services/auth_services.dart';
@@ -49,7 +48,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
         ),
       );
 
-      // URUTAN REVISI: Sesuai alur baru, setelah mendaftar lempar dulu ke Login Screen
       context.go('/sign_in');
     } else {
       String errMsg = "Registrasi Gagal";
@@ -65,12 +63,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: context.colors.cardBackground,
+      backgroundColor: Colors.white,
       appBar: AppBar(
           backgroundColor: Colors.white, title: const Text("Daftar Akun")),
-        backgroundColor: context.colors.cardBackground,
-        title: const Text("Sign Up"),
-      ),
       body: SafeArea(
         child: SizedBox(
           width: double.infinity,
@@ -98,13 +93,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     key: _formKey,
                     child: Column(
                       children: [
-                        // Username
                         TextFormField(
                           controller: _usernameController,
                           validator: (val) => (val == null || val.isEmpty)
                               ? "Nama pengguna tidak boleh kosong"
                               : null,
-                          decoration: InputDecoration(
+                          decoration: const InputDecoration(
                             labelText: "Nama Pengguna",
                             hintText: "Masukkan nama pengguna",
                             floatingLabelBehavior: FloatingLabelBehavior.always,
@@ -112,21 +106,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           ),
                         ),
                         const SizedBox(height: 20),
-
-                        // Email
                         TextFormField(
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
                           validator: (value) {
-                            if (value == null || value.isEmpty)
+                            if (value == null || value.isEmpty) {
                               return "Email tidak boleh kosong";
+                            }
                             final emailRegex =
                                 RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-                            if (!emailRegex.hasMatch(value))
+                            if (!emailRegex.hasMatch(value)) {
                               return "Format email tidak valid";
+                            }
                             return null;
                           },
-                          decoration: InputDecoration(
+                          decoration: const InputDecoration(
                             labelText: "Email",
                             hintText: "Masukkan alamat email",
                             floatingLabelBehavior: FloatingLabelBehavior.always,
@@ -134,8 +128,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           ),
                         ),
                         const SizedBox(height: 20),
-
-                        // Password
                         TextFormField(
                           controller: _passwordController,
                           obscureText: _obscureText1,
@@ -159,16 +151,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           ),
                         ),
                         const SizedBox(height: 20),
-
-                        // Confirm Password
                         TextFormField(
                           controller: _confirmPasswordController,
                           obscureText: _obscureText2,
                           validator: (val) {
-                            if (val == null || val.isEmpty)
+                            if (val == null || val.isEmpty) {
                               return "Konfirmasi kata sandi wajib diisi";
-                            if (val != _passwordController.text)
+                            }
+                            if (val != _passwordController.text) {
                               return "Kata sandi tidak cocok";
+                            }
                             return null;
                           },
                           decoration: InputDecoration(
@@ -214,83 +206,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   const SizedBox(height: 30),
                 ],
               ),
-  @override
-  Widget build(BuildContext context) {
-    return Form(
-      child: Column(
-        children: [
-          TextFormField(
-            controller: _usernameController,
-            decoration: InputDecoration(
-                hintText: "Enter your username",
-                labelText: "Username",
-                floatingLabelBehavior: FloatingLabelBehavior.always,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                suffixIcon: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: SvgPicture.string(userIcon),
-                ),
-                border: authOutlineInputBorder),
-          ),
-          const SizedBox(height: 20),
-          TextFormField(
-            controller: _emailController,
-            keyboardType: TextInputType.emailAddress,
-            decoration: InputDecoration(
-                hintText: "Enter your email",
-                labelText: "Email",
-                floatingLabelBehavior: FloatingLabelBehavior.always,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                suffixIcon: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: SvgPicture.string(mailIcon),
-                ),
-                border: authOutlineInputBorder),
-          ),
-          const SizedBox(height: 20),
-          TextFormField(
-            controller: _passwordController,
-            obscureText: true,
-            decoration: InputDecoration(
-                hintText: "Enter your password",
-                labelText: "Password",
-                floatingLabelBehavior: FloatingLabelBehavior.always,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                suffixIcon: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: SvgPicture.string(lockIcon),
-                ),
-                border: authOutlineInputBorder),
-          ),
-          const SizedBox(height: 20),
-          TextFormField(
-            controller: _confirmPasswordController,
-            obscureText: true,
-            decoration: InputDecoration(
-                hintText: "Re-enter your password",
-                labelText: "Confirm Password",
-                floatingLabelBehavior: FloatingLabelBehavior.always,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                suffixIcon: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: SvgPicture.string(lockIcon),
-                ),
-                border: authOutlineInputBorder),
-          ),
-          const SizedBox(height: 30),
-          ElevatedButton(
-            onPressed: _isLoading ? null : _handleRegister,
-            style: ElevatedButton.styleFrom(
-              elevation: 0,
-              backgroundColor: const Color(0xFFFF7643),
-              foregroundColor: context.colors.cardBackground,
-              minimumSize: const Size(double.infinity, 48),
-              shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(16))),
             ),
           ),
         ),

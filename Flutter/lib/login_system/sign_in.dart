@@ -1,4 +1,3 @@
-import '../theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -42,15 +41,11 @@ class _SignInScreenState extends State<SignInScreen> {
             content: Text("Login Berhasil!"), backgroundColor: Colors.green),
       );
 
-      // REVISI LOGIKA NAVIGASI: Cek status apakah user baru pertama kali login
-      // Menyesuaikan dengan data yang dikirim oleh backend Laravel kamu
       final bool isNewUser = response['user']?['is_new_user'] ?? true;
 
       if (isNewUser) {
-        // Jika pertama kali login, arahkan ke halaman pengisian data kuesioner
         context.go('/onboarding');
       } else {
-        // Jika sudah pernah mengisi data/bukan user baru, langsung ke Dashboard Utama
         context.go('/app/home');
       }
     } else {
@@ -65,7 +60,7 @@ class _SignInScreenState extends State<SignInScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: context.colors.cardBackground,
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -78,8 +73,6 @@ class _SignInScreenState extends State<SignInScreen> {
           style: TextStyle(color: Color(0xFF757575), fontSize: 18),
         ),
         centerTitle: true,
-        backgroundColor: context.colors.cardBackground,
-        title: const Text("Sign In"),
       ),
       body: SafeArea(
         child: SizedBox(
@@ -227,108 +220,6 @@ class _SignInScreenState extends State<SignInScreen> {
   }
 }
 
-class SignInForm extends StatefulWidget {
-  const SignInForm({super.key});
-
-  @override
-  State<SignInForm> createState() => _SignInFormState();
-}
-
-class _SignInFormState extends State<SignInForm> {
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final AuthService _authService = AuthService();
-  bool _isLoading = false;
-
-  void _handleLogin() async {
-    setState(() => _isLoading = true);
-
-    final response = await _authService.login(
-      _emailController.text.trim(),
-      _passwordController.text.trim(),
-    );
-
-    setState(() => _isLoading = false);
-
-    if (response['access_token'] != null) {
-      await _authService.saveToken(response['access_token']);
-      if (!mounted) return;
-      context.go('/app/home');
-    } else {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(response['message'] ?? "Login Failed")),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Form(
-      child: Column(
-        children: [
-          TextFormField(
-            controller: _emailController,
-            decoration: InputDecoration(
-                hintText: "Enter your email",
-                labelText: "Email",
-                floatingLabelBehavior: FloatingLabelBehavior.always,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                suffixIcon: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: SvgPicture.string(mailIcon),
-                ),
-                border: authOutlineInputBorder,
-                enabledBorder: authOutlineInputBorder,
-                focusedBorder: authOutlineInputBorder.copyWith(
-                    borderSide: const BorderSide(color: Color(0xFFFF7643)))),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 24),
-            child: TextFormField(
-              controller: _passwordController,
-              obscureText: true,
-              decoration: InputDecoration(
-                  hintText: "Enter your password",
-                  labelText: "Password",
-                  floatingLabelBehavior: FloatingLabelBehavior.always,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                  suffixIcon: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: SvgPicture.string(lockIcon),
-                  ),
-                  border: authOutlineInputBorder,
-                  enabledBorder: authOutlineInputBorder,
-                  focusedBorder: authOutlineInputBorder.copyWith(
-                      borderSide: const BorderSide(color: Color(0xFFFF7643)))),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: _isLoading ? null : _handleLogin,
-            style: ElevatedButton.styleFrom(
-              elevation: 0,
-              backgroundColor: const Color(0xFFFF7643),
-              foregroundColor: context.colors.cardBackground,
-              minimumSize: const Size(double.infinity, 48),
-              shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(16))),
-            ),
-            child: _isLoading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                        color: Colors.white, strokeWidth: 2))
-                : const Text("Continue"),
-          )
-        ],
-      ),
-    );
-  }
-}
-
 const authOutlineInputBorder = OutlineInputBorder(
   borderSide: BorderSide(color: Color(0xFF757575)),
   borderRadius: BorderRadius.all(Radius.circular(100)),
@@ -355,4 +246,4 @@ class NoAccountText extends StatelessWidget {
 }
 
 const mailIcon =
-    '''<svg width=\"18\" height=\"13\" viewBox=\"0 0 18 13\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M15.3576 3.39368C15.524 3.51336 15.625 3.70519 15.625 3.9103V10.7419C15.625 11.4552 15.011 12.0335 14.2541 12.0335H3.74591C2.98895 12.0335 2.375 11.4552 2.375 10.7419V3.9103C2.375 3.70519 2.47596 3.51336 2.64237 3.39368L8.41169 7.5401C8.76295 7.79255 9.23705 7.79255 9.58831 7.5401L15.3576 3.39368ZM3.74591 0.966431H14.2541C14.7709 0.966431 15.222 1.24075 15.4668 1.6508L9.00003 6.29828L2.5332 1.6508C2.77803 1.24075 3.22912 0.966431 3.74591 0.966431Z\" fill=\"#757575\"/></svg>''';
+    '''<svg width="18" height="13" viewBox="0 0 18 13" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M15.3576 3.39368C15.524 3.51336 15.625 3.70519 15.625 3.9103V10.7419C15.625 11.4552 15.011 12.0335 14.2541 12.0335H3.74591C2.98895 12.0335 2.375 11.4552 2.375 10.7419V3.9103C2.375 3.70519 2.47596 3.51336 2.64237 3.39368L8.41169 7.5401C8.76295 7.79255 9.23705 7.79255 9.58831 7.5401L15.3576 3.39368ZM3.74591 0.966431H14.2541C14.7709 0.966431 15.222 1.24075 15.4668 1.6508L9.00003 6.29828L2.5332 1.6508C2.77803 1.24075 3.22912 0.966431 3.74591 0.966431Z" fill="#757575"/></svg>''';
