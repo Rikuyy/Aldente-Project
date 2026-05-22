@@ -1,113 +1,9 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../theme/app_theme.dart';
 
-class GuestModePage extends StatefulWidget {
+class GuestModePage extends StatelessWidget {
   const GuestModePage({super.key});
-
-  @override
-  State<GuestModePage> createState() => _GuestModePageState();
-}
-
-class _GuestModePageState extends State<GuestModePage> {
-  final TextEditingController _messageController = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
-  final List<Map<String, dynamic>> _messages = [];
-  bool _isLoading = false;
-  int _botMessageCount = 0; // counter pesan bot
-
-  static const String _baseUrl = 'http://127.0.0.1:8000/api';
-
-  // CTA muncul setiap kelipatan 2 pesan bot
-  bool _shouldShowCTA(int botCount) => botCount % 2 == 0;
-
-  Future<void> _sendMessage() async {
-    final userMessage = _messageController.text.trim();
-    if (userMessage.isEmpty || _isLoading) return;
-
-    setState(() {
-      _messages.add({'role': 'user', 'text': userMessage});
-      _messages.add({'role': 'loading', 'text': ''});
-      _isLoading = true;
-    });
-    _messageController.clear();
-    _scrollToBottom();
-
-    // History tanpa pesan loading terakhir
-    final history = _messages
-        .where((m) => m['role'] == 'user' || m['role'] == 'model')
-        .map((m) => {'role': m['role'], 'text': m['text']})
-        .toList();
-
-    try {
-      final response = await http.post(
-        Uri.parse('$_baseUrl/consultation'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: jsonEncode({
-          'message': userMessage,
-          'history':
-              history.length > 1 ? history.sublist(0, history.length - 1) : [],
-          'context': {
-            'nama': 'Tamu',
-            'stokBahan': [],
-            'sisaBudget': 15000,
-            'totalBudget': 15000,
-          },
-        }),
-      );
-
-      final data = jsonDecode(response.body);
-      final botReply = data['reply'] ?? 'Maaf, aku tidak bisa menjawab itu.';
-
-      _botMessageCount++;
-      final showCTA = _shouldShowCTA(_botMessageCount);
-
-      setState(() {
-        _messages.removeLast(); // hapus loading
-        _messages.add({
-          'role': 'model',
-          'text': botReply,
-          'showCTA': showCTA,
-        });
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _messages.removeLast();
-        _messages.add({
-          'role': 'model',
-          'text': 'Waduh, ada gangguan koneksi nih. Coba lagi ya! 🙏',
-          'showCTA': false,
-        });
-        _isLoading = false;
-      });
-    }
-
-    _scrollToBottom();
-  }
-
-  void _scrollToBottom() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _messageController.dispose();
-    _scrollController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -156,8 +52,7 @@ class _GuestModePageState extends State<GuestModePage> {
           Divider(height: 1, color: context.colors.border),
 
           Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
+            child: ListView(
               padding: const EdgeInsets.all(24),
               children: [
                 _ChatBubble(
@@ -346,8 +241,7 @@ class _ChatBubble extends StatelessWidget {
     return Align(
       alignment: isBot ? Alignment.centerLeft : Alignment.centerRight,
       child: Container(
-        constraints:
-            BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.85),
+        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.85),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: context.colors.cardBackground,
@@ -360,10 +254,8 @@ class _ChatBubble extends StatelessWidget {
           border: Border.all(color: context.colors.border),
           boxShadow: [
             BoxShadow(
-              color: isBot
-                  ? Colors.black.withValues(alpha: 0.04)
-                  : AppTheme.orange600.withValues(alpha: 0.2),
-              blurRadius: isBot ? 10 : 12,
+              color: Colors.black.withValues(alpha: 10.2),
+              blurRadius: 10,
               offset: const Offset(0, 2),
             ),
           ],

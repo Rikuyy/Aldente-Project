@@ -5,15 +5,12 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\DashboardController as ApiDashboardController;
 use App\Http\Controllers\API\StockController;
-<<<<<<< HEAD
 use App\Http\Controllers\API\SetupController;
 use App\Http\Controllers\API\ConsultationController;
 use App\Http\Controllers\DashboardController;
-=======
 use App\Http\Controllers\API\KeuanganController;
 use App\Http\Controllers\API\ProfileController;
 use App\Http\Controllers\DashboardController as WebDashboardController;
->>>>>>> 22ce2f3 (menambahkan backend stok,dashboard,keuangan di laravel)
 use App\Http\Controllers\ResepController;
 use App\Http\Controllers\ChatbotController;
 use Illuminate\Support\Facades\Password;
@@ -88,12 +85,10 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/evaluasi',    [ChatbotController::class, 'evaluasi']);
     });
 
-<<<<<<< HEAD
     
 });
 
 Route::post('/consultation', [ConsultationController::class, 'send']);
-=======
     // ── Laporan Keuangan ────────────────────────
     Route::prefix('keuangan')->group(function () {
         // Ringkasan bulan: total, rata2, prediksi, komposisi
@@ -112,4 +107,3 @@ Route::post('/consultation', [ConsultationController::class, 'send']);
         Route::put('/', [ProfileController::class, 'update']);
     });
 });
->>>>>>> 22ce2f3 (menambahkan backend stok,dashboard,keuangan di laravel)

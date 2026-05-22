@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../theme/app_theme.dart';
-import '../services/finance_service.dart';
 
 class _Transaction {
   final String id;
@@ -884,84 +883,6 @@ class _PeriodPicker extends StatelessWidget {
         )),
         const SizedBox(height: 16),
       ],
-    );
-  }
-}
-
-// ── Mutasi Item ───────────────────────────────────────────────
-class _MutasiItem extends StatelessWidget {
-  final dynamic item;
-  final String Function(double) formatRupiah;
-  const _MutasiItem({required this.item, required this.formatRupiah});
-
-  @override
-  Widget build(BuildContext context) {
-    final jenis = item['Jenis_Pengeluaran'] ?? 'Beli';
-    final jumlah = (item['Total Pengeluaran'] ?? 0).toDouble();
-    final tanggal = item['Tanggal'] ?? '';
-    final isMasak = jenis == 'Masak';
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.slate100),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withValues(alpha: 10.2),
-              blurRadius: 6,
-              offset: const Offset(0, 2))
-        ],
-      ),
-      child: Row(
-        children: [
-          // Icon
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: isMasak ? AppTheme.orange50 : AppTheme.slate100,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              isMasak ? Icons.restaurant_rounded : Icons.shopping_bag_rounded,
-              color: isMasak ? AppTheme.orange600 : AppTheme.slate500,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          // Info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isMasak ? 'Masak Sendiri' : 'Beli / Jajan',
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                      color: AppTheme.slate800),
-                ),
-                Text(tanggal,
-                    style: const TextStyle(
-                        fontSize: 12,
-                        color: AppTheme.slate400,
-                        fontWeight: FontWeight.w500)),
-              ],
-            ),
-          ),
-          // Jumlah
-          Text(
-            formatRupiah(jumlah),
-            style: const TextStyle(
-                fontWeight: FontWeight.w900,
-                fontSize: 14,
-                color: AppTheme.slate800),
-          ),
-        ],
-      ),
     );
   }
 }
