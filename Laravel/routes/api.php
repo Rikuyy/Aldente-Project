@@ -8,7 +8,7 @@ use App\Http\Controllers\API\StockController;
 use App\Http\Controllers\API\ConsultationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\API\KeuanganController;
-use App\Http\Controllers\API\ProfileController;
+use App\Http\Controllers\API\UserProfileController;
 use App\Http\Controllers\ResepController;
 use App\Http\Controllers\ChatbotController;
 use Illuminate\Support\Facades\Password;
@@ -78,7 +78,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/evaluasi', [ChatbotController::class, 'evaluasi']); 
     });
 
-    
+    Route::put('/profile',          [UserProfileController::class, 'saveOnboarding']); // Simpan data onboarding user (kategori favorit, alergi, dll)
 });
 
 Route::post('/consultation', [ConsultationController::class, 'send']);
@@ -104,7 +104,6 @@ Route::post('/consultation', [ConsultationController::class, 'send']);
 
     Route::prefix('profile')->group(function () {
         Route::get('/', [ProfileController::class, 'show']);
-        Route::put('/', [ProfileController::class, 'update']);
-        Route::put('/profile',          [UserProfileController::class, 'saveOnboarding']);
+        Route::put('/', [ProfileController::class, 'update']); 
     });
 });
