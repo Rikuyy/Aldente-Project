@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Resep; 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Http\JsonResponse;
+use App\Http\Controllers\Controller;
 
 class ResepController extends Controller
 {
@@ -110,4 +112,43 @@ class ResepController extends Controller
             'message' => 'Resep berhasil dihapus!'
         ]);
     }
+
+    // 5. Ambil Semua Kategori Resep Unik
+    public function getCategories(): JsonResponse
+        {
+            try {
+                $rawCategories = Resep::raw(function($collection) {
+            return $collection->distinct('Category');
+        });
+        $categories = collect($rawCategories);
+                $cleaned = $categories
+                    ->filter(fn($v) => !empty(trim((string) $v)))
+                    ->map(fn($v) => trim((string) $v))
+                    ->unique()
+                    ->sort()
+                    ->values()
+                    ->toArray();
+    
+                if (empty($cleaned)) {
+                    return response()->json([
+                        'success'    => false,
+                        'message'    => 'Belum ada kategori resep di database.',
+                        'categories' => [],
+                    ], 404);
+                }
+    
+                return response()->json([
+                    'success'    => true,
+                    'message'    => 'Kategori berhasil diambil.',
+                    'categories' => $cleaned,
+                ], 200);
+    
+            } catch (\Exception $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Terjadi kesalahan server.',
+                    'error'   => $e->getMessage(),
+                ], 500);
+            }
+        }
 }
