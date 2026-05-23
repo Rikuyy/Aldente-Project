@@ -15,10 +15,11 @@ class GuestModePage extends StatelessWidget {
 class _GuestModePageState extends State<GuestModePage> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-
   final List<ChatMessage> _messages = [];
   bool _isLoading = false;
   int _botMessageCount = 0;
+
+  static const String _baseUrl = 'http://127.0.0.1:8000/api';
 
   @override
   void initState() {
@@ -34,14 +35,13 @@ class _GuestModePageState extends State<GuestModePage> {
     ));
   }
 
-  bool _shouldShowCTA() {
-    return _botMessageCount > 0 && _botMessageCount % 2 == 0;
-  }
+  bool _shouldShowCTA() => _botMessageCount > 0 && _botMessageCount % 2 == 0;
 
   Future<void> _sendMessage(String text) async {
     final userMessage = text.trim();
     if (userMessage.isEmpty || _isLoading) return;
 
+    // ✅ Ambil history SEBELUM setState
     final historyToSend = _messages
         .where((m) => m.status != MessageStatus.loading)
         .map((m) => {'role': m.isUser ? 'user' : 'model', 'text': m.text})
@@ -57,7 +57,7 @@ class _GuestModePageState extends State<GuestModePage> {
 
     try {
       final response = await http.post(
-        Uri.parse('${ApiService.baseUrl}/consultation'),
+        Uri.parse('$_baseUrl/consultation'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -68,44 +68,29 @@ class _GuestModePageState extends State<GuestModePage> {
           'context': {
             'nama': 'Tamu',
             'stokBahan': [],
-            'sisaBudget': 150000,
-            'totalBudget': 150000,
+            'sisaBudget': 0,
+            'totalBudget': 0,
           },
         }),
       );
 
       final data = jsonDecode(response.body);
-      String botReply = data['reply'] ?? 'Maaf, aku tidak bisa menjawab itu.';
-      final List<dynamic>? recommendations = data['recommendations'];
+      final botReply = data['reply'] ?? 'Maaf, aku tidak bisa menjawab itu.';
 
       _botMessageCount++;
       final showCTA = _shouldShowCTA();
 
       setState(() {
-        _messages.removeLast();
+        _messages.removeLast(); // hapus loading
         _messages.add(ChatMessage(text: botReply, isUser: false));
-        _isLoading = false;
-      });
-
-      if (recommendations != null && recommendations.isNotEmpty) {
-        String recText = '\n\n📋 Rekomendasi:\n';
-        for (var rec in recommendations) {
-          recText += '• ${rec['nama']} - ${rec['deskripsi']}\n';
-        }
-        setState(() {
-          _messages.removeLast();
-          _messages.add(ChatMessage(text: botReply + recText, isUser: false));
-        });
-      }
-
-      if (showCTA) {
-        setState(() {
+        if (showCTA) {
           _messages.add(ChatMessage(
-            text: '🔔 Butuh rekomendasi lebih akurat? Yuk login!',
+            text: 'Butuh rekomendasi lebih akurat? Yuk login!',
             isUser: false,
           ));
-        });
-      }
+        }
+        _isLoading = false;
+      });
     } catch (e) {
       setState(() {
         _messages.removeLast();
@@ -224,9 +209,6 @@ class _GuestModePageState extends State<GuestModePage> {
           ),
           const Divider(height: 1, color: AppTheme.slate100),
 
-          // Quick Chips
-          _buildQuickChips(),
-
           // Chat area
           Expanded(
             child: ListView.builder(
@@ -235,6 +217,7 @@ class _GuestModePageState extends State<GuestModePage> {
               itemCount: _messages.length,
               itemBuilder: (context, index) {
                 final msg = _messages[index];
+
                 if (msg.status == MessageStatus.loading) {
                   return const Padding(
                     padding: EdgeInsets.only(bottom: 12),
@@ -262,10 +245,15 @@ class _GuestModePageState extends State<GuestModePage> {
                     ),
                   );
                 }
+
+                final isBot = !msg.isUser;
+                final isCTA = isBot &&
+                    msg.text.contains('Butuh rekomendasi lebih akurat?');
+
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: _ChatBubble(
-                    isBot: !msg.isUser,
+                    isBot: isBot,
                     child: msg.isUser
                         ? Text(
                             msg.text,
@@ -287,8 +275,7 @@ class _GuestModePageState extends State<GuestModePage> {
                                   fontSize: 14,
                                 ),
                               ),
-                              if (msg.text.contains(
-                                  'Butuh rekomendasi lebih akurat?')) ...[
+                              if (isCTA) ...[
                                 const SizedBox(height: 12),
                                 _buildLoginCTA(context),
                               ],
@@ -364,66 +351,6 @@ class _GuestModePageState extends State<GuestModePage> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildQuickChips() {
-    final chips = [
-      {
-        'label': '🍳 Rekomendasi Masak',
-        'message': 'Berikan rekomendasi masakan sederhana untuk makan siang',
-        'color': AppTheme.orange50,
-        'textColor': const Color(0xFF9A3412),
-        'borderColor': AppTheme.orange200,
-      },
-      {
-        'label': '💰 Saran Budget',
-        'message': 'Bagaimana cara mengatur budget makan agar hemat?',
-        'color': AppTheme.blue50,
-        'textColor': AppTheme.blue700,
-        'borderColor': AppTheme.blue100,
-      },
-      {
-        'label': '🍲 Menu Sehat',
-        'message': 'Rekomendasi menu sehat dengan budget terbatas',
-        'color': AppTheme.green50,
-        'textColor': AppTheme.green600,
-        'borderColor': const Color(0xFFBBF7D0),
-      },
-    ];
-
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: chips.map((chip) {
-            return Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: GestureDetector(
-                onTap: () => _sendMessage(chip['message'] as String),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: chip['color'] as Color,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: chip['borderColor'] as Color),
-                  ),
-                  child: Text(
-                    chip['label'] as String,
-                    style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: chip['textColor'] as Color),
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
       ),
     );
   }
