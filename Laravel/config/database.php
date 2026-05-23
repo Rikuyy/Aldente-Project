@@ -86,11 +86,7 @@ return [
 
     ],
 
-    'migrations' => 'migrations',
-'migrations' => [
-    'table' => 'migrations',
-    'connection' => 'mongodb',
-],
+    'migrations' => 'migrations', 
     'redis' => [
         'client' => env('REDIS_CLIENT', 'phpredis'),
         'options' => [

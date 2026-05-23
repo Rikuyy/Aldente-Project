@@ -65,6 +65,7 @@ Route::middleware('auth:api')->group(function () {
 
     Route::prefix('resep')->group(function () {
         Route::get('/', [ResepController::class, 'index']);
+        Route::get('/categories', [ResepController::class,      'getCategories']);
         Route::post('/', [ResepController::class, 'store']);
         Route::put('/{id}', [ResepController::class, 'update']);
         Route::delete('/{id}', [ResepController::class, 'destroy']);
@@ -104,5 +105,6 @@ Route::post('/consultation', [ConsultationController::class, 'send']);
     Route::prefix('profile')->group(function () {
         Route::get('/', [ProfileController::class, 'show']);
         Route::put('/', [ProfileController::class, 'update']);
+        Route::put('/profile',          [UserProfileController::class, 'saveOnboarding']);
     });
 });
