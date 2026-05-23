@@ -115,8 +115,8 @@ class AppColors extends ThemeExtension<AppColors> {
   final Color textHint;
   final Color cardBackground;
   final Color inputFill;
-  final Color chipBackground;  
-final Color chipText;
+  final Color chipBackground;
+  final Color chipText;
 
   const AppColors({
     required this.surface,
@@ -152,8 +152,8 @@ final Color chipText;
       textSecondary: textSecondary ?? this.textSecondary,
       textHint: textHint ?? this.textHint,
       cardBackground: cardBackground ?? this.cardBackground,
-      inputFill: inputFill ?? this.inputFill, 
-      chipBackground: chipBackground ?? this.chipBackground, 
+      inputFill: inputFill ?? this.inputFill,
+      chipBackground: chipBackground ?? this.chipBackground,
       chipText: chipText ?? this.chipText,
     );
   }
@@ -171,8 +171,7 @@ final Color chipText;
     cardBackground: Colors.white,
     inputFill: AppTheme.slate50,
     chipBackground: AppTheme.slate100,
-chipText: AppTheme.slate600,
-    
+    chipText: AppTheme.slate600,
   );
 
   static const dark = AppColors(
@@ -185,7 +184,7 @@ chipText: AppTheme.slate600,
     cardBackground: AppTheme.slate800,
     inputFill: AppTheme.slate800,
     chipBackground: AppTheme.slate700,
-chipText: AppTheme.slate300,
+    chipText: AppTheme.slate300,
   );
 }
 

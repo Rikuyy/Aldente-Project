@@ -49,21 +49,14 @@ final _router = GoRouter(
         path: '/notifications',
         builder: (ctx, state) => const NotificationsPage()),
     GoRoute(path: '/todo', builder: (ctx, state) => const TodoPage()),
-
     ShellRoute(
       builder: (ctx, state, child) => MainLayout(child: child),
       routes: [
         GoRoute(path: '/app/home', builder: (ctx, state) => const HomePage()),
-        GoRoute(
-            path: '/app/consultation',
-            builder: (ctx, state) => const ConsultationPage()),
-        GoRoute(
-            path: '/app/finance', builder: (ctx, state) => const FinancePage()),
-        GoRoute(
-            path: '/app/inventory',
-            builder: (ctx, state) => const InventoryPage()),
-        GoRoute(
-            path: '/app/profile', builder: (ctx, state) => const ProfilePage()),
+        GoRoute(path: '/app/consultation', builder: (ctx, state) => const ConsultationPage()),
+        GoRoute(path: '/app/finance', builder: (ctx, state) => const FinancePage()),
+        GoRoute(path: '/app/inventory', builder: (ctx, state) => const InventoryPage()),
+        GoRoute(path: '/app/profile', builder: (ctx, state) => const ProfilePage()),
         GoRoute(path: '/app/todo', builder: (ctx, state) => const TodoPage()),
       ],
     ),

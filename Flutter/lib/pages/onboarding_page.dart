@@ -314,7 +314,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.orange600,
                   disabledBackgroundColor: context.colors.border,
-                  foregroundColor: context.colors.cardBackground,
+                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 17),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20)),
@@ -613,6 +613,7 @@ class _StepAllergies extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
+
         if (!noAllergy) ...[
           Text('Pilih dari daftar:',
               style: TextStyle(
