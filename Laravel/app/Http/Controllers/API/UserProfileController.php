@@ -32,43 +32,36 @@ class UserProfileController extends Controller
             return $this->serverError($e);
         }
     }
-    public function saveOnboarding(Request $request, string $id): JsonResponse
+    public function saveOnboarding(Request $request): JsonResponse
     {
         try {
             $validated = $request->validate([
-                'kategori_favorit'   => ['required', 'array', 'min:1'],
-                'kategori_favorit.*' => ['string'],
-                'alergi'             => ['required', 'array'],
-                'alergi.*'           => ['string'],
-                'budget_bulanan'     => ['required', 'integer', 'min:1'],
-                'jumlah_makan'       => ['required', 'integer', 'min:2', 'max:4'],
+                'Kategori_Favorit'   => ['required', 'array', 'min:1'],
+                'Kategori_Favorit.*' => ['string'],
+                'Alergi'             => ['required', 'array'],
+                'Alergi.*'           => ['string'],
+                'Budget_Bulanan'     => ['required', 'integer', 'min:1'],
+                'Jumlah_Makan'       => ['required', 'integer', 'min:2', 'max:4'],
             ], [
-                'kategori_favorit.required' => 'Pilih minimal 1 kategori makanan favorit.',
-                'kategori_favorit.min'      => 'Pilih minimal 1 kategori makanan favorit.',
-                'budget_bulanan.required'   => 'Budget bulanan wajib diisi.',
-                'budget_bulanan.min'        => 'Budget bulanan harus lebih dari 0.',
-                'jumlah_makan.required'     => 'Frekuensi makan wajib dipilih.',
-                'jumlah_makan.min'          => 'Frekuensi makan minimal 2 kali.',
-                'jumlah_makan.max'          => 'Frekuensi makan maksimal 4 kali.',
+                'Kategori_Favorit.required' => 'Pilih minimal 1 kategori makanan favorit.',
+                'Kategori_Favorit.min'      => 'Pilih minimal 1 kategori makanan favorit.',
+                'Budget_Bulanan.required'   => 'Budget bulanan wajib diisi.',
+                'Budget_Bulanan.min'        => 'Budget bulanan harus lebih dari 0.',
+                'Jumlah_Makan.required'     => 'Frekuensi makan wajib dipilih.',
+                'Jumlah_Makan.min'          => 'Frekuensi makan minimal 2 kali.',
+                'Jumlah_Makan.max'          => 'Frekuensi makan maksimal 4 kali.',
             ]);
 
-            $user      = Auth::user();
-             $authCheck = $user && (string) $user->_id === $id;
-             if (!$authCheck) {
-                 return response()->json([
-                     'success' => false,
-                     'message' => 'Akses ditolak.',
-                 ], 403);
-             }
+            $user = Auth::user();
 
             if (!$user) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'User tidak ditemukan.',
-                ], 404);
+                    'message' => 'User tidak ditemukan atau belum login.',
+                ], 401); // 401 Unauthorized lebih tepat dibanding 404
             }
 
-             User::where('_id', $user->_id)->update([
+            $user->update([
                 'Kategori_Favorit' => array_values(
                     array_filter((array) $validated['Kategori_Favorit'], 'is_string')
                 ),
@@ -79,23 +72,20 @@ class UserProfileController extends Controller
                 'Jumlah_Makan'     => (int) $validated['Jumlah_Makan'],
                 'updated_at'       => now(),
             ]);
- 
-            // Refresh dari DB untuk response
-            $user = User::find($user->_id);
- 
+
             return response()->json([
                 'success' => true,
                 'message' => 'Profil berhasil disimpan.',
-                'data'    => $this->formatUser($user),
+                'data'    => $this->formatUser($user->refresh()), // Refresh data terbaru
             ], 200);
- 
+
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Data tidak valid.',
                 'errors'  => $e->errors(),
             ], 422);
- 
+
         } catch (\Exception $e) {
             return $this->serverError($e);
         }

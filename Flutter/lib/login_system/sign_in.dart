@@ -41,9 +41,9 @@ class _SignInScreenState extends State<SignInScreen> {
             content: Text("Login Berhasil!"), backgroundColor: Colors.green),
       );
 
-      final bool isNewUser = response['user']?['is_new_user'] ?? true;
+      final bool needsOnboarding = response['needs_onboarding'] ?? true;
 
-      if (isNewUser) {
+      if (needsOnboarding) {
         context.go('/onboarding');
       } else {
         context.go('/app/home');

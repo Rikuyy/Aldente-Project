@@ -81,11 +81,15 @@ class AuthController extends Controller
             }
 
             $user = auth('api')->user();
-
+            $needsOnboarding = empty($user->Kategori_Favorit) 
+                || empty($user->Alergi) 
+                || empty($user->Budget_Bulanan) 
+                || empty($user->Jumlah_Makan);
             return response()->json([
                 'success'      => true,
                 'message' => 'Login Berhasil',
-                'access_token' => $token, 
+                'access_token' => $token,
+                'needs_onboarding' => $needsOnboarding, 
                 'user'         => $user
             ], 200);
 
