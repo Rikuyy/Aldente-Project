@@ -11,16 +11,43 @@ import 'pages/inventory_page.dart';
 import 'pages/profile_page.dart';
 import 'pages/notifications_page.dart';
 import 'pages/todo_page.dart';
+import 'login_system/sign_in.dart';
+import 'login_system/sign_up.dart';
+import 'login_system/forgot_password.dart';
+import 'login_system/otp_ver.dart';
+import 'login_system/reset_password.dart';
 
 void main() {
   runApp(const CookCashApp());
 }
+
 final _router = GoRouter(
   initialLocation: '/',
   routes: [
     GoRoute(path: '/', builder: (ctx, state) => const GuestModePage()),
-    GoRoute(path: '/onboarding', builder: (ctx, state) => const OnboardingPage()),
-    GoRoute(path: '/notifications', builder: (ctx, state) => const NotificationsPage()),
+
+    // ── Login System ─────────────────────────
+    GoRoute(path: '/sign_in', builder: (ctx, state) => const SignInScreen()),
+    GoRoute(path: '/sign_up', builder: (ctx, state) => const SignUpScreen()),
+    GoRoute(
+        path: '/forgot_password',
+        builder: (ctx, state) => const ForgotPasswordScreen()),
+    GoRoute(
+      path: '/otp',
+      builder: (ctx, state) => OtpScreen(email: state.extra as String?),
+    ),
+    GoRoute(
+      path: '/reset_password',
+      builder: (ctx, state) =>
+          ResetPasswordScreen(email: state.extra as String),
+    ),
+    // ─────────────────────────────────────────
+
+    GoRoute(
+        path: '/onboarding', builder: (ctx, state) => const OnboardingPage()),
+    GoRoute(
+        path: '/notifications',
+        builder: (ctx, state) => const NotificationsPage()),
     GoRoute(path: '/todo', builder: (ctx, state) => const TodoPage()),
     ShellRoute(
       builder: (ctx, state, child) => MainLayout(child: child),
@@ -37,8 +64,6 @@ final _router = GoRouter(
 );
 
 final themeNotifier = ValueNotifier<ThemeMode>(ThemeMode.light);
-
-
 
 class CookCashApp extends StatelessWidget {
   const CookCashApp({super.key});

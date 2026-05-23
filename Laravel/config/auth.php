@@ -8,8 +8,8 @@ return [
     |--------------------------------------------------------------------------
     */
     'defaults' => [
-        'guard' => 'api', // Default diubah ke api agar JWT langsung aktif
-        'passwords' => 'users',
+        'guard' => 'web', // DIUBAH KEMBALI KE 'web' agar Laravel Breeze (Admin) bekerja menggunakan Session
+        'passwords' => 'admins',
     ],
 
     /*
@@ -24,8 +24,8 @@ return [
         ],
 
         'api' => [
-            'driver' => 'jwt',          // WAJIB: JWT untuk API
-            'provider' => 'users',      // Model User MongoDB
+            'driver' => 'jwt',          // Tetap JWT untuk API Flutter
+            'provider' => 'users',      // Membaca model User di MongoDB
         ],
     ],
 

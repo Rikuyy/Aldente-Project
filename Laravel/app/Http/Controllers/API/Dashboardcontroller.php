@@ -3,129 +3,163 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Budget;
 use App\Models\Keuangan;
 use App\Models\Resep;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
-    // ─────────────────────────────────────────
-    // GET /api/dashboard
-    // ─────────────────────────────────────────
-    public function index(Request $request)
+    // ============================================================
+    // 1. GET /api/dashboard
+    // ============================================================
+    public function index(Request $request): JsonResponse
     {
-        $user   = $request->user();
-        $userId = $user->id;
-        $now    = Carbon::now();
+        try {
+            $pengguna = $request->user();
+            $idPengguna = $pengguna->id;
+            $sekarang   = Carbon::now();
 
-        $bulan      = $now->format('Y-m');
-        $awalBulan  = $now->copy()->startOfMonth()->toDateString();
-        $akhirBulan = $now->copy()->endOfMonth()->toDateString();
-        $sisaHari   = $now->daysInMonth - $now->day + 1;
+            $bulan      = $sekarang->format('Y-m');
+            $awalBulan  = $sekarang->copy()->startOfMonth()->toDateString();
+            $akhirBulan = $sekarang->copy()->endOfMonth()->toDateString();
+            $sisaHari   = $sekarang->daysInMonth - $sekarang->day + 1;
 
-        // ── 1. Budget bulan ini ──────────────────
-        $budget      = Budget::where('Id_User', $userId)->where('Bulan', $bulan)->first();
-        $totalBudget = $budget ? $budget->Total_Budget : 0;
+            // ── 1. Budget dari field user ────────────────────────────
+            $totalBudget = $pengguna->Budget_Bulanan ?? 0;
 
-        // ── 2. Total pengeluaran bulan ini ───────
-        $totalKeluar = Keuangan::where('Id_User', $userId)
-            ->whereBetween('Tanggal', [$awalBulan, $akhirBulan])
-            ->sum('Total Pengeluaran');
+            // ── 2. Total pengeluaran bulan ini ───────────────────────
+            $totalKeluar = Keuangan::where('Id_User', $idPengguna)
+                ->whereBetween('Tanggal', [$awalBulan, $akhirBulan])
+                ->sum('Total_Pengeluaran');
 
-        // ── 3. Hitung sisa ───────────────────────
-        $sisaBulan   = max($totalBudget - $totalKeluar, 0);
-        $sisaHariIni = $sisaHari > 0 ? round($sisaBulan / $sisaHari) : 0;
+            // ── 3. Hitung sisa ───────────────────────────────────────
+            $sisaBulan   = max($totalBudget - $totalKeluar, 0);
+            $sisaHariIni = $sisaHari > 0 ? round($sisaBulan / $sisaHari) : 0;
 
-        // ── 4. Status warning ────────────────────
-        $persenSisa = $totalBudget > 0
-            ? round(($sisaBulan / $totalBudget) * 100)
-            : 0;
+            // ── 4. Status peringatan ─────────────────────────────────
+            $persenSisa = $totalBudget > 0
+                ? round(($sisaBulan / $totalBudget) * 100)
+                : 0;
 
-        if ($persenSisa <= 10) {
-            $statusBudget = 'Kritis';
-            $warningMsg   = "Sisa budget tinggal {$persenSisa}%! Segera kurangi pengeluaran.";
-        } elseif ($persenSisa <= 20) {
-            $statusBudget = 'Waspada';
-            $warningMsg   = "Sisa uang makan tinggal {$persenSisa}% dari jatah bulan ini. Hati-hati defisit!";
-        } else {
-            $statusBudget = 'Aman';
-            $warningMsg   = null;
-        }
-
-        // ── 5. Rekomendasi Resep ─────────────────
-        $kategoriFavorit = $user->Kategori_Favorit;
-        $alergi          = $user->Alergi; // nullable
-
-        // Filter berdasarkan kategori favorit user, urutkan loves terbanyak
-        $query = Resep::where('Category', $kategoriFavorit)
-            ->orderBy('Loves', 'desc');
-
-        // Exclude resep yang mengandung bahan alergi user
-        // Alergi disimpan sebagai string dipisah koma, misal: "udang, kacang, susu"
-        if (!empty($alergi)) {
-            $daftarAlergi = array_map('trim', explode(',', $alergi));
-            foreach ($daftarAlergi as $bahan) {
-                $query->where('Ingredients Cleaned', 'not like', "%{$bahan}%");
+            if ($persenSisa <= 10) {
+                $statusBudget    = 'Kritis';
+                $pesanPeringatan = "Sisa budget tinggal {$persenSisa}%! Segera kurangi pengeluaran.";
+            } elseif ($persenSisa <= 20) {
+                $statusBudget    = 'Waspada';
+                $pesanPeringatan = "Sisa uang makan tinggal {$persenSisa}% dari jatah bulan ini. Hati-hati defisit!";
+            } else {
+                $statusBudget    = 'Aman';
+                $pesanPeringatan = null;
             }
+
+            // ── 5. Rekomendasi resep ─────────────────────────────────
+            $kategoriFavorit = $pengguna->Kategori_Favorit;
+            $alergi          = $pengguna->Alergi;
+
+            $query = Resep::where('Category', $kategoriFavorit)
+                          ->orderBy('Loves', 'desc');
+
+            if (!empty($alergi)) {
+                $daftarAlergi = is_array($alergi)
+                    ? $alergi
+                    : array_map('trim', explode(',', $alergi));
+
+                foreach ($daftarAlergi as $bahan) {
+                    $query->where('Ingredients_Cleaned', 'not like', "%{$bahan}%");
+                }
+            }
+
+            $rekomendasiResep = $query->take(10)->get([
+                '_id',
+                'Title Cleaned',
+                'Category',
+                'Loves',
+                'Total Ingredients',
+                'Total Steps',
+            ]);
+
+            // ── 6. Info pengguna ─────────────────────────────────────
+            $nama    = $pengguna->Username ?? 'Pengguna';
+            $inisial = strtoupper(substr($nama, 0, 1));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data dashboard berhasil diambil.',
+                'data'    => [
+                    'pengguna' => [
+                        'nama'             => $nama,
+                        'inisial'          => $inisial,
+                        'kategori_favorit' => $kategoriFavorit,
+                        'alergi'           => $alergi,
+                    ],
+                    'budget' => [
+                        'total_budget'     => $totalBudget,
+                        'total_keluar'     => $totalKeluar,
+                        'sisa_bulan'       => $sisaBulan,
+                        'sisa_hari_ini'    => $sisaHariIni,
+                        'persen_sisa'      => $persenSisa,
+                        'status'           => $statusBudget,
+                        'pesan_peringatan' => $pesanPeringatan,
+                    ],
+                    'rekomendasi_resep' => $rekomendasiResep,
+                ],
+            ], 200);
+
+        } catch (\Exception $e) {
+            return $this->serverError($e);
         }
-
-        $rekomendasi = $query->take(10)->get([
-            '_id',
-            'Title Cleaned',
-            'Category',
-            'Loves',
-            'Total Ingredients',
-            'Total Steps',
-        ]);
-
-        // ── 6. User info ─────────────────────────
-        $nama    = $user->Username ?? 'User';
-        $inisial = strtoupper(substr($nama, 0, 1));
-
-        return response()->json([
-            'user' => [
-                'nama'             => $nama,
-                'inisial'          => $inisial,
-                'kategori_favorit' => $kategoriFavorit,
-                'alergi'           => $alergi,
-            ],
-            'budget' => [
-                'total_budget'  => $totalBudget,
-                'total_keluar'  => $totalKeluar,
-                'sisa_bulan'    => $sisaBulan,
-                'sisa_hari_ini' => $sisaHariIni,
-                'persen_sisa'   => $persenSisa,
-                'status'        => $statusBudget,
-                'warning_msg'   => $warningMsg,
-            ],
-            'rekomendasi_resep' => $rekomendasi,
-        ]);
     }
 
-    // ─────────────────────────────────────────
-    // POST /api/dashboard/budget
-    // Set / update budget bulan ini
-    // ─────────────────────────────────────────
-    public function setBudget(Request $request)
+    // ============================================================
+    // 2. POST /api/dashboard/budget
+    // Simpan budget bulanan ke field Budget_Bulanan di users
+    // ============================================================
+    public function simpanBudget(Request $request): JsonResponse
     {
-        $request->validate([
-            'total_budget' => 'required|numeric|min:0',
-            'bulan'        => 'nullable|date_format:Y-m',
-        ]);
+        try {
+            $request->validate([
+                'total_budget' => ['required', 'numeric', 'min:0'],
+            ], [
+                'total_budget.required' => 'Total budget wajib diisi.',
+                'total_budget.numeric'  => 'Total budget harus berupa angka.',
+                'total_budget.min'      => 'Total budget tidak boleh negatif.',
+            ]);
 
-        $userId = $request->user()->id;
-        $bulan  = $request->input('bulan', Carbon::now()->format('Y-m'));
+            $pengguna = $request->user();
+            $pengguna->Budget_Bulanan = $request->total_budget;
+            $pengguna->save();
 
-        $budget = Budget::updateOrCreate(
-            ['Id_User' => $userId, 'Bulan' => $bulan],
-            ['Total_Budget' => $request->total_budget]
-        );
+            return response()->json([
+                'success' => true,
+                'message' => 'Budget berhasil disimpan.',
+                'data'    => [
+                    'budget_bulanan' => $pengguna->Budget_Bulanan,
+                ],
+            ], 200);
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data tidak valid.',
+                'errors'  => $e->errors(),
+            ], 422);
+
+        } catch (\Exception $e) {
+            return $this->serverError($e);
+        }
+    }
+
+    // ============================================================
+    // Helper: response error 500
+    // ============================================================
+    private function serverError(\Exception $e): JsonResponse
+    {
         return response()->json([
-            'message' => 'Budget berhasil disimpan',
-            'data'    => $budget,
-        ]);
+            'success' => false,
+            'message' => 'Terjadi kesalahan server.',
+            'error'   => $e->getMessage(),
+        ], 500);
     }
 }

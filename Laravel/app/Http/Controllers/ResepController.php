@@ -2,13 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Resep; // Pastikan kamu punya Model Resep
+use App\Models\Resep; 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Http\JsonResponse;
+use App\Http\Controllers\Controller;
 
 class ResepController extends Controller
 {
-    // 1. Ambil Semua Data Resep
+    // 1. Ambil Semua Data Resep dari MongoDB
     public function index()
     {
         $resep = Resep::all();
@@ -29,7 +31,20 @@ class ResepController extends Controller
             return response()->json($validator->errors(), 400);
         }
 
-        $resep = Resep::create($request->all());
+        // Hitung total komponen data secara otomatis
+        $totalIngredients = count(explode(',', $request->input('Ingredients Cleaned')));
+        $totalSteps = count(explode('.', $request->input('Steps')));
+
+        // Buat objek array terstruktur sesuai kolom MongoDB
+        $resep = Resep::create([
+            'Title Cleaned' => $request->input('Title Cleaned'),
+            'Ingredients Cleaned' => $request->input('Ingredients Cleaned'),
+            'Steps' => $request->input('Steps'),
+            'Category' => $request->input('Category'),
+            'Loves' => (int) $request->input('Loves', 0),
+            'Total Ingredients' => $totalIngredients,
+            'Total Steps' => $totalSteps
+        ]);
 
         return response()->json([
             'status' => 'success',
@@ -38,17 +53,38 @@ class ResepController extends Controller
         ], 201);
     }
 
-    // 3. Update Resep
-public function update(Request $request, $id)
-{
-    // Pakai where('_id', $id) buat mastiin MongoDB nangkep
-    $resep = \App\Models\Resep::where('_id', $id)->first();
+    // 3. Update Resep Berdasarkan ID MongoDB
+    public function update(Request $request, $id)
+    {
+        $resep = Resep::where('_id', $id)->first();
 
-    if (!$resep) {
-        return response()->json(['message' => 'ID: ' . $id . ' tidak ditemukan di database'], 404);
-    }
+        if (!$resep) {
+            return response()->json(['message' => 'ID: ' . $id . ' tidak ditemukan di database'], 404);
+        }
 
-    $resep->update($request->all());
+        $validator = Validator::make($request->all(), [
+            'Title Cleaned' => 'required',
+            'Ingredients Cleaned' => 'required',
+            'Steps' => 'required',
+            'Category' => 'required'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 400);
+        }
+
+        $totalIngredients = count(explode(',', $request->input('Ingredients Cleaned')));
+        $totalSteps = count(explode('.', $request->input('Steps')));
+
+        $resep->update([
+            'Title Cleaned' => $request->input('Title Cleaned'),
+            'Ingredients Cleaned' => $request->input('Ingredients Cleaned'),
+            'Steps' => $request->input('Steps'),
+            'Category' => $request->input('Category'),
+            'Loves' => (int) $request->input('Loves', 0),
+            'Total Ingredients' => $totalIngredients,
+            'Total Steps' => $totalSteps
+        ]);
 
         return response()->json([
             'status' => 'success',
@@ -57,11 +93,10 @@ public function update(Request $request, $id)
         ]);
     }
 
-    // 4. Hapus Resep
+    // 4. Hapus Resep dari MongoDB
     public function destroy($id)
     {
-        // Pakai cara pencarian yang sama kayak update tadi biar aman
-        $resep = \App\Models\Resep::where('_id', $id)->first();
+        $resep = Resep::where('_id', $id)->first();
 
         if (!$resep) {
             return response()->json([
@@ -74,7 +109,46 @@ public function update(Request $request, $id)
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Resep berhasil dihapus !'
+            'message' => 'Resep berhasil dihapus!'
         ]);
     }
+
+    // 5. Ambil Semua Kategori Resep Unik
+    public function getCategories(): JsonResponse
+        {
+            try {
+                $rawCategories = Resep::raw(function($collection) {
+            return $collection->distinct('Category');
+        });
+        $categories = collect($rawCategories);
+                $cleaned = $categories
+                    ->filter(fn($v) => !empty(trim((string) $v)))
+                    ->map(fn($v) => trim((string) $v))
+                    ->unique()
+                    ->sort()
+                    ->values()
+                    ->toArray();
+    
+                if (empty($cleaned)) {
+                    return response()->json([
+                        'success'    => false,
+                        'message'    => 'Belum ada kategori resep di database.',
+                        'categories' => [],
+                    ], 404);
+                }
+    
+                return response()->json([
+                    'success'    => true,
+                    'message'    => 'Kategori berhasil diambil.',
+                    'categories' => $cleaned,
+                ], 200);
+    
+            } catch (\Exception $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Terjadi kesalahan server.',
+                    'error'   => $e->getMessage(),
+                ], 500);
+            }
+        }
 }

@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import '../api_config.dart';
+import '../services/api_service.dart';
 
 class DashboardService {
-  final String baseUrl = ApiConfig.baseUrl;
+  final String baseUrl = ApiService.baseUrl;
 
   Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
@@ -43,6 +43,7 @@ class DashboardService {
       return {'success': false, 'message': 'Gagal terhubung ke server: $e'};
     }
   }
+
   Future<Map<String, dynamic>> setBudget(double totalBudget,
       {String? bulan}) async {
     final token = await _getToken();

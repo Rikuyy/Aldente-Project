@@ -1,9 +1,144 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
 import '../theme/app_theme.dart';
+import '../models/chat_message.dart';
+import '../services/api_service.dart';
 
 class GuestModePage extends StatelessWidget {
   const GuestModePage({super.key});
+
+  @override
+  State<GuestModePage> createState() => _GuestModePageState();
+}
+
+class _GuestModePageState extends State<GuestModePage> {
+  final TextEditingController _messageController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+
+  final List<ChatMessage> _messages = [];
+  bool _isLoading = false;
+  int _botMessageCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _addWelcomeMessage();
+  }
+
+  void _addWelcomeMessage() {
+    _messages.add(ChatMessage(
+      text:
+          'Halo! Saya asisten CookCash kamu. Ada yang bisa saya bantu untuk rencana makan hari ini?',
+      isUser: false,
+    ));
+  }
+
+  bool _shouldShowCTA() {
+    return _botMessageCount > 0 && _botMessageCount % 2 == 0;
+  }
+
+  Future<void> _sendMessage(String text) async {
+    final userMessage = text.trim();
+    if (userMessage.isEmpty || _isLoading) return;
+
+    final historyToSend = _messages
+        .where((m) => m.status != MessageStatus.loading)
+        .map((m) => {'role': m.isUser ? 'user' : 'model', 'text': m.text})
+        .toList();
+
+    setState(() {
+      _messages.add(ChatMessage(text: userMessage, isUser: true));
+      _messages.add(ChatMessage.loading());
+      _isLoading = true;
+    });
+    _messageController.clear();
+    _scrollToBottom();
+
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiService.baseUrl}/consultation'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({
+          'message': userMessage,
+          'history': historyToSend,
+          'context': {
+            'nama': 'Tamu',
+            'stokBahan': [],
+            'sisaBudget': 150000,
+            'totalBudget': 150000,
+          },
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+      String botReply = data['reply'] ?? 'Maaf, aku tidak bisa menjawab itu.';
+      final List<dynamic>? recommendations = data['recommendations'];
+
+      _botMessageCount++;
+      final showCTA = _shouldShowCTA();
+
+      setState(() {
+        _messages.removeLast();
+        _messages.add(ChatMessage(text: botReply, isUser: false));
+        _isLoading = false;
+      });
+
+      if (recommendations != null && recommendations.isNotEmpty) {
+        String recText = '\n\n📋 Rekomendasi:\n';
+        for (var rec in recommendations) {
+          recText += '• ${rec['nama']} - ${rec['deskripsi']}\n';
+        }
+        setState(() {
+          _messages.removeLast();
+          _messages.add(ChatMessage(text: botReply + recText, isUser: false));
+        });
+      }
+
+      if (showCTA) {
+        setState(() {
+          _messages.add(ChatMessage(
+            text: '🔔 Butuh rekomendasi lebih akurat? Yuk login!',
+            isUser: false,
+          ));
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _messages.removeLast();
+        _messages.add(ChatMessage(
+          text: 'Waduh, ada gangguan koneksi nih. Coba lagi ya! 🙏',
+          isUser: false,
+          status: MessageStatus.error,
+        ));
+        _isLoading = false;
+      });
+    }
+
+    _scrollToBottom();
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -11,6 +146,7 @@ class GuestModePage extends StatelessWidget {
       backgroundColor: context.colors.surface,
       body: Column(
         children: [
+          // Header
           Container(
             color: context.colors.cardBackground,
             padding: EdgeInsets.only(
@@ -19,181 +155,152 @@ class GuestModePage extends StatelessWidget {
               right: 24,
               bottom: 16,
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'CookCash',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                        color: context.colors.textPrimary,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Icon(Icons.auto_awesome, color: AppTheme.orange500, size: 20),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Ruang Konsultasi Cerdas',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: context.colors.surface,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Divider(height: 1, color: context.colors.border),
-
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(24),
-              children: [
-                _ChatBubble(
-                  isBot: true,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Halo!',
-                        style: TextStyle(fontWeight: FontWeight.w700, color: AppTheme.slate900),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Saya asisten CookCash kamu. Ada yang bisa saya bantu untuk rencana makan hari ini?',
-                        style: TextStyle(color: context.colors.textPrimary, height: 1.5),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    constraints: BoxConstraints(
-                      maxWidth: MediaQuery.of(context).size.width * 0.85,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFF97316), AppTheme.orange600],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(20),
-                        topRight: Radius.circular(4),
-                        bottomLeft: Radius.circular(20),
-                        bottomRight: Radius.circular(20),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.orange600.withValues(alpha: 51),
-                          blurRadius: 15,
-                          offset: const Offset(0, 4),
+                    Row(
+                      children: [
+                        Text(
+                          'CookCash',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                            color: context.colors.textPrimary,
+                            letterSpacing: -0.5,
+                          ),
                         ),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.auto_awesome,
+                            color: AppTheme.orange500, size: 20),
                       ],
                     ),
-                    child: Text(
-                      'Rekomendasi menu untuk makan siang dengan budget 15 ribu',
-                      style: TextStyle(color: context.colors.cardBackground, fontWeight: FontWeight.w500, height: 1.5),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Ruang Konsultasi Cerdas',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: context.colors.textSecondary,
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                _ChatBubble(
-                  isBot: true,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Tentu! Dengan budget Rp15.000, kamu bisa mempertimbangkan menu berikut:',
-                        style: TextStyle(color: context.colors.textPrimary, height: 1.5),
+                Row(
+                  children: [
+                    TextButton(
+                      onPressed: () => context.push('/sign_in'),
+                      child: const Text(
+                        'Masuk',
+                        style: TextStyle(
+                            color: AppTheme.orange600,
+                            fontWeight: FontWeight.bold),
                       ),
-                      const SizedBox(height: 12),
-                      const _MenuOption(icon: Icons.restaurant, title: 'Nasi Telur Pontianak + Es Teh', subtitle: '(Masak di kos)'),
-                      const SizedBox(height: 6),
-                      const _MenuOption(icon: Icons.ramen_dining, title: 'Mie Dok-Dok Ala Warkop'),
-                      const SizedBox(height: 6),
-                      const _MenuOption(icon: Icons.rice_bowl, title: 'Beli Nasi Warteg', subtitle: '(Sayur 2 macem, Telur, dan Tempe Orek)'),
-                      const SizedBox(height: 16),
-                      GestureDetector(
-                        onTap: () => context.go('/onboarding'),
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: AppTheme.orange50,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: AppTheme.orange200, width: 2),
-                          ),
-                          child: Column(
-                            children: [
-                              const Text(
-                                'Butuh rekomendasi lebih akurat?',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                  color: Color(0xFF431407),
-                                  fontSize: 14,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 4),
-                              const Text(
-                                'Dapatkan rencana makan yang disesuaikan dengan isi kulkas dan seleramu.',
-                                style: TextStyle(
-                                  color: Color(0xFF9A3412),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 12),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.orange600,
-                                  borderRadius: BorderRadius.circular(50),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: AppTheme.orange600.withValues(alpha: 76.5),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 3),
-                                    ),
-                                  ],
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      'Yuk, Login!',
-                                      style: TextStyle(
-                                        color: context.colors.cardBackground,
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Icon(Icons.arrow_forward, color: context.colors.cardBackground, size: 16),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                    ),
+                    const SizedBox(width: 6),
+                    ElevatedButton(
+                      onPressed: () => context.push('/sign_up'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.orange500,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 8),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8)),
                       ),
-                    ],
-                  ),
+                      child: const Text('Daftar',
+                          style: TextStyle(
+                              fontSize: 12, fontWeight: FontWeight.bold)),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
+          const Divider(height: 1, color: AppTheme.slate100),
+
+          // Quick Chips
+          _buildQuickChips(),
+
+          // Chat area
+          Expanded(
+            child: ListView.builder(
+              controller: _scrollController,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              itemCount: _messages.length,
+              itemBuilder: (context, index) {
+                final msg = _messages[index];
+                if (msg.status == MessageStatus.loading) {
+                  return const Padding(
+                    padding: EdgeInsets.only(bottom: 12),
+                    child: _ChatBubble(
+                      isBot: true,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: AppTheme.orange500),
+                          ),
+                          SizedBox(width: 10),
+                          Text(
+                            'ChefBot sedang mengetik...',
+                            style: TextStyle(
+                                fontSize: 12,
+                                color: AppTheme.slate400,
+                                fontStyle: FontStyle.italic),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _ChatBubble(
+                    isBot: !msg.isUser,
+                    child: msg.isUser
+                        ? Text(
+                            msg.text,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w500,
+                              height: 1.5,
+                              fontSize: 14,
+                            ),
+                          )
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                msg.text,
+                                style: const TextStyle(
+                                  color: AppTheme.slate700,
+                                  height: 1.5,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              if (msg.text.contains(
+                                  'Butuh rekomendasi lebih akurat?')) ...[
+                                const SizedBox(height: 12),
+                                _buildLoginCTA(context),
+                              ],
+                            ],
+                          ),
+                  ),
+                );
+              },
+            ),
+          ),
+
+          // Input bar
           Container(
             color: context.colors.cardBackground,
             padding: EdgeInsets.only(
@@ -205,27 +312,180 @@ class GuestModePage extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               decoration: BoxDecoration(
-                color: context.colors.border,
+                color: AppTheme.slate100.withOpacity(0.8),
                 borderRadius: BorderRadius.circular(50),
-                border: Border.all(color: context.colors.border),
+                border: Border.all(color: AppTheme.slate200),
               ),
               child: Row(
                 children: [
                   Expanded(
                     child: TextField(
-                      decoration: InputDecoration(
+                      controller: _messageController,
+                      onSubmitted: (_) => _sendMessage(_messageController.text),
+                      decoration: const InputDecoration(
                         hintText: 'Ketik pertanyaanmu di sini...',
-                        hintStyle: TextStyle(color: context.colors.textHint, fontWeight: FontWeight.w500),
+                        hintStyle: TextStyle(
+                            color: AppTheme.slate400,
+                            fontWeight: FontWeight.w500),
                         border: InputBorder.none,
                       ),
                     ),
                   ),
-                  const Icon(Icons.send_rounded, color: AppTheme.orange500, size: 22),
+                  GestureDetector(
+                    onTap: _isLoading
+                        ? null
+                        : () => _sendMessage(_messageController.text),
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color:
+                            _isLoading ? AppTheme.slate300 : AppTheme.orange500,
+                        shape: BoxShape.circle,
+                        boxShadow: _isLoading
+                            ? []
+                            : [
+                                BoxShadow(
+                                    color: AppTheme.orange500.withOpacity(0.3),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2))
+                              ],
+                      ),
+                      child: Icon(
+                        _isLoading
+                            ? Icons.hourglass_empty_rounded
+                            : Icons.send_rounded,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildQuickChips() {
+    final chips = [
+      {
+        'label': '🍳 Rekomendasi Masak',
+        'message': 'Berikan rekomendasi masakan sederhana untuk makan siang',
+        'color': AppTheme.orange50,
+        'textColor': const Color(0xFF9A3412),
+        'borderColor': AppTheme.orange200,
+      },
+      {
+        'label': '💰 Saran Budget',
+        'message': 'Bagaimana cara mengatur budget makan agar hemat?',
+        'color': AppTheme.blue50,
+        'textColor': AppTheme.blue700,
+        'borderColor': AppTheme.blue100,
+      },
+      {
+        'label': '🍲 Menu Sehat',
+        'message': 'Rekomendasi menu sehat dengan budget terbatas',
+        'color': AppTheme.green50,
+        'textColor': AppTheme.green600,
+        'borderColor': const Color(0xFFBBF7D0),
+      },
+    ];
+
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: chips.map((chip) {
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: GestureDetector(
+                onTap: () => _sendMessage(chip['message'] as String),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: chip['color'] as Color,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: chip['borderColor'] as Color),
+                  ),
+                  child: Text(
+                    chip['label'] as String,
+                    style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: chip['textColor'] as Color),
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoginCTA(BuildContext context) {
+    return GestureDetector(
+      onTap: () => context.push('/sign_in'),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppTheme.orange50,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppTheme.orange200, width: 2),
+        ),
+        child: Column(
+          children: [
+            const Text(
+              'Butuh rekomendasi lebih akurat?',
+              style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF431407),
+                  fontSize: 14),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Dapatkan rencana makan yang disesuaikan dengan isi kulkas dan seleramu.',
+              style: TextStyle(
+                  color: Color(0xFF9A3412),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              decoration: BoxDecoration(
+                color: AppTheme.orange600,
+                borderRadius: BorderRadius.circular(50),
+                boxShadow: [
+                  BoxShadow(
+                      color: AppTheme.orange600.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3))
+                ],
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Yuk, Login!',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13)),
+                  SizedBox(width: 6),
+                  Icon(Icons.arrow_forward, color: Colors.white, size: 16),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -244,52 +504,26 @@ class _ChatBubble extends StatelessWidget {
         constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.85),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: context.colors.cardBackground,
+          color: isBot ? context.colors.cardBackground : AppTheme.orange500,
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(4),
             topRight: Radius.circular(20),
             bottomLeft: Radius.circular(20),
             bottomRight: Radius.circular(20),
           ),
-          border: Border.all(color: context.colors.border),
+          border: isBot ? Border.all(color: context.colors.border) : null,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 10.2),
-              blurRadius: 10,
+              color: isBot
+                  ? Colors.black.withOpacity(0.04)
+                  : AppTheme.orange600.withOpacity(0.2),
+              blurRadius: isBot ? 10 : 12,
               offset: const Offset(0, 2),
             ),
           ],
         ),
         child: child,
       ),
-    );
-  }
-}
-
-class _MenuOption extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String? subtitle;
-  const _MenuOption({required this.icon, required this.title, this.subtitle});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 16, color: context.colors.textSecondary),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: context.colors.textPrimary)),
-              if (subtitle != null)
-                Text(subtitle!, style:  TextStyle(fontSize: 12, color: context.colors.surface)),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }
