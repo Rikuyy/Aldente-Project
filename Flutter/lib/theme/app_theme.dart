@@ -31,6 +31,7 @@ class AppTheme {
   static const red50 = Color(0xFFFFF1F2);
   static const red100 = Color(0xFFFFE4E6);
   static const red200 = Color(0xFFFECDD3);
+  static const red400 = Color(0xFFC93344);
   static const red500 = Color(0xFFEF4444);
   static const red600 = Color(0xFFDC2626);
 
