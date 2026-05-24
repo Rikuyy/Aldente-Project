@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import '../theme/app_theme.dart';
 import '../services/dashboard_service.dart';
 
+<<<<<<< HEAD
+=======
 class _Recommendation {
   final IconData icon;
   final String name;
@@ -51,6 +53,7 @@ class _StockReminder {
 
 enum ReminderType { lowStock, expiringSoon }
 
+>>>>>>> 3dce3ded2007c2340c53492b0ffca3ec2144b212
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -692,6 +695,42 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                   ),
+<<<<<<< HEAD
+
+                  const SizedBox(height: 24),
+
+                  // ── To-Do List (masih dummy) ───────────────────────
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'To-Do List Hari Ini',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          color: context.colors.textPrimary,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      GestureDetector(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8)),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.add_circle_outline,
+                                  color: AppTheme.orange600, size: 16),
+                              SizedBox(width: 4),
+                              Text(
+                                'Tambah',
+                                style: TextStyle(
+                                  color: AppTheme.orange600,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13,
+                                ),
+=======
                 const SizedBox(height: 12),
                 if (_otherRecs.isNotEmpty)
                   SizedBox(
@@ -720,6 +759,7 @@ class _HomePageState extends State<HomePage> {
                                       blurRadius: 8,
                                       offset: const Offset(0, 2))
                                 ],
+>>>>>>> 3dce3ded2007c2340c53492b0ffca3ec2144b212
                               ),
                               child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -937,6 +977,8 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
+<<<<<<< HEAD
+=======
 
 class _StockReminderCard extends StatefulWidget {
   final _StockReminder reminder;
@@ -1167,3 +1209,4 @@ class _FinanceStat extends StatelessWidget {
     ]);
   }
 }
+>>>>>>> 3dce3ded2007c2340c53492b0ffca3ec2144b212

@@ -11,6 +11,7 @@ class AppTheme {
   static const orange500 = Color(0xFFF97316);
   static const orange600 = Color(0xFFEA580C);
   static const orange700 = Color(0xFFC2410C);
+  static const orange800 = Color(0xFFC2410C);
 
   static const slate50 = Color(0xFFF8FAFC);
   static const slate100 = Color(0xFFF1F5F9);
@@ -27,6 +28,7 @@ class AppTheme {
   static const green100 = Color(0xFFDCFCE7);
   static const green500 = Color(0xFF22C55E);
   static const green600 = Color(0xFF16A34A);
+  static const green700 = Color(0xFF15803D);
 
   static const red50 = Color(0xFFFFF1F2);
   static const red100 = Color(0xFFFFE4E6);
@@ -34,10 +36,15 @@ class AppTheme {
   static const red400 = Color(0xFFC93344);
   static const red500 = Color(0xFFEF4444);
   static const red600 = Color(0xFFDC2626);
+  static const red300 = Color(0xFFEF4444);
+  static const red400 = Color(0xFFEF4444);
+  static const red800 = Color(0xFFDC2626);
+  static const red700 = Color(0xFFDC2626);
 
   static const blue50 = Color(0xFFEFF6FF);
   static const blue100 = Color(0xFFDBEAFE);
   static const blue500 = Color(0xFF3B82F6);
+  static const blue600 = Color(0xFF2563EB);
   static const blue700 = Color(0xFF1D4ED8);
 
   static const purple50 = Color(0xFFFAF5FF);

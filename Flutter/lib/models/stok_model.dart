@@ -1,5 +1,3 @@
-// lib/models/stok_model.dart
-
 class StokModel {
   final String? id;
   final String idUser;
@@ -7,6 +5,7 @@ class StokModel {
   final String kategoriBahan;
   double jumlahBahan;
   final String satuanBahan;
+  final String tipeBahan; // 'kemasan' atau 'segar'
   final DateTime? tanggalBeli;
   final DateTime? tanggalKadaluarsa;
   final DateTime? updatedAt;
@@ -19,6 +18,7 @@ class StokModel {
     required this.kategoriBahan,
     required this.jumlahBahan,
     required this.satuanBahan,
+    required this.tipeBahan,
     this.tanggalBeli,
     this.tanggalKadaluarsa,
     this.updatedAt,
@@ -33,6 +33,7 @@ class StokModel {
       kategoriBahan: json['Kategori_Bahan'] ?? '',
       jumlahBahan: (json['Jumlah_Bahan'] ?? 0).toDouble(),
       satuanBahan: json['Satuan_Bahan'] ?? '',
+      tipeBahan: json['Tipe_Bahan'] ?? 'segar',
       tanggalBeli: json['Tanggal_Beli'] != null
           ? DateTime.tryParse(json['Tanggal_Beli'].toString())
           : null,
@@ -56,6 +57,7 @@ class StokModel {
       'Kategori_Bahan': kategoriBahan,
       'Jumlah_Bahan': jumlahBahan,
       'Satuan_Bahan': satuanBahan,
+      'Tipe_Bahan': tipeBahan,
       if (tanggalBeli != null) 'Tanggal_Beli': tanggalBeli!.toIso8601String(),
       if (tanggalKadaluarsa != null)
         'Tanggal_Kadaluarsa': tanggalKadaluarsa!.toIso8601String(),
@@ -69,6 +71,7 @@ class StokModel {
     String? kategoriBahan,
     double? jumlahBahan,
     String? satuanBahan,
+    String? tipeBahan,
     DateTime? tanggalBeli,
     DateTime? tanggalKadaluarsa,
   }) {
@@ -79,6 +82,7 @@ class StokModel {
       kategoriBahan: kategoriBahan ?? this.kategoriBahan,
       jumlahBahan: jumlahBahan ?? this.jumlahBahan,
       satuanBahan: satuanBahan ?? this.satuanBahan,
+      tipeBahan: tipeBahan ?? this.tipeBahan,
       tanggalBeli: tanggalBeli ?? this.tanggalBeli,
       tanggalKadaluarsa: tanggalKadaluarsa ?? this.tanggalKadaluarsa,
     );

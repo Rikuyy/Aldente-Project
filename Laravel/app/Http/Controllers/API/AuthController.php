@@ -1,4 +1,5 @@
 <?php
+// AuthController.php (FULL dengan perubahan checkNeedsOnboarding)
 
 namespace App\Http\Controllers\API;
 
@@ -63,7 +64,7 @@ class AuthController extends Controller
     }
 
     /**
-     * LOGIN
+     * LOGIN - menentukan needs_onboarding berdasarkan kelengkapan data
      */
     public function login(Request $request)
     {
@@ -81,16 +82,14 @@ class AuthController extends Controller
             }
 
             $user = auth('api')->user();
-            $needsOnboarding = empty($user->Kategori_Favorit) 
-                || empty($user->Alergi) 
-                || empty($user->Budget_Bulanan) 
-                || empty($user->Jumlah_Makan);
+            $needsOnboarding = $this->checkNeedsOnboarding($user);
+
             return response()->json([
-                'success'      => true,
-                'message' => 'Login Berhasil',
-                'access_token' => $token,
-                'needs_onboarding' => $needsOnboarding, 
-                'user'         => $user
+                'success'          => true,
+                'message'          => 'Login Berhasil',
+                'access_token'     => $token,
+                'needs_onboarding' => $needsOnboarding,
+                'user'             => $user
             ], 200);
 
         } catch (JWTException $e) {
@@ -100,6 +99,36 @@ class AuthController extends Controller
                 'error'   => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Cek apakah user perlu onboarding (data wajib belum lengkap)
+     * Perubahan: Kategori minimal 2, Alergi tidak dicek (boleh null)
+     */
+    private function checkNeedsOnboarding($user): bool
+    {
+        // 1. Kategori_Favorit harus array minimal 2
+        $kategori = $user->Kategori_Favorit ?? [];
+        if (!is_array($kategori) || count($kategori) < 2) {
+            return true;
+        }
+
+        // 2. Alergi tidak perlu dicek (null = tidak ada alergi, dianggap lengkap)
+        //    Hapus pengecekan $user->Alergi === null
+
+        // 3. Budget_Bulanan harus > 0
+        $budget = $user->Budget_Bulanan ?? 0;
+        if ($budget <= 0) {
+            return true;
+        }
+
+        // 4. Jumlah_Makan harus antara 2-4
+        $jumlahMakan = $user->Jumlah_Makan ?? 0;
+        if ($jumlahMakan < 2 || $jumlahMakan > 4) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -201,8 +230,6 @@ class AuthController extends Controller
             ], 400);
         }
 
-        // Catatan: Jangan di-delete dulu di sini supaya route reset-password tahu kalau OTP ini valid, 
-        // namun demi simplifikasi kita izinkan lolos ke step Flutter berikutnya.
         $otpData->delete();
 
         return response()->json([
@@ -212,13 +239,13 @@ class AuthController extends Controller
     }
 
     /**
-     * FUNGSI BARU: RESET & UPDATE PASSWORD + AUTOMATIC LOGIN DIRECT TO DASHBOARD
+     * RESET PASSWORD + AUTOMATIC LOGIN
      */
     public function resetPassword(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'email'    => 'required|email',
-            'password' => 'required|string|min:6|confirmed', // Wajib ada password_confirmation
+            'password' => 'required|string|min:6|confirmed',
         ]);
 
         if ($validator->fails()) {
@@ -238,13 +265,11 @@ class AuthController extends Controller
             ], 404);
         }
 
-        // Update password baru ke MongoDB
         $user->update([
             'Password' => Hash::make($request->password)
         ]);
 
         try {
-            // LOGIN OTOMATIS: Buat token JWT baru untuk user ini
             if (!$token = auth('api')->fromUser($user)) {
                 return response()->json([
                     'success' => true,
@@ -268,7 +293,7 @@ class AuthController extends Controller
     }
 
     /**
-     * ME
+     * GET AUTHENTICATED USER
      */
     public function me(Request $request)
     {

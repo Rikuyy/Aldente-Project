@@ -21,7 +21,7 @@ class User extends Authenticatable implements JWTSubject
         'Kategori_Favorit',
         'Jumlah_Makan',
         'Budget_Bulanan',
-        'Alergi'
+        'Alergi',
     ];
 
     protected $hidden = [
