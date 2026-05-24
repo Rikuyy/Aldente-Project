@@ -1,21 +1,28 @@
-enum MessageStatus { sent, loading, error }
+enum MessageStatus { normal, loading, error, recipes }
 
 class ChatMessage {
   final String text;
   final bool isUser;
   final MessageStatus status;
-  final DateTime timestamp;
+  final List? recipes;
 
-  ChatMessage({
+  const ChatMessage({
     required this.text,
     required this.isUser,
-    this.status = MessageStatus.sent,
-    DateTime? timestamp,
-  }) : timestamp = timestamp ?? DateTime.now();
+    this.status = MessageStatus.normal,
+    this.recipes,
+  });
 
-  factory ChatMessage.loading() => ChatMessage(
-        text: '...',
+  factory ChatMessage.loading() => const ChatMessage(
+        text: '',
         isUser: false,
         status: MessageStatus.loading,
+      );
+
+  factory ChatMessage.recipes(List recipes) => ChatMessage(
+        text: '',
+        isUser: false,
+        status: MessageStatus.recipes,
+        recipes: recipes,
       );
 }

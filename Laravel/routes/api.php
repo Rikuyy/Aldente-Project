@@ -37,7 +37,7 @@ Route::prefix('auth')->group(function () {
     });
 });
 
-Route::post('/consultation', [ConsultationController::class, 'send']);
+Route::post('/consultation', [ConsultationController::class, 'send']); // guest dan konsultasi belum login tetap bisa akses (menggunakan JWT opsional, untuk dapat konteks lebih kaya jika login)
 
 
 // ── PROTECTED ROUTES (Wajib Login & Menggunakan JWT) ─────────────
@@ -53,8 +53,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/budget', [ApiDashboardController::class, 'setBudget']);
     });
 
-    Route::prefix('stok')->group(function () {
-        // Pastikan StockController kamu ada di folder App\Http\Controllers\API\StockController
+    Route::prefix('stok')->group(function () { 
         Route::get('/',               [StockController::class, 'index']);
         Route::get('/cari',           [StockController::class, 'cari']);
         Route::post('/',              [StockController::class, 'simpan']);
@@ -79,10 +78,8 @@ Route::middleware('auth:api')->group(function () {
     });
 
     Route::put('/profile',          [UserProfileController::class, 'saveOnboarding']); // Simpan data onboarding user (kategori favorit, alergi, dll)
-});
-
-Route::post('/consultation', [ConsultationController::class, 'send']);
-    // ── Laporan Keuangan ────────────────────────
+}); 
+ 
     Route::prefix('keuangan')->group(function () {
         Route::get('/ringkasan', [KeuanganController::class, 'ringkasan']);
         Route::get('/grafik',    [KeuanganController::class, 'grafik']);
@@ -107,3 +104,11 @@ Route::post('/consultation', [ConsultationController::class, 'send']);
         Route::put('/', [ProfileController::class, 'update']); 
     });
 });
+// Konsultasi, gunakan salah satu dari dua route berikut://
+//Route::middleware('auth:sanctum')->group(function () {
+    //Route::post('/consultation/send', [ConsultationController::class, 'send'])
+        //->name('consultation.send');
+//});
+Route::post('/consultation/send', [ConsultationController::class, 'send'])
+    ->name('consultation.send');
+//============//

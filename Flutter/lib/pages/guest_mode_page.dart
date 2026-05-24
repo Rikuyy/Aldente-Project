@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
@@ -5,7 +6,7 @@ import '../theme/app_theme.dart';
 import '../models/chat_message.dart';
 import '../services/api_service.dart';
 
-class GuestModePage extends StatelessWidget {
+class GuestModePage extends StatefulWidget {
   const GuestModePage({super.key});
 
   @override
@@ -18,8 +19,6 @@ class _GuestModePageState extends State<GuestModePage> {
   final List<ChatMessage> _messages = [];
   bool _isLoading = false;
   int _botMessageCount = 0;
-
-  static const String _baseUrl = 'http://127.0.0.1:8000/api';
 
   @override
   void initState() {
@@ -41,7 +40,6 @@ class _GuestModePageState extends State<GuestModePage> {
     final userMessage = text.trim();
     if (userMessage.isEmpty || _isLoading) return;
 
-    // ✅ Ambil history SEBELUM setState
     final historyToSend = _messages
         .where((m) => m.status != MessageStatus.loading)
         .map((m) => {'role': m.isUser ? 'user' : 'model', 'text': m.text})
@@ -57,7 +55,7 @@ class _GuestModePageState extends State<GuestModePage> {
 
     try {
       final response = await http.post(
-        Uri.parse('$_baseUrl/consultation'),
+        Uri.parse('${ApiService.baseUrl}/consultation'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -66,7 +64,7 @@ class _GuestModePageState extends State<GuestModePage> {
           'message': userMessage,
           'history': historyToSend,
           'context': {
-            'nama': 'Tamu',
+            'nama': 'Cookmate',
             'stokBahan': [],
             'sisaBudget': 0,
             'totalBudget': 0,
@@ -428,7 +426,8 @@ class _ChatBubble extends StatelessWidget {
     return Align(
       alignment: isBot ? Alignment.centerLeft : Alignment.centerRight,
       child: Container(
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.85),
+        constraints:
+            BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.85),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: isBot ? context.colors.cardBackground : AppTheme.orange500,
