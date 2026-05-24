@@ -1,22 +1,9 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
-
-class _InventoryItem {
-  String name;
-  String unit;
-  double qty;
-  final String category;
-  final IconData icon;
-
-  _InventoryItem(
-      {required this.name,
-      required this.unit,
-      required this.qty,
-      required this.category,
-      required this.icon});
-}
+import '../models/stok_model.dart';
 
 class InventoryPage extends StatefulWidget {
   const InventoryPage({super.key});
@@ -25,355 +12,573 @@ class InventoryPage extends StatefulWidget {
   State<InventoryPage> createState() => _InventoryPageState();
 }
 
-class _InventoryPageState extends State<InventoryPage>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabCtrl;
+class _InventoryPageState extends State<InventoryPage> {
   final _searchCtrl = TextEditingController();
   String _searchQuery = '';
-
-  final List<_InventoryItem> _items = [
-    _InventoryItem(
-        name: 'Telur Ayam',
-        unit: 'butir',
-        qty: 6,
-        category: 'Protein',
-        icon: Icons.egg_rounded),
-    _InventoryItem(
-        name: 'Dada Ayam',
-        unit: 'gram',
-        qty: 250,
-        category: 'Protein',
-        icon: Icons.lunch_dining_rounded),
-    _InventoryItem(
-        name: 'Sosis',
-        unit: 'pcs',
-        qty: 3,
-        category: 'Protein',
-        icon: Icons.kebab_dining_rounded),
-    _InventoryItem(
-        name: 'Bawang Merah',
-        unit: 'gram',
-        qty: 100,
-        category: 'Sayur & Buah',
-        icon: Icons.grass_rounded),
-    _InventoryItem(
-        name: 'Tomat',
-        unit: 'pcs',
-        qty: 2,
-        category: 'Sayur & Buah',
-        icon: Icons.spa_rounded),
-    _InventoryItem(
-        name: 'Beras',
-        unit: 'kg',
-        qty: 2,
-        category: 'Karbohidrat',
-        icon: Icons.rice_bowl_rounded),
-    _InventoryItem(
-        name: 'Mie Instan',
-        unit: 'bungkus',
-        qty: 4,
-        category: 'Karbohidrat',
-        icon: Icons.ramen_dining_rounded),
-    _InventoryItem(
-        name: 'Kecap Manis',
-        unit: 'botol',
-        qty: 1,
-        category: 'Bumbu & Lainnya',
-        icon: Icons.water_drop_rounded),
-    _InventoryItem(
-        name: 'Minyak Goreng',
-        unit: 'liter',
-        qty: 1,
-        category: 'Bumbu & Lainnya',
-        icon: Icons.opacity_rounded),
-    _InventoryItem(
-        name: 'Garam',
-        unit: 'gram',
-        qty: 200,
-        category: 'Bumbu & Lainnya',
-        icon: Icons.scatter_plot_rounded),
-  ];
-
-  final List<Map<String, dynamic>> _history = [
-    {
-      'type': 'in',
-      'item': 'Telur Ayam',
-      'qty': 6,
-      'unit': 'butir',
-      'note': 'Beli di warung',
-      'time': '08.30',
-      'date': 'Hari ini'
-    },
-    {
-      'type': 'out',
-      'item': 'Telur Ayam',
-      'qty': 1,
-      'unit': 'butir',
-      'note': 'Nasi goreng sarapan',
-      'time': '09.15',
-      'date': 'Hari ini'
-    },
-    {
-      'type': 'out',
-      'item': 'Mie Instan',
-      'qty': 1,
-      'unit': 'bungkus',
-      'note': 'Mie nyemek makan siang',
-      'time': '12.00',
-      'date': 'Hari ini'
-    },
-    {
-      'type': 'in',
-      'item': 'Beras',
-      'qty': 2,
-      'unit': 'kg',
-      'note': 'Belanja bulanan',
-      'time': '09.00',
-      'date': 'Kemarin'
-    },
-    {
-      'type': 'in',
-      'item': 'Minyak Goreng',
-      'qty': 1,
-      'unit': 'liter',
-      'note': 'Beli di minimarket',
-      'time': '10.00',
-      'date': 'Kemarin'
-    },
-    {
-      'type': 'out',
-      'item': 'Dada Ayam',
-      'qty': 100,
-      'unit': 'gram',
-      'note': 'Ayam goreng makan malam',
-      'time': '18.30',
-      'date': 'Kemarin'
-    },
-  ];
+  List<StokModel> _stocks = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+  Set<String> _dismissedWarnings = {};
+  String? _filterType;
+  String _sortBy = 'nama';
 
   @override
   void initState() {
     super.initState();
-    _tabCtrl = TabController(length: 3, vsync: this);
+    _loadDismissedWarnings();
+    _fetchStocks();
   }
 
   @override
   void dispose() {
-    _tabCtrl.dispose();
     _searchCtrl.dispose();
     super.dispose();
   }
 
-  Map<String, List<_InventoryItem>> get _groupedItems {
-    final q = _searchQuery.toLowerCase();
-    final filtered = q.isEmpty
-        ? _items
-        : _items.where((i) => i.name.toLowerCase().contains(q)).toList();
-    final map = <String, List<_InventoryItem>>{};
-    for (final item in filtered) {
-      map.putIfAbsent(item.category, () => []).add(item);
+  Future<void> _loadDismissedWarnings() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getStringList('dismissed_warnings') ?? [];
+    setState(() {
+      _dismissedWarnings = saved.toSet();
+    });
+  }
+
+  Future<void> _saveDismissedWarnings() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+        'dismissed_warnings', _dismissedWarnings.toList());
+  }
+
+  void _dismissWarning(String key) {
+    setState(() {
+      _dismissedWarnings.add(key);
+    });
+    _saveDismissedWarnings();
+  }
+
+  Future<void> _fetchStocks() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    final response = await ApiService.get('/inventory');
+    if (response['success'] == true) {
+      final List<dynamic> data = response['data'];
+      List<StokModel> allStocks = [];
+      for (var group in data) {
+        final bahanList = group['bahan'] as List;
+        for (var item in bahanList) {
+          allStocks.add(StokModel.fromJson(item));
+        }
+      }
+      setState(() {
+        _stocks = allStocks;
+        _isLoading = false;
+      });
+    } else {
+      setState(() {
+        _errorMessage = response['message'] ?? 'Gagal mengambil data';
+        _isLoading = false;
+      });
     }
-    return map;
   }
 
-  void _showInputSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _StockInputSheet(
-        items: _items,
-        isInput: true,
-        onSubmit: (itemName, qty, note) {
-          setState(() {
-            final idx = _items.indexWhere((i) => i.name == itemName);
-            if (idx >= 0) {
-              _items[idx].qty += qty;
-              _history.insert(0, {
-                'type': 'in',
-                'item': itemName,
-                'qty': qty,
-                'unit': _items[idx].unit,
-                'note': note,
-                'time': _nowTime(),
-                'date': 'Hari ini'
-              });
-            }
-          });
-        },
-      ),
-    );
+  List<StokModel> get _filteredAndSortedStocks {
+    List<StokModel> filtered = _stocks;
+    if (_searchQuery.isNotEmpty) {
+      filtered = filtered
+          .where((s) =>
+              s.namaBahan.toLowerCase().contains(_searchQuery.toLowerCase()))
+          .toList();
+    }
+    if (_filterType != null) {
+      filtered = filtered.where((s) => s.tipeBahan == _filterType).toList();
+    }
+    switch (_sortBy) {
+      case 'nama':
+        filtered.sort((a, b) => a.namaBahan.compareTo(b.namaBahan));
+        break;
+      case 'jumlah':
+        filtered.sort((a, b) => a.jumlahBahan.compareTo(b.jumlahBahan));
+        break;
+      case 'kadaluarsa':
+        filtered.sort((a, b) {
+          final aDate = a.tanggalKadaluarsa ?? DateTime(3000);
+          final bDate = b.tanggalKadaluarsa ?? DateTime(3000);
+          return aDate.compareTo(bDate);
+        });
+        break;
+    }
+    return filtered;
   }
 
-  void _showOutputSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _StockInputSheet(
-        items: _items,
-        isInput: false,
-        onSubmit: (itemName, qty, note) {
-          setState(() {
-            final idx = _items.indexWhere((i) => i.name == itemName);
-            if (idx >= 0) {
-              _items[idx].qty =
-                  (_items[idx].qty - qty).clamp(0, double.infinity);
-              _history.insert(0, {
-                'type': 'out',
-                'item': itemName,
-                'qty': qty,
-                'unit': _items[idx].unit,
-                'note': note,
-                'time': _nowTime(),
-                'date': 'Hari ini'
-              });
-            }
-          });
-        },
-      ),
-    );
-  }
-
-  String _nowTime() {
+  List<_WarningItem> get _activeWarnings {
     final now = DateTime.now();
-    return '${now.hour.toString().padLeft(2, '0')}.${now.minute.toString().padLeft(2, '0')}';
+    final today = DateTime(now.year, now.month, now.day);
+    List<_WarningItem> warnings = [];
+    for (var stock in _stocks) {
+      final key = 'warning_${stock.id}';
+      if (_dismissedWarnings.contains(key)) continue;
+
+      if (stock.tipeBahan == 'segar' && stock.tanggalBeli != null) {
+        final beliDate = DateTime(stock.tanggalBeli!.year,
+            stock.tanggalBeli!.month, stock.tanggalBeli!.day);
+        final days = today.difference(beliDate).inDays;
+        if (days >= 7) {
+          warnings.add(_WarningItem(
+            stock: stock,
+            message: 'Sudah $days hari sejak beli',
+            detail: 'Dibeli: ${_formatDate(stock.tanggalBeli!)} · Segera olah!',
+            type: WarningType.warning,
+            dismissKey: key,
+          ));
+        }
+      } else if (stock.tipeBahan == 'kemasan' &&
+          stock.tanggalKadaluarsa != null) {
+        final expiredDate = DateTime(stock.tanggalKadaluarsa!.year,
+            stock.tanggalKadaluarsa!.month, stock.tanggalKadaluarsa!.day);
+        final daysLeft = expiredDate.difference(today).inDays;
+        if (daysLeft < 0) {
+          warnings.add(_WarningItem(
+            stock: stock,
+            message: 'Sudah kadaluarsa!',
+            detail: 'Kadaluarsa: ${_formatDate(stock.tanggalKadaluarsa!)}',
+            type: WarningType.error,
+            dismissKey: key,
+          ));
+        } else if (daysLeft <= 7) {
+          warnings.add(_WarningItem(
+            stock: stock,
+            message: 'Akan kadaluarsa dalam $daysLeft hari',
+            detail: 'Kadaluarsa: ${_formatDate(stock.tanggalKadaluarsa!)}',
+            type: WarningType.warning,
+            dismissKey: key,
+          ));
+        }
+      }
+    }
+    return warnings;
+  }
+
+  void _showForm({StokModel? existingStock}) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _StockFormSheet(
+        existingStock: existingStock,
+        onSubmit: () => _fetchStocks(),
+      ),
+    );
+  }
+
+  Future<void> _adjustStock(StokModel stock, double delta) async {
+    final newJumlah = stock.jumlahBahan + delta;
+    if (newJumlah < 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Stok tidak boleh kurang dari 0')),
+      );
+      return;
+    }
+    if (delta < 0 && newJumlah == 0) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Konfirmasi Stok Habis'),
+          content: Text('${stock.namaBahan} telah habis. Hapus dari daftar?'),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Batal')),
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Hapus',
+                    style: TextStyle(color: AppTheme.red500))),
+          ],
+        ),
+      );
+      if (confirmed == true) {
+        await _deleteStock(stock, showConfirm: false, showSnackbar: true);
+      }
+      return;
+    }
+    final response = await ApiService.put(
+        '/inventory/${stock.id}', {'Jumlah_Bahan': newJumlah});
+    if (response['success'] == true) {
+      await _fetchStocks();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Stok ${stock.namaBahan} diperbarui')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal: ${response['message']}')));
+    }
+  }
+
+  Future<void> _deleteStock(StokModel stock,
+      {bool showConfirm = true, bool showSnackbar = true}) async {
+    if (showConfirm) {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Hapus Bahan'),
+          content:
+              Text('Yakin ingin menghapus ${stock.namaBahan} dari daftar?'),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Batal')),
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Hapus',
+                    style: TextStyle(color: AppTheme.red500))),
+          ],
+        ),
+      );
+      if (confirm != true) return;
+    }
+    final response = await ApiService.delete('/inventory/${stock.id}');
+    if (response['success'] == true) {
+      await _fetchStocks();
+      if (showSnackbar) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${stock.namaBahan} dihapus')),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal hapus: ${response['message']}')));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Scaffold(
-      backgroundColor: context.colors.surface,
-      body: NestedScrollView(
-        headerSliverBuilder: (ctx, _) => [
-          SliverAppBar(
-            pinned: true,
-            floating: true,
-            backgroundColor: context.colors.cardBackground,
-            elevation: 0,
-            automaticallyImplyLeading: false,
-            toolbarHeight: 56,
-            title: Text('Stok Bahan',
-                style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                    color: context.colors.textPrimary,
-                    letterSpacing: -0.5)),
-            actions: [
-              GestureDetector(
-                onTap: () => _showInputSheet(context),
-                child: Container(
-                  margin: const EdgeInsets.only(right: 8),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                      color: AppTheme.green50,
-                      borderRadius: BorderRadius.circular(50),
-                      border: Border.all(color: AppTheme.green500)),
-                  child: const Row(children: [
-                    Icon(Icons.add_rounded, size: 14, color: AppTheme.green600),
-                    SizedBox(width: 4),
-                    Text('Masuk',
-                        style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.green600))
-                  ]),
-                ),
-              ),
-              GestureDetector(
-                onTap: () => _showOutputSheet(context),
-                child: Container(
-                  margin: const EdgeInsets.only(right: 16),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                      color: AppTheme.red50,
-                      borderRadius: BorderRadius.circular(50),
-                      border: Border.all(color: AppTheme.red100)),
-                  child: const Row(children: [
-                    Icon(Icons.remove_rounded,
-                        size: 14, color: AppTheme.red500),
-                    SizedBox(width: 4),
-                    Text('Keluar',
-                        style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.red500))
-                  ]),
-                ),
-              ),
+      backgroundColor: colors.surface,
+      appBar: AppBar(
+        title: const Text(
+          'Stok Bahan',
+          style: TextStyle(
+              fontWeight: FontWeight.w700, fontSize: 20, letterSpacing: -0.3),
+        ),
+        centerTitle: false,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search_rounded),
+            onPressed: () => _showSearchDialog(),
+          ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.sort_rounded),
+            onSelected: (value) => setState(() => _sortBy = value),
+            itemBuilder: (ctx) => [
+              const PopupMenuItem(value: 'nama', child: Text('Urutkan Nama')),
+              const PopupMenuItem(
+                  value: 'jumlah', child: Text('Urutkan Jumlah Stok')),
+              const PopupMenuItem(
+                  value: 'kadaluarsa',
+                  child: Text('Urutkan Kadaluarsa Terdekat')),
             ],
-            bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(95.5),
-              child: Column(children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                    decoration: BoxDecoration(
-                        color: context.colors.border,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: context.colors.border)),
-                    child: Row(children: [
-                      Icon(Icons.search_rounded,
-                          color: context.colors.textHint, size: 18),
-                      const SizedBox(width: 8),
-                      Expanded(
-                          child: TextField(
-                        controller: _searchCtrl,
-                        onChanged: (v) => setState(() => _searchQuery = v),
-                        decoration: InputDecoration(
-                            hintText: 'Cari bahan...',
-                            hintStyle: TextStyle(
-                                color: context.colors.textHint, fontSize: 14),
-                            border: InputBorder.none,
-                            isDense: true),
-                        style: const TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.w500),
-                      )),
-                      if (_searchQuery.isNotEmpty)
-                        GestureDetector(
-                            onTap: () => setState(() {
-                                  _searchCtrl.clear();
-                                  _searchQuery = '';
-                                }),
-                            child: Icon(Icons.close_rounded,
-                                size: 16, color: context.colors.textHint)),
-                    ]),
-                  ),
-                ),
-                TabBar(
-                  controller: _tabCtrl,
-                  indicatorColor: AppTheme.orange600,
-                  indicatorWeight: 2.5,
-                  labelColor: AppTheme.orange600,
-                  unselectedLabelColor: context.colors.textHint,
-                  labelStyle: const TextStyle(
-                      fontWeight: FontWeight.w700, fontSize: 13),
-                  unselectedLabelStyle: const TextStyle(
-                      fontWeight: FontWeight.w600, fontSize: 13),
-                  tabs: const [
-                    Tab(text: 'Stok'),
-                    Tab(text: 'Masuk'),
-                    Tab(text: 'Keluar')
-                  ],
-                ),
-              ]),
-            ),
           ),
         ],
-        body: TabBarView(
-          controller: _tabCtrl,
+      ),
+      body: Column(
+        children: [
+          // Warning section - background orange400, border tipis
+          if (_activeWarnings.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+              child: Column(
+                children: _activeWarnings
+                    .map((w) => _WarningTile(
+                          warning: w,
+                          onDismiss: () => _dismissWarning(w.dismissKey),
+                        ))
+                    .toList(),
+              ),
+            ),
+          // Filter chips
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildFilterChip('Semua', _filterType == null, () {
+                      setState(() {
+                        _filterType = null;
+                        _searchQuery = '';
+                        _searchCtrl.clear();
+                      });
+                    }),
+                    const SizedBox(width: 8),
+                    _buildFilterChip('Segar', _filterType == 'segar', () {
+                      setState(() {
+                        _filterType = 'segar';
+                        _searchQuery = '';
+                        _searchCtrl.clear();
+                      });
+                    }),
+                    const SizedBox(width: 8),
+                    _buildFilterChip('Kemasan', _filterType == 'kemasan', () {
+                      setState(() {
+                        _filterType = 'kemasan';
+                        _searchQuery = '';
+                        _searchCtrl.clear();
+                      });
+                    }),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Sorting indicator
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Icon(Icons.sort, size: 14, color: colors.textHint),
+                const SizedBox(width: 4),
+                Text(
+                  'Urutan: ${_sortBy == 'nama' ? 'Nama' : (_sortBy == 'jumlah' ? 'Stok' : 'Kadaluarsa')}',
+                  style: TextStyle(fontSize: 12, color: colors.textHint),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 4),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _errorMessage != null
+                    ? Center(child: Text('Error: $_errorMessage'))
+                    : _filteredAndSortedStocks.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.inventory_rounded,
+                                    size: 64, color: colors.textHint),
+                                const SizedBox(height: 16),
+                                Text('Tidak ada bahan',
+                                    style: TextStyle(color: colors.textHint)),
+                                const SizedBox(height: 8),
+                                TextButton.icon(
+                                  onPressed: () => _showForm(),
+                                  icon: const Icon(Icons.add_rounded),
+                                  label: const Text('Tambah bahan'),
+                                ),
+                              ],
+                            ),
+                          )
+                        : RefreshIndicator(
+                            onRefresh: _fetchStocks,
+                            child: ListView.builder(
+                              padding: const EdgeInsets.all(16),
+                              itemCount: _filteredAndSortedStocks.length,
+                              itemBuilder: (ctx, i) => _StockCard(
+                                stock: _filteredAndSortedStocks[i],
+                                onIncrease: () => _adjustStock(
+                                    _filteredAndSortedStocks[i], 1),
+                                onDecrease: () => _adjustStock(
+                                    _filteredAndSortedStocks[i], -1),
+                                onEdit: () => _showForm(
+                                    existingStock: _filteredAndSortedStocks[i]),
+                                onDelete: () =>
+                                    _deleteStock(_filteredAndSortedStocks[i]),
+                              ),
+                            ),
+                          ),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showForm(),
+        backgroundColor: AppTheme.orange600,
+        foregroundColor: Colors.white,
+        child: const Icon(Icons.add_rounded),
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String label, bool selected, VoidCallback onTap) {
+    return FilterChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (_) => onTap(),
+      backgroundColor: Colors.white,
+      selectedColor: AppTheme.orange500,
+      checkmarkColor: selected ? Colors.white : Colors.transparent,
+      side: BorderSide(
+        color: selected ? AppTheme.orange500 : AppTheme.orange300,
+        width: 1.2,
+      ),
+      labelStyle: TextStyle(
+        color: selected ? Colors.white : AppTheme.orange700,
+        fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+        fontSize: 13,
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+    );
+  }
+
+  void _showSearchDialog() {
+    final localController = TextEditingController(text: _searchQuery);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cari Bahan'),
+        content: TextField(
+          controller: localController,
+          autofocus: true,
+          decoration: InputDecoration(
+            hintText: 'Masukkan nama bahan...',
+            border: OutlineInputBorder(),
+            suffixIcon: localController.text.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.clear),
+                    onPressed: () {
+                      localController.clear();
+                      setState(() {});
+                    },
+                  )
+                : null,
+          ),
+          onChanged: (_) => setState(() {}),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _searchQuery = localController.text.trim();
+              });
+              Navigator.pop(ctx);
+            },
+            child: const Text('Cari'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) => '${date.day}/${date.month}/${date.year}';
+}
+
+enum WarningType { warning, error }
+
+class _WarningItem {
+  final StokModel stock;
+  final String message;
+  final String detail;
+  final WarningType type;
+  final String dismissKey;
+  _WarningItem({
+    required this.stock,
+    required this.message,
+    required this.detail,
+    required this.type,
+    required this.dismissKey,
+  });
+}
+
+class _WarningTile extends StatelessWidget {
+  final _WarningItem warning;
+  final VoidCallback onDismiss;
+  const _WarningTile({required this.warning, required this.onDismiss});
+
+  @override
+  Widget build(BuildContext context) {
+    // Warna border dan icon: lebih merah untuk error, orange untuk warning biasa
+    final isError = warning.type == WarningType.error;
+    final borderColor = isError ? AppTheme.red600 : AppTheme.orange400;
+    final iconAndTextColor = isError ? AppTheme.red700 : AppTheme.orange700;
+    final bgColor = AppTheme.orange400;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor, width: 1.0),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 2,
+              offset: const Offset(0, 1))
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        child: Row(
           children: [
-            _StockTab(
-                grouped: _groupedItems,
-                onDelete: (item) => setState(() => _items.remove(item))),
-            _HistoryTab(
-                history: _history.where((h) => h['type'] == 'in').toList()),
-            _HistoryTab(
-                history: _history.where((h) => h['type'] == 'out').toList()),
+            // Icon warning warna merah/orange
+            Icon(Icons.warning_rounded, color: iconAndTextColor, size: 28),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'WARNING: ',
+                        style: TextStyle(
+                          fontSize: 16, // lebih besar
+                          fontWeight: FontWeight.w800,
+                          color: iconAndTextColor,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          warning.stock.namaBahan.toUpperCase(),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                            color: Colors.white,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    warning.message,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    warning.detail,
+                    style: const TextStyle(fontSize: 11, color: Colors.white70),
+                  ),
+                ],
+              ),
+            ),
+            GestureDetector(
+              onTap: onDismiss,
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.close, size: 16, color: Colors.white),
+              ),
+            ),
           ],
         ),
       ),
@@ -381,605 +586,662 @@ class _InventoryPageState extends State<InventoryPage>
   }
 }
 
-class _StockTab extends StatelessWidget {
-  final Map<String, List<_InventoryItem>> grouped;
-  final Function(_InventoryItem) onDelete;
-  const _StockTab({required this.grouped, required this.onDelete});
+class _StockCard extends StatelessWidget {
+  final StokModel stock;
+  final VoidCallback onIncrease;
+  final VoidCallback onDecrease;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+  const _StockCard({
+    required this.stock,
+    required this.onIncrease,
+    required this.onDecrease,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
-    if (grouped.isEmpty) {
-      return Center(
-          child: Text('Tidak ada bahan ditemukan.',
-              style: TextStyle(
-                  color: context.colors.textHint,
-                  fontWeight: FontWeight.w500)));
-    }
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: grouped.entries
-          .map((entry) => Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8, top: 4),
-                    child: Row(children: [
-                      Text(entry.key,
-                          style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: context.colors.surface,
-                              letterSpacing: 0.4)),
-                      const SizedBox(width: 8),
-                      Expanded(
-                          child:
-                              Divider(color: context.colors.border, height: 1)),
-                    ]),
-                  ),
-                  Container(
-                    decoration: BoxDecoration(
-                        color: context.colors.cardBackground,
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: context.colors.border),
-                        boxShadow: [
-                          BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.03),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2))
-                        ]),
-                    child: Column(
-                        children: entry.value.asMap().entries.map((e) {
-                      final i = e.key;
-                      final item = e.value;
-                      final isLow = item.qty <= 2;
-                      return Column(children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 14),
-                          child: Row(children: [
-                            Container(
-                                width: 38,
-                                height: 38,
-                                decoration: BoxDecoration(
-                                    color: context.colors.surface,
-                                    borderRadius: BorderRadius.circular(10)),
-                                child: Center(
-                                    child: Icon(item.icon,
-                                        size: 20,
-                                        color: context.colors.surface))),
-                            const SizedBox(width: 12),
-                            Expanded(
-                                child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                  Text(item.name,
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 14,
-                                          color: context.colors.textPrimary)),
-                                  const SizedBox(height: 2),
-                                  Row(children: [
-                                    Text(
-                                        '${item.qty % 1 == 0 ? item.qty.toInt() : item.qty} ${item.unit}',
-                                        style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
-                                            color: isLow
-                                                ? AppTheme.red500
-                                                : context.colors.surface)),
-                                    if (isLow) ...[
-                                      const SizedBox(width: 6),
-                                      Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 6, vertical: 2),
-                                          decoration: BoxDecoration(
-                                              color: AppTheme.red50,
-                                              borderRadius:
-                                                  BorderRadius.circular(50)),
-                                          child: const Text('Stok menipis',
-                                              style: TextStyle(
-                                                  fontSize: 9,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: AppTheme.red500)))
-                                    ],
-                                  ]),
-                                ])),
-                            GestureDetector(
-                              onTap: () => onDelete(item),
-                              child: Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                      color: context.colors.surface,
-                                      borderRadius: BorderRadius.circular(8)),
-                                  child: Icon(Icons.delete_outline_rounded,
-                                      size: 16,
-                                      color: context.colors.textHint)),
-                            ),
-                          ]),
-                        ),
-                        if (i < entry.value.length - 1)
-                          Divider(
-                              height: 1,
-                              color: context.colors.border,
-                              indent: 66),
-                      ]);
-                    }).toList()),
-                  ),
-                  const SizedBox(height: 14),
-                ],
-              ))
-          .toList(),
-    );
-  }
-}
-
-class _HistoryTab extends StatelessWidget {
-  final List<Map<String, dynamic>> history;
-  const _HistoryTab({required this.history});
-
-  @override
-  Widget build(BuildContext context) {
-    if (history.isEmpty) {
-      return Center(
-          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Icon(Icons.history_rounded, size: 48, color: context.colors.textHint),
-        const SizedBox(height: 12),
-        Text('Belum ada riwayat',
-            style: TextStyle(
-                color: context.colors.textHint, fontWeight: FontWeight.w600)),
-      ]));
-    }
-
-    final grouped = <String, List<Map<String, dynamic>>>{};
-    for (final h in history) {
-      grouped.putIfAbsent(h['date'] as String, () => []).add(h);
-    }
-
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: grouped.entries
-          .map((entry) => Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8, top: 4),
-                    child: Row(children: [
-                      Text(entry.key,
-                          style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: context.colors.surface,
-                              letterSpacing: 0.4)),
-                      const SizedBox(width: 8),
-                      Expanded(
-                          child:
-                              Divider(color: context.colors.border, height: 1)),
-                    ]),
-                  ),
-                  Container(
-                    decoration: BoxDecoration(
-                        color: context.colors.cardBackground,
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: context.colors.border),
-                        boxShadow: [
-                          BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.03),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2))
-                        ]),
-                    child: Column(
-                        children: entry.value.asMap().entries.map((e) {
-                      final i = e.key;
-                      final h = e.value;
-                      final isIn = h['type'] == 'in';
-                      return Column(children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 14),
-                          child: Row(children: [
-                            Container(
-                              width: 38,
-                              height: 38,
-                              decoration: BoxDecoration(
-                                  color:
-                                      isIn ? AppTheme.green50 : AppTheme.red50,
-                                  borderRadius: BorderRadius.circular(10)),
-                              child: Icon(
-                                  isIn
-                                      ? Icons.add_rounded
-                                      : Icons.remove_rounded,
-                                  color: isIn
-                                      ? AppTheme.green600
-                                      : AppTheme.red500,
-                                  size: 20),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                                child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                  Text(h['item'] as String,
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 13,
-                                          color: context.colors.textPrimary)),
-                                  const SizedBox(height: 2),
-                                  Text(h['note'] as String,
-                                      style: TextStyle(
-                                          fontSize: 11,
-                                          color: context.colors.textHint,
-                                          fontWeight: FontWeight.w500)),
-                                ])),
-                            Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text(
-                                    '${isIn ? '+' : '-'}${h['qty']} ${h['unit']}',
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: 13,
-                                        color: isIn
-                                            ? AppTheme.green600
-                                            : AppTheme.red500),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(h['time'] as String,
-                                      style: TextStyle(
-                                          fontSize: 10,
-                                          color: context.colors.textHint)),
-                                ]),
-                          ]),
-                        ),
-                        if (i < entry.value.length - 1)
-                          Divider(
-                              height: 1,
-                              color: context.colors.border,
-                              indent: 66),
-                      ]);
-                    }).toList()),
-                  ),
-                  const SizedBox(height: 14),
-                ],
-              ))
-          .toList(),
-    );
-  }
-}
-
-class _StockInputSheet extends StatefulWidget {
-  final List<_InventoryItem> items;
-  final bool isInput;
-  final Function(String itemName, double qty, String note) onSubmit;
-  const _StockInputSheet(
-      {required this.items, required this.isInput, required this.onSubmit});
-
-  @override
-  State<_StockInputSheet> createState() => _StockInputSheetState();
-}
-
-class _StockInputSheetState extends State<_StockInputSheet> {
-  String? _selectedItem;
-  final _qtyCtrl = TextEditingController();
-  final _noteCtrl = TextEditingController();
-  bool _isNewItem = false;
-  final _newItemCtrl = TextEditingController();
-  final _newUnitCtrl = TextEditingController();
-
-  String get _unit {
-    if (_isNewItem) return _newUnitCtrl.text;
-    final idx = widget.items.indexWhere((i) => i.name == _selectedItem);
-    return idx >= 0 ? widget.items[idx].unit : '';
-  }
-
-  bool get _canSubmit =>
-      (_selectedItem != null || (_isNewItem && _newItemCtrl.text.isNotEmpty)) &&
-      _qtyCtrl.text.isNotEmpty;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = widget.isInput ? AppTheme.green600 : AppTheme.red500;
-    final bgColor = widget.isInput ? AppTheme.green50 : AppTheme.red50;
-    final label = widget.isInput ? 'Stok Masuk' : 'Stok Keluar';
-
-    return Container(
-      decoration: BoxDecoration(
-          color: context.colors.cardBackground,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28))),
-      padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-          left: 24,
-          right: 24,
-          top: 16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-              child: Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                      color: context.colors.border,
-                      borderRadius: BorderRadius.circular(2)))),
-          const SizedBox(height: 16),
-          Row(children: [
-            Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                    color: bgColor, borderRadius: BorderRadius.circular(10)),
-                child: Icon(
-                    widget.isInput ? Icons.add_rounded : Icons.remove_rounded,
-                    color: color,
-                    size: 20)),
-            const SizedBox(width: 10),
-            Text(label,
-                style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                    color: context.colors.textPrimary)),
-          ]),
-          const SizedBox(height: 20),
-          if (!_isNewItem) ...[
-            Text('Pilih Bahan',
-                style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: context.colors.surface,
-                    letterSpacing: 0.3)),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(
-                  color: context.colors.surface,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: context.colors.border)),
-              child: DropdownButton<String>(
-                value: _selectedItem,
-                isExpanded: true,
-                underline: const SizedBox.shrink(),
-                hint: Text('Pilih bahan makanan',
-                    style: TextStyle(
-                        color: context.colors.textHint,
-                        fontWeight: FontWeight.w500)),
-                items: widget.items
-                    .map((item) => DropdownMenuItem(
-                        value: item.name,
-                        child: Row(children: [
-                          Icon(item.icon,
-                              size: 20, color: context.colors.surface),
-                          const SizedBox(width: 8),
-                          Text(item.name,
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.w600, fontSize: 14))
-                        ])))
-                    .toList(),
-                onChanged: (v) => setState(() {
-                  _selectedItem = v;
-                  _isNewItem = false;
-                }),
-              ),
-            ),
-            const SizedBox(height: 8),
-            GestureDetector(
-              onTap: () => setState(() {
-                _isNewItem = true;
-                _selectedItem = null;
-              }),
-              child: const Row(children: [
-                Icon(Icons.add_circle_outline_rounded,
-                    size: 16, color: AppTheme.orange600),
-                SizedBox(width: 6),
-                Text('Tambah bahan baru',
-                    style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.orange600))
-              ]),
-            ),
-          ] else ...[
-            Text('Nama Bahan Baru',
-                style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: context.colors.surface,
-                    letterSpacing: 0.3)),
-            const SizedBox(height: 8),
-            Row(children: [
-              Expanded(
-                  child: _inputField(
-                      controller: _newItemCtrl, hint: 'Nama bahan')),
-              const SizedBox(width: 8),
-              SizedBox(
-                  width: 90,
-                  child: _inputField(controller: _newUnitCtrl, hint: 'Satuan')),
-            ]),
-            const SizedBox(height: 8),
-            GestureDetector(
-              onTap: () => setState(() {
-                _isNewItem = false;
-                _newItemCtrl.clear();
-                _newUnitCtrl.clear();
-              }),
-              child: const Text('Pilih dari daftar',
-                  style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.orange600)),
-            ),
-          ],
-          const SizedBox(height: 16),
-          Text('Jumlah',
-              style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: context.colors.surface,
-                  letterSpacing: 0.3)),
-          const SizedBox(height: 8),
-          Row(children: [
-            Expanded(
-                child: _inputField(
-                    controller: _qtyCtrl,
-                    hint: '0',
-                    inputType: TextInputType.number,
-                    formatter:
-                        FilteringTextInputFormatter.allow(RegExp(r'[\d.]')))),
-            if (_unit.isNotEmpty) ...[
-              const SizedBox(width: 10),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                decoration: BoxDecoration(
-                    color: context.colors.surface,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: context.colors.border)),
-                child: Text(_unit,
-                    style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: context.colors.textSecondary)),
-              ),
-            ],
-          ]),
-          const SizedBox(height: 16),
-          Text('Keterangan (opsional)',
-              style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: context.colors.surface,
-                  letterSpacing: 0.3)),
-          const SizedBox(height: 8),
-          _inputField(
-              controller: _noteCtrl,
-              hint: widget.isInput
-                  ? 'Contoh: Beli di warung Bu Sari'
-                  : 'Contoh: Dipakai masak nasi goreng'),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _canSubmit
-                  ? () {
-                      final itemName = _isNewItem
-                          ? _newItemCtrl.text.trim()
-                          : _selectedItem!;
-                      final qty = double.tryParse(_qtyCtrl.text) ?? 0;
-                      final note = _noteCtrl.text.trim().isEmpty
-                          ? (widget.isInput
-                              ? 'Stok ditambahkan'
-                              : 'Stok digunakan')
-                          : _noteCtrl.text.trim();
-                      widget.onSubmit(itemName, qty, note);
-                      Navigator.pop(context);
-                    }
-                  : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: color,
-                disabledBackgroundColor: context.colors.border,
-                foregroundColor: context.colors.cardBackground,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16)),
-                elevation: 0,
-              ),
-              child: Text('${widget.isInput ? 'Tambah' : 'Kurangi'} Stok',
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w700, fontSize: 15)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _inputField(
-      {required TextEditingController controller,
-      required String hint,
-      TextInputType? inputType,
-      TextInputFormatter? formatter}) {
-    return TextField(
-      controller: controller,
-      keyboardType: inputType,
-      inputFormatters: formatter != null ? [formatter] : null,
-      onChanged: (_) => setState(() {}),
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: TextStyle(
-            color: context.colors.textHint, fontWeight: FontWeight.w500),
-        filled: true,
-        fillColor: context.colors.surface,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-        border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide(color: context.colors.border)),
-        enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide(color: context.colors.border)),
-        focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: AppTheme.orange500, width: 2)),
-      ),
-    );
-  }
-}
-
-class IngredientRow extends StatelessWidget {
-  final String name;
-  final String subtitle;
-  final String change;
-  const IngredientRow(
-      {super.key,
-      required this.name,
-      required this.subtitle,
-      required this.change});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: context.colors.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: context.colors.border),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(
-                color: AppTheme.orange500,
-                borderRadius: BorderRadius.circular(6)),
-            child: Icon(Icons.check,
-                color: context.colors.cardBackground, size: 16),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
+    final colors = context.colors;
+    final isLow =
+        stock.jumlahBahan <= 2 && !['kg', 'liter'].contains(stock.satuanBahan);
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      elevation: 1,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Column(
+          children: [
+            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(name,
-                    style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
-                        color: context.colors.textPrimary)),
-                Text(subtitle,
-                    style: TextStyle(
-                        fontSize: 11,
-                        color: context.colors.surface,
-                        fontWeight: FontWeight.w500)),
+                Container(
+                  width: 5,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: _getCategoryColor(stock.kategoriBahan),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        stock.namaBahan,
+                        style: const TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 6),
+                      Wrap(spacing: 8, runSpacing: 4, children: [
+                        _chipWithoutIcon(stock.kategoriBahan, colors),
+                        _chipWithIcon(
+                            Icons.label_rounded,
+                            stock.tipeBahan == 'kemasan' ? 'Kemasan' : 'Segar',
+                            colors),
+                        if (stock.tanggalKadaluarsa != null)
+                          _chipWithIcon(Icons.calendar_today_rounded,
+                              _formatDate(stock.tanggalKadaluarsa!), colors),
+                      ]),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '${stock.jumlahBahan % 1 == 0 ? stock.jumlahBahan.toInt() : stock.jumlahBahan.toStringAsFixed(1)} ${stock.satuanBahan}',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: isLow ? AppTheme.red500 : colors.textPrimary,
+                      ),
+                    ),
+                    if (stock.tanggalBeli != null)
+                      Text('Beli: ${_formatDate(stock.tanggalBeli!)}',
+                          style:
+                              TextStyle(fontSize: 10, color: colors.textHint)),
+                  ],
+                ),
               ],
             ),
-          ),
-          Text(change,
-              style: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13,
-                  color: AppTheme.red500)),
-        ],
+            const SizedBox(height: 10),
+            Divider(color: colors.border, height: 1),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                _actionButton(
+                    icon: Icons.remove_rounded,
+                    bg: AppTheme.red50,
+                    fg: AppTheme.red600,
+                    onTap: onDecrease),
+                const SizedBox(width: 8),
+                _actionButton(
+                    icon: Icons.add_rounded,
+                    bg: AppTheme.green50,
+                    fg: AppTheme.green600,
+                    onTap: onIncrease),
+                const SizedBox(width: 8),
+                _actionButton(
+                    icon: Icons.edit_rounded,
+                    bg: colors.surface,
+                    fg: colors.textSecondary,
+                    onTap: onEdit),
+                const SizedBox(width: 4),
+                _actionButton(
+                    icon: Icons.delete_outline_rounded,
+                    bg: colors.surface,
+                    fg: AppTheme.red500,
+                    onTap: onDelete),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
+
+  Widget _chipWithoutIcon(String label, AppColors colors) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: colors.chipBackground,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: colors.border.withOpacity(0.3), width: 0.5),
+      ),
+      child:
+          Text(label, style: TextStyle(fontSize: 11, color: colors.chipText)),
+    );
+  }
+
+  Widget _chipWithIcon(IconData icon, String label, AppColors colors) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: colors.chipBackground,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: colors.border.withOpacity(0.3), width: 0.5),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 12, color: colors.chipText),
+        const SizedBox(width: 4),
+        Text(label, style: TextStyle(fontSize: 11, color: colors.chipText)),
+      ]),
+    );
+  }
+
+  Widget _actionButton({
+    required IconData icon,
+    required Color bg,
+    required Color fg,
+    required VoidCallback onTap,
+  }) {
+    return IconButton(
+      icon: Icon(icon, size: 20),
+      onPressed: onTap,
+      style: IconButton.styleFrom(
+        backgroundColor: bg,
+        foregroundColor: fg,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
+  Color _getCategoryColor(String category) {
+    switch (category) {
+      case 'Protein':
+        return AppTheme.orange600;
+      case 'Sayur & Buah':
+        return AppTheme.green600;
+      case 'Karbohidrat':
+        return AppTheme.blue500;
+      case 'Bumbu & Lainnya':
+        return AppTheme.purple600;
+      case 'Jajanan':
+        return AppTheme.red500;
+      case 'Minuman':
+        return AppTheme.blue500;
+      default:
+        return AppTheme.slate500;
+    }
+  }
+
+  String _formatDate(DateTime date) => '${date.day}/${date.month}/${date.year}';
+}
+
+class _StockFormSheet extends StatefulWidget {
+  final StokModel? existingStock;
+  final VoidCallback onSubmit;
+  const _StockFormSheet({this.existingStock, required this.onSubmit});
+
+  @override
+  State<_StockFormSheet> createState() => _StockFormSheetState();
+}
+
+class _StockFormSheetState extends State<_StockFormSheet> {
+  final _formKey = GlobalKey<FormState>();
+  final _namaCtrl = TextEditingController();
+  final _jumlahCtrl = TextEditingController();
+  late String _satuan;
+  String _kategori = 'Protein';
+  String _tipe = 'segar';
+  bool _isEditing = false;
+  String? _editId;
+  bool _isSubmitting = false;
+  DateTime? _tanggalBeli;
+  DateTime? _tanggalKadaluarsa;
+
+  bool _isKategoriLain = false;
+  final _kategoriLainCtrl = TextEditingController();
+  bool _isSatuanLain = false;
+  final _satuanLainCtrl = TextEditingController();
+
+  final List<String> _kategoriList = [
+    'Protein',
+    'Sayur & Buah',
+    'Karbohidrat',
+    'Bumbu & Lainnya',
+    'Jajanan',
+    'Minuman',
+    'Lainnya'
+  ];
+  final List<String> _satuanList = [
+    'kg',
+    'gram',
+    'liter',
+    'pcs',
+    'bungkus',
+    'botol',
+    'cup',
+    'gelas',
+    'sachet',
+    'lembar',
+    'porsi',
+    'mangkok',
+    'sendok',
+    'Lainnya'
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.existingStock != null) {
+      _isEditing = true;
+      _editId = widget.existingStock!.id;
+      _namaCtrl.text = widget.existingStock!.namaBahan;
+      _jumlahCtrl.text = widget.existingStock!.jumlahBahan.toString();
+      _satuan = widget.existingStock!.satuanBahan;
+      _kategori = widget.existingStock!.kategoriBahan;
+      _tipe = widget.existingStock!.tipeBahan;
+      _tanggalBeli = widget.existingStock!.tanggalBeli;
+      _tanggalKadaluarsa = widget.existingStock!.tanggalKadaluarsa;
+
+      if (!_kategoriList.contains(_kategori)) {
+        _isKategoriLain = true;
+        _kategoriLainCtrl.text = _kategori;
+      }
+      if (!_satuanList.contains(_satuan)) {
+        _isSatuanLain = true;
+        _satuanLainCtrl.text = _satuan;
+      }
+    } else {
+      _tanggalBeli = DateTime.now();
+      _satuan = _satuanList.first;
+    }
+  }
+
+  @override
+  void dispose() {
+    _namaCtrl.dispose();
+    _jumlahCtrl.dispose();
+    _kategoriLainCtrl.dispose();
+    _satuanLainCtrl.dispose();
+    super.dispose();
+  }
+
+  String _getFinalKategori() {
+    if (_isKategoriLain) {
+      final custom = _kategoriLainCtrl.text.trim();
+      return custom.isEmpty ? 'Lainnya' : custom;
+    } else {
+      return _kategori;
+    }
+  }
+
+  String _getFinalSatuan() {
+    if (_isSatuanLain) {
+      final custom = _satuanLainCtrl.text.trim();
+      return custom.isEmpty ? 'Lainnya' : custom;
+    } else {
+      return _satuan;
+    }
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_tipe == 'kemasan' && _tanggalKadaluarsa == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Tanggal kadaluarsa wajib untuk bahan kemasan')));
+      return;
+    }
+    final kategoriFinal = _getFinalKategori();
+    final satuanFinal = _getFinalSatuan();
+    if (_isKategoriLain && kategoriFinal.isEmpty) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Isi kategori Lainnya')));
+      return;
+    }
+    if (_isSatuanLain && satuanFinal.isEmpty) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Isi satuan Lainnya')));
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+    final body = {
+      'Nama_Bahan': _namaCtrl.text.trim(),
+      'Kategori_Bahan': kategoriFinal,
+      'Jumlah_Bahan': double.parse(_jumlahCtrl.text),
+      'Satuan_Bahan': satuanFinal,
+      'Tipe_Bahan': _tipe,
+      'Tanggal_Beli': _tanggalBeli?.toIso8601String(),
+      if (_tanggalKadaluarsa != null)
+        'Tanggal_Kadaluarsa': _tanggalKadaluarsa!.toIso8601String(),
+    };
+    final response = _isEditing
+        ? await ApiService.put('/inventory/$_editId', body)
+        : await ApiService.post('/inventory', body);
+    setState(() => _isSubmitting = false);
+    if (response['success'] == true) {
+      widget.onSubmit();
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content:
+              Text(_isEditing ? 'Bahan diperbarui' : 'Bahan ditambahkan')));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal: ${response['message']}')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Container(
+      decoration: BoxDecoration(
+          color: colors.cardBackground,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28))),
+      padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+          left: 20,
+          right: 20,
+          top: 16),
+      child: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Center(
+                  child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                          color: colors.border,
+                          borderRadius: BorderRadius.circular(2)))),
+              const SizedBox(height: 20),
+              Text(_isEditing ? 'Edit Bahan' : 'Tambah Bahan Baru',
+                  style: const TextStyle(
+                      fontSize: 20, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 24),
+              // Nama Bahan
+              TextFormField(
+                controller: _namaCtrl,
+                decoration: InputDecoration(
+                    labelText: 'Nama Bahan',
+                    hintText: 'Contoh: Dada Ayam, Beras, Kecap',
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14))),
+                validator: (v) =>
+                    v == null || v.isEmpty ? 'Nama bahan wajib' : null,
+              ),
+              const SizedBox(height: 16),
+              // Kategori
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Kategori',
+                      style: TextStyle(fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 8),
+                  if (!_isKategoriLain)
+                    DropdownButtonFormField<String>(
+                      value: _kategori,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14)),
+                      ),
+                      items: _kategoriList.map((cat) {
+                        return DropdownMenuItem(value: cat, child: Text(cat));
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          if (value == 'Lainnya') {
+                            _isKategoriLain = true;
+                            _kategoriLainCtrl.clear();
+                          } else {
+                            _kategori = value!;
+                          }
+                        });
+                      },
+                    ),
+                  if (_isKategoriLain)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _kategoriLainCtrl,
+                            decoration: InputDecoration(
+                              labelText: 'Kategori Lainnya',
+                              hintText: 'Masukkan kategori custom',
+                              border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14)),
+                            ),
+                            autofocus: true,
+                            validator: (v) =>
+                                v == null || v.isEmpty ? 'Harus diisi' : null,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () {
+                            setState(() {
+                              _isKategoriLain = false;
+                              _kategoriLainCtrl.clear();
+                              _kategori = _kategoriList.first;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              // Tipe Bahan
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Tipe Bahan',
+                      style: TextStyle(fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 8),
+                  SegmentedButton<String>(
+                    segments: const [
+                      ButtonSegment(
+                          value: 'segar',
+                          label: Text('Segar'),
+                          icon: Icon(Icons.eco_rounded)),
+                      ButtonSegment(
+                          value: 'kemasan',
+                          label: Text('Kemasan'),
+                          icon: Icon(Icons.inventory_rounded))
+                    ],
+                    selected: {_tipe},
+                    onSelectionChanged: (set) =>
+                        setState(() => _tipe = set.first),
+                    style: ButtonStyle(
+                      backgroundColor: WidgetStateProperty.resolveWith(
+                          (states) => states.contains(WidgetState.selected)
+                              ? AppTheme.orange500
+                              : colors.surface),
+                      foregroundColor: WidgetStateProperty.resolveWith(
+                          (states) => states.contains(WidgetState.selected)
+                              ? Colors.white
+                              : colors.textPrimary),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              // Jumlah dan Satuan
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 1,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Jumlah',
+                            style: TextStyle(fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 4),
+                        TextFormField(
+                          controller: _jumlahCtrl,
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14)),
+                          ),
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(RegExp(r'[\d.]'))
+                          ],
+                          validator: (v) {
+                            if (v == null || v.isEmpty) return 'Jumlah wajib';
+                            if (double.tryParse(v) == null)
+                              return 'Angka tidak valid';
+                            return null;
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 1,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Satuan',
+                            style: TextStyle(fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 4),
+                        if (!_isSatuanLain)
+                          DropdownButtonFormField<String>(
+                            value: _satuan,
+                            decoration: InputDecoration(
+                              border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14)),
+                            ),
+                            items: _satuanList.map((unit) {
+                              return DropdownMenuItem(
+                                  value: unit, child: Text(unit));
+                            }).toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                if (value == 'Lainnya') {
+                                  _isSatuanLain = true;
+                                  _satuanLainCtrl.clear();
+                                } else {
+                                  _satuan = value!;
+                                }
+                              });
+                            },
+                            validator: (v) =>
+                                v == null || v.isEmpty ? 'Satuan wajib' : null,
+                          ),
+                        if (_isSatuanLain)
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _satuanLainCtrl,
+                                  decoration: InputDecoration(
+                                    labelText: 'Satuan Lainnya',
+                                    hintText: 'Masukkan satuan custom',
+                                    border: OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(14)),
+                                  ),
+                                  autofocus: true,
+                                  validator: (v) => v == null || v.isEmpty
+                                      ? 'Harus diisi'
+                                      : null,
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.close),
+                                onPressed: () {
+                                  setState(() {
+                                    _isSatuanLain = false;
+                                    _satuanLainCtrl.clear();
+                                    _satuan = _satuanList.first;
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              // Tanggal Beli
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.calendar_today_rounded),
+                title: const Text('Tanggal Beli'),
+                subtitle: Text(_tanggalBeli != null
+                    ? _formatDate(_tanggalBeli!)
+                    : 'Pilih tanggal'),
+                trailing: IconButton(
+                  icon: const Icon(Icons.date_range_rounded),
+                  onPressed: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: _tanggalBeli ?? DateTime.now(),
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime.now(),
+                    );
+                    if (picked != null) setState(() => _tanggalBeli = picked);
+                  },
+                ),
+              ),
+              if (_tipe == 'kemasan')
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading:
+                      const Icon(Icons.warning_rounded, color: AppTheme.red500),
+                  title: const Text('Tanggal Kadaluarsa',
+                      style: TextStyle(color: AppTheme.red500)),
+                  subtitle: Text(_tanggalKadaluarsa != null
+                      ? _formatDate(_tanggalKadaluarsa!)
+                      : 'Pilih tanggal (wajib)'),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.date_range_rounded),
+                    onPressed: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: _tanggalKadaluarsa ??
+                            DateTime.now().add(const Duration(days: 30)),
+                        firstDate: DateTime.now(),
+                        lastDate:
+                            DateTime.now().add(const Duration(days: 365 * 2)),
+                      );
+                      if (picked != null)
+                        setState(() => _tanggalKadaluarsa = picked);
+                    },
+                  ),
+                ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isSubmitting ? null : _submit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.orange600,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
+                  ),
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white))
+                      : Text(_isEditing ? 'Simpan Perubahan' : 'Tambah Stok'),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) => '${date.day}/${date.month}/${date.year}';
 }

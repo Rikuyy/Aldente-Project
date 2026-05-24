@@ -1,6 +1,8 @@
+﻿// onboarding_page.dart (FULL)
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
 
@@ -15,29 +17,56 @@ class _OnboardingPageState extends State<OnboardingPage> {
   int _step = 1;
   static const int _totalSteps = 4;
 
-  // ---------- STEP 1 ----------
+  // STEP 1
   List<String> _selectedCategories = [];
   List<String> _availableCategories = [];
   bool _isLoadingCategories = true;
   String? _loadCategoriesError;
 
-  // ---------- STEP 2 ----------
+  // STEP 2
   final List<String> _allergies = [];
   final TextEditingController _allergyCtrl = TextEditingController();
   bool _noAllergy = false;
 
-  // ---------- STEP 3 ----------
+  // STEP 3
   final TextEditingController _budgetCtrl = TextEditingController();
 
-  // ---------- STEP 4 ----------
+  // STEP 4
   int _mealFreq = 3;
 
   bool _isSaving = false;
+  bool _isChecking = true;
 
   @override
   void initState() {
     super.initState();
+    _checkAlreadyOnboarded();
     _budgetCtrl.addListener(() => setState(() {}));
+  }
+
+  Future<void> _checkAlreadyOnboarded() async {
+    setState(() => _isChecking = true);
+
+    bool backendOnboarded = false;
+    try {
+      final response = await ApiService.get('/profile');
+      if (response['success'] == true) {
+        backendOnboarded = response['data']?['status_onboarding'] ?? false;
+      }
+    } catch (e) {
+      print('Error checking backend onboarding: $e');
+    }
+
+    if (backendOnboarded) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('onboarding_completed', true);
+      if (mounted) {
+        context.go('/app/home');
+      }
+      return;
+    }
+
+    setState(() => _isChecking = false);
     _fetchCategories();
   }
 
@@ -47,8 +76,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
       _loadCategoriesError = null;
     });
     try {
-      // ApiService.get selalu return Map<String, dynamic>
-      // Format response dari ResepController: { "success": true, "categories": ["Ayam", ...] }
       final response = await ApiService.get('/resep/categories');
 
       if (response['success'] != true) {
@@ -71,7 +98,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
       setState(() => _availableCategories = categories);
     } catch (e) {
-      // ignore: avoid_print
       print('ERROR fetch categories: $e');
       setState(() => _loadCategoriesError = 'Gagal memuat kategori: $e');
       _showError(
@@ -82,9 +108,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   Future<void> _saveAndContinue() async {
-    // Validasi per step sebelum lanjut
-    if (_step == 1 && _selectedCategories.isEmpty) {
-      _showError('Pilih minimal 1 kategori makanan favorit');
+    // Validasi tiap step
+    if (_step == 1 && _selectedCategories.length < 2) {
+      _showError('Pilih minimal 2 kategori makanan favorit');
       return;
     }
     if (_step == 2 && !_noAllergy && _allergies.isEmpty) {
@@ -100,32 +126,34 @@ class _OnboardingPageState extends State<OnboardingPage> {
       }
     }
 
-    // Step 1–3: lanjut ke step berikutnya tanpa hit API
     if (_step < _totalSteps) {
       setState(() => _step++);
       return;
     }
 
-    // Step 4 (terakhir): submit semua data ke API sekaligus
+    // STEP 4: Submit ke backend
     setState(() => _isSaving = true);
     try {
       final cleanBudget =
           _budgetCtrl.text.trim().replaceAll(RegExp(r'[^0-9]'), '');
 
+      // Kirim Alergi: null jika _noAllergy true, else array _allergies
       final Map<String, dynamic> payload = {
         'Kategori_Favorit': _selectedCategories,
-        'Alergi': _noAllergy ? <String>[] : _allergies,
+        'Alergi': _noAllergy ? null : _allergies,
         'Budget_Bulanan': int.parse(cleanBudget),
         'Jumlah_Makan': _mealFreq,
       };
 
-      final response = await ApiService.put('/profile', payload);
-      // ignore: avoid_print
-      print('Onboarding PUT response: $response');
+      print('Onboarding payload: $payload');
+
+      final response = await ApiService.post('/onboarding', payload);
 
       if (!mounted) return;
 
-      if (response['success'] == true || response['status'] == 'success') {
+      if (response['success'] == true) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('onboarding_completed', true);
         context.go('/app/home');
       } else {
         _showError(response['message']?.toString() ?? 'Gagal menyimpan data');
@@ -143,7 +171,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     );
   }
 
-  Future<void> _next() async {
+  void _next() async {
     if (_isSaving) return;
     await _saveAndContinue();
   }
@@ -158,18 +186,22 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   void _toggleCategory(String category) {
     setState(() {
-      _selectedCategories.contains(category)
-          ? _selectedCategories.remove(category)
-          : _selectedCategories.add(category);
+      if (_selectedCategories.contains(category)) {
+        _selectedCategories.remove(category);
+      } else {
+        _selectedCategories.add(category);
+      }
     });
   }
 
   void _toggleAllergy(String item) {
     setState(() {
       if (_noAllergy) _noAllergy = false;
-      _allergies.contains(item)
-          ? _allergies.remove(item)
-          : _allergies.add(item);
+      if (_allergies.contains(item)) {
+        _allergies.remove(item);
+      } else {
+        _allergies.add(item);
+      }
     });
   }
 
@@ -184,14 +216,14 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   bool get _canContinue {
-    if (_step == 1) return _selectedCategories.isNotEmpty;
+    if (_step == 1) return _selectedCategories.length >= 2;
     if (_step == 2) return _noAllergy || _allergies.isNotEmpty;
     if (_step == 3) {
       final clean = _budgetCtrl.text.trim().replaceAll(RegExp(r'[^0-9]'), '');
       final budget = int.tryParse(clean);
       return budget != null && budget > 0;
     }
-    return true; // step 4 selalu bisa lanjut (sudah ada default value)
+    return true;
   }
 
   @override
@@ -203,6 +235,13 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isChecking) {
+      return Scaffold(
+        backgroundColor: context.colors.surface,
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: context.colors.surface,
       body: Column(
@@ -329,9 +368,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     : Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(_step == _totalSteps
-                              ? 'Mulai Masak! 🍳'
-                              : 'Lanjut'),
+                          Text(_step == _totalSteps ? 'Mulai Masak' : 'Lanjut'),
                           if (_step < _totalSteps) ...[
                             const SizedBox(width: 6),
                             const Icon(Icons.chevron_right, size: 20),
@@ -404,7 +441,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 }
 
-// ==================== STEP 1 : KATEGORI ====================
 class _StepCategoryPrefs extends StatelessWidget {
   final List<String> selected;
   final List<String> available;
@@ -428,7 +464,7 @@ class _StepCategoryPrefs extends StatelessWidget {
                 letterSpacing: -0.5)),
         const SizedBox(height: 6),
         Text(
-            'Pilih minimal 1 kategori. CookCase+ akan merekomendasikan resep sesuai favoritmu.',
+            'Pilih minimal 2 kategori. CookMate akan merekomendasikan resep sesuai favoritmu.',
             style: TextStyle(
                 fontSize: 13,
                 color: context.colors.surface,
@@ -495,7 +531,6 @@ class _StepCategoryPrefs extends StatelessWidget {
   }
 }
 
-// ==================== STEP 2 : ALERGI ====================
 class _StepAllergies extends StatelessWidget {
   final List<String> selected;
   final bool noAllergy;
@@ -515,14 +550,14 @@ class _StepAllergies extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const presets = [
-      'Kacang 🥜',
-      'Susu 🥛',
-      'Telur 🥚',
-      'Seafood 🦐',
-      'Gluten 🌾',
-      'Kedelai 🫘',
-      'Wijen 🌱',
-      'Udang 🦐',
+      'Kacang',
+      'Susu',
+      'Telur',
+      'Seafood',
+      'Gluten',
+      'Kedelai',
+      'Wijen',
+      'Udang',
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -545,7 +580,7 @@ class _StepAllergies extends StatelessWidget {
           ]),
         ),
         const SizedBox(height: 12),
-        const Text('Ada Alergi Bahan Makanan? 🤔',
+        const Text('Ada Alergi Bahan Makanan?',
             style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.w900,
@@ -560,7 +595,6 @@ class _StepAllergies extends StatelessWidget {
                 fontWeight: FontWeight.w500,
                 height: 1.5)),
         const SizedBox(height: 20),
-        // Opsi tidak ada alergi
         GestureDetector(
           onTap: onNoAllergy,
           child: AnimatedContainer(
@@ -613,7 +647,6 @@ class _StepAllergies extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-
         if (!noAllergy) ...[
           Text('Pilih dari daftar:',
               style: TextStyle(
@@ -666,7 +699,7 @@ class _StepAllergies extends StatelessWidget {
                 controller: controller,
                 onSubmitted: (_) => onCustomAdd(),
                 decoration: InputDecoration(
-                  hintText: 'Contoh: Durian, Petai...',
+                  hintText: 'Contoh: Durian, Petai',
                   hintStyle: TextStyle(
                       color: context.colors.textHint,
                       fontWeight: FontWeight.w500,
@@ -702,7 +735,6 @@ class _StepAllergies extends StatelessWidget {
               ),
             ),
           ]),
-          // Tampilkan custom alergi yang sudah ditambahkan
           if (selected.any((s) => !presets.contains(s))) ...[
             const SizedBox(height: 12),
             Wrap(
@@ -739,7 +771,6 @@ class _StepAllergies extends StatelessWidget {
   }
 }
 
-// ==================== STEP 3 : BUDGET ====================
 class _StepBudget extends StatelessWidget {
   final TextEditingController controller;
   const _StepBudget({required this.controller});
@@ -749,7 +780,7 @@ class _StepBudget extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Budget Makan Bulanan 💰',
+        const Text('Budget Makan Bulanan',
             style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.w900,
@@ -757,7 +788,7 @@ class _StepBudget extends StatelessWidget {
                 letterSpacing: -0.5)),
         const SizedBox(height: 6),
         Text(
-            'Berapa total budget makan kamu dalam sebulan? CookCase+ akan memantau pengeluaran agar kamu tidak defisit.',
+            'Berapa total budget makan kamu dalam sebulan? CookMate akan memantau pengeluaran agar kamu tidak defisit.',
             style: TextStyle(
                 fontSize: 13,
                 color: context.colors.surface,
@@ -879,7 +910,6 @@ class _StepBudget extends StatelessWidget {
   }
 }
 
-// ==================== STEP 4 : FREKUENSI MAKAN ====================
 class _StepMealFreq extends StatelessWidget {
   final int freq;
   final Function(int) onChanged;
@@ -888,24 +918,14 @@ class _StepMealFreq extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const options = [
-      {'val': 2, 'label': '2 kali', 'desc': 'Siang & Malam', 'icon': '🍽️'},
-      {
-        'val': 3,
-        'label': '3 kali',
-        'desc': 'Sarapan, Siang & Malam',
-        'icon': '🍳🥗🍲'
-      },
-      {
-        'val': 4,
-        'label': '4 kali',
-        'desc': '3 makan + 1 cemilan',
-        'icon': '🍽️🍎'
-      },
+      {'val': 2, 'label': '2 kali', 'desc': 'Siang & Malam'},
+      {'val': 3, 'label': '3 kali', 'desc': 'Sarapan, Siang & Malam'},
+      {'val': 4, 'label': '4 kali', 'desc': '3 makan + 1 cemilan'},
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Jadwal Makan Sehari ⏰',
+        const Text('Jadwal Makan Sehari',
             style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.w900,
@@ -994,8 +1014,6 @@ class _StepMealFreq extends StatelessWidget {
                                     ? AppTheme.orange600
                                     : context.colors.surface)),
                       ])),
-                  Text(opt['icon'] as String,
-                      style: const TextStyle(fontSize: 18)),
                 ]),
               ),
             );

@@ -1,3 +1,4 @@
+import 'dart:convert'; // ← tambahkan import ini
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
@@ -5,7 +6,7 @@ import '../theme/app_theme.dart';
 import '../models/chat_message.dart';
 import '../services/api_service.dart';
 
-class GuestModePage extends StatelessWidget {
+class GuestModePage extends StatefulWidget {
   const GuestModePage({super.key});
 
   @override
@@ -428,7 +429,8 @@ class _ChatBubble extends StatelessWidget {
     return Align(
       alignment: isBot ? Alignment.centerLeft : Alignment.centerRight,
       child: Container(
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.85),
+        constraints:
+            BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.85),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: isBot ? context.colors.cardBackground : AppTheme.orange500,

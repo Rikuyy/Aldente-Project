@@ -1,10 +1,12 @@
-import '../models/chat_message.dart';
-import '../services/api_service.dart';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
+import '../models/chat_message.dart';
+import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 
-class ConsultationPage extends StatelessWidget {
+class ConsultationPage extends StatefulWidget {
   const ConsultationPage({super.key});
 
   @override
@@ -130,7 +132,9 @@ class _ConsultationPageState extends State<ConsultationPage> {
             color: context.colors.cardBackground,
             padding: EdgeInsets.only(
               top: MediaQuery.of(context).padding.top + 12,
-              left: 24, right: 24, bottom: 16,
+              left: 24,
+              right: 24,
+              bottom: 16,
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -174,7 +178,8 @@ class _ConsultationPageState extends State<ConsultationPage> {
                 GestureDetector(
                   onTap: () => context.go('/app/profile'),
                   child: Container(
-                    width: 40, height: 40,
+                    width: 40,
+                    height: 40,
                     decoration: BoxDecoration(
                       color: AppTheme.orange100,
                       shape: BoxShape.circle,
@@ -199,7 +204,7 @@ class _ConsultationPageState extends State<ConsultationPage> {
 
           // Chat area
           Expanded(
-            child: ListView(
+            child: ListView.builder(
               padding: const EdgeInsets.all(20),
               itemCount: _messages.length,
               itemBuilder: (context, index) {
@@ -412,7 +417,8 @@ class _BotMessage extends StatelessWidget {
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.85),
+        constraints:
+            BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.85),
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: context.colors.cardBackground,
@@ -446,7 +452,8 @@ class _UserMessage extends StatelessWidget {
     return Align(
       alignment: Alignment.centerRight,
       child: Container(
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+        constraints:
+            BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
@@ -487,12 +494,19 @@ class _QuickChip extends StatelessWidget {
   final Color color;
   final Color textColor;
   final Color borderColor;
-  const _QuickChip({required this.label, required this.color, required this.textColor, required this.borderColor});
+  final VoidCallback? onTap; // ← tambahkan ini
 
+  const _QuickChip({
+    required this.label,
+    required this.color,
+    required this.textColor,
+    required this.borderColor,
+    this.onTap, // ← tambahkan ini
+  });
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: onTap, // ← gunakan onTap di sini
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(

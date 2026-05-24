@@ -2,34 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
-
-class _Transaction {
-  final String id;
-  final String title;
-  final String subtitle;
-  final String time;
-  final String date;
-  final double amount;
-  final bool isDebit;
-  final TransactionCategory category;
-  final int month;
-  final int year;
-
-  const _Transaction({
-    required this.id,
-    required this.title,
-    required this.subtitle,
-    required this.time,
-    required this.date,
-    required this.amount,
-    required this.isDebit,
-    required this.category,
-    required this.month,
-    required this.year,
-  });
-}
-
-enum TransactionCategory { food, grocery, cook, topup, refund }
+import '../models/finance_model.dart';
 
 class FinancePage extends StatefulWidget {
   const FinancePage({super.key});
@@ -43,6 +16,12 @@ class _FinancePageState extends State<FinancePage> {
   int _touchedIndex = -1;
   String _mutationMonth = 'Semua';
   int _mutationYear = 0;
+
+  FinanceRingkasanModel? _ringkasan;
+  List<FinanceGrafikModel> _grafikData = [];
+  List<GroupedMutasi> _groupedMutasi = [];
+  bool _isLoading = true;
+  String _error = '';
 
   static const _monthOptions = [
     'Semua',
@@ -62,282 +41,80 @@ class _FinancePageState extends State<FinancePage> {
 
   static const _yearOptions = [0, 2025, 2024, 2023];
 
-  final List<_Transaction> _transactions = const [
-    _Transaction(
-        id: '1',
-        title: 'Pengisian Budget',
-        subtitle: 'Budget masuk dari dompet',
-        time: '08.00',
-        date: 'Hari ini',
-        amount: 500000,
-        isDebit: false,
-        category: TransactionCategory.topup,
-        month: 5,
-        year: 2025),
-    _Transaction(
-        id: '2',
-        title: 'Nasi Goreng Telur',
-        subtitle: 'Masak sendiri',
-        time: '09.15',
-        date: 'Hari ini',
-        amount: 12000,
-        isDebit: true,
-        category: TransactionCategory.cook,
-        month: 5,
-        year: 2025),
-    _Transaction(
-        id: '3',
-        title: 'Beli Mie Instan',
-        subtitle: 'Warung Bu Sari • 4 bungkus',
-        time: '11.30',
-        date: 'Hari ini',
-        amount: 14000,
-        isDebit: true,
-        category: TransactionCategory.grocery,
-        month: 5,
-        year: 2025),
-    _Transaction(
-        id: '4',
-        title: 'Makan Siang Warteg',
-        subtitle: 'Nasi + Sayur + Tempe',
-        time: '13.00',
-        date: 'Hari ini',
-        amount: 15000,
-        isDebit: true,
-        category: TransactionCategory.food,
-        month: 5,
-        year: 2025),
-    _Transaction(
-        id: '5',
-        title: 'Refund Belanja',
-        subtitle: 'Kelebihan bayar dikembalikan',
-        time: '15.20',
-        date: 'Hari ini',
-        amount: 3000,
-        isDebit: false,
-        category: TransactionCategory.refund,
-        month: 5,
-        year: 2025),
-    _Transaction(
-        id: '6',
-        title: 'Kopi & Roti Bakar',
-        subtitle: 'Sarapan di kantin',
-        time: '07.45',
-        date: 'Kemarin',
-        amount: 18000,
-        isDebit: true,
-        category: TransactionCategory.food,
-        month: 5,
-        year: 2025),
-    _Transaction(
-        id: '7',
-        title: 'Beli Telur 1 kg',
-        subtitle: 'Toko Sembako Pak Budi',
-        time: '10.00',
-        date: 'Kemarin',
-        amount: 28000,
-        isDebit: true,
-        category: TransactionCategory.grocery,
-        month: 5,
-        year: 2025),
-    _Transaction(
-        id: '8',
-        title: 'Mie Nyemek Masak',
-        subtitle: 'Masak sendiri dari stok',
-        time: '12.30',
-        date: 'Kemarin',
-        amount: 5000,
-        isDebit: true,
-        category: TransactionCategory.cook,
-        month: 5,
-        year: 2025),
-    _Transaction(
-        id: '9',
-        title: 'Ayam Goreng Lalapan',
-        subtitle: 'Warung Pak Haji',
-        time: '19.00',
-        date: 'Kemarin',
-        amount: 25000,
-        isDebit: true,
-        category: TransactionCategory.food,
-        month: 5,
-        year: 2025),
-    _Transaction(
-        id: '10',
-        title: 'Belanja Bulanan',
-        subtitle: 'Beras, bumbu, minyak',
-        time: '09.00',
-        date: '14 Mei',
-        amount: 120000,
-        isDebit: true,
-        category: TransactionCategory.grocery,
-        month: 5,
-        year: 2025),
-    _Transaction(
-        id: '11',
-        title: 'Makan Soto Ayam',
-        subtitle: 'Warung Bu Dewi',
-        time: '12.00',
-        date: '20 Apr',
-        amount: 15000,
-        isDebit: true,
-        category: TransactionCategory.food,
-        month: 4,
-        year: 2025),
-    _Transaction(
-        id: '12',
-        title: 'Pengisian Budget',
-        subtitle: 'Budget masuk dari dompet',
-        time: '08.00',
-        date: '1 Apr',
-        amount: 500000,
-        isDebit: false,
-        category: TransactionCategory.topup,
-        month: 4,
-        year: 2025),
-    _Transaction(
-        id: '13',
-        title: 'Beli Sayuran',
-        subtitle: 'Pasar tradisional',
-        time: '07.30',
-        date: '5 Apr',
-        amount: 35000,
-        isDebit: true,
-        category: TransactionCategory.grocery,
-        month: 4,
-        year: 2025),
-    _Transaction(
-        id: '14',
-        title: 'Nasi Padang',
-        subtitle: 'RM Sederhana',
-        time: '13.00',
-        date: '10 Mar',
-        amount: 22000,
-        isDebit: true,
-        category: TransactionCategory.food,
-        month: 3,
-        year: 2025),
-    _Transaction(
-        id: '15',
-        title: 'Pengisian Budget',
-        subtitle: 'Budget masuk dari dompet',
-        time: '08.00',
-        date: '1 Mar',
-        amount: 500000,
-        isDebit: false,
-        category: TransactionCategory.topup,
-        month: 3,
-        year: 2025),
-    _Transaction(
-        id: '16',
-        title: 'Makan Sate Ayam',
-        subtitle: 'Sate Pak Kumis',
-        time: '18.30',
-        date: '25 Des 2024',
-        amount: 30000,
-        isDebit: true,
-        category: TransactionCategory.food,
-        month: 12,
-        year: 2024),
-    _Transaction(
-        id: '17',
-        title: 'Pengisian Budget',
-        subtitle: 'Budget masuk dari dompet',
-        time: '08.00',
-        date: '1 Des 2024',
-        amount: 500000,
-        isDebit: false,
-        category: TransactionCategory.topup,
-        month: 12,
-        year: 2024),
-    _Transaction(
-        id: '18',
-        title: 'Belanja Akhir Tahun',
-        subtitle: 'Stok bahan masak',
-        time: '10.00',
-        date: '20 Des 2024',
-        amount: 150000,
-        isDebit: true,
-        category: TransactionCategory.grocery,
-        month: 12,
-        year: 2024),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
 
-  final List<FlSpot> _lineSpots = const [
-    FlSpot(0, 15000),
-    FlSpot(1, 30000),
-    FlSpot(2, 45000),
-    FlSpot(3, 20000),
-    FlSpot(4, 50000),
-    FlSpot(5, 15000),
-    FlSpot(6, 65000),
-  ];
-  static const _days = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+  Future<void> _loadData() async {
+    setState(() => _isLoading = true);
+    try {
+      final now = DateTime.now();
+      final bulanQuery = '${now.year}-${now.month.toString().padLeft(2, '0')}';
 
-  IconData _categoryIcon(TransactionCategory c) {
-    switch (c) {
-      case TransactionCategory.food:
-        return Icons.restaurant_rounded;
-      case TransactionCategory.grocery:
-        return Icons.shopping_basket_rounded;
-      case TransactionCategory.cook:
-        return Icons.outdoor_grill_rounded;
-      case TransactionCategory.topup:
-        return Icons.add_circle_rounded;
-      case TransactionCategory.refund:
-        return Icons.undo_rounded;
+      final ringkasanResp =
+          await ApiService.get('/keuangan/ringkasan?bulan=$bulanQuery');
+      if (ringkasanResp['success'] == true) {
+        final ringkasanData = ringkasanResp['data']['data'];
+        _ringkasan = FinanceRingkasanModel.fromJson(ringkasanData);
+      } else {
+        throw Exception(ringkasanResp['message'] ?? 'Gagal ambil ringkasan');
+      }
+
+      final grafikResp =
+          await ApiService.get('/keuangan/grafik?bulan=$bulanQuery');
+      if (grafikResp['success'] == true) {
+        final perTanggal = grafikResp['data']['per_tanggal'] as List;
+        _grafikData =
+            perTanggal.map((j) => FinanceGrafikModel.fromJson(j)).toList();
+      }
+
+      await _loadMutasi();
+      setState(() => _isLoading = false);
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
     }
   }
 
-  Color _categoryColor(TransactionCategory c) {
-    switch (c) {
-      case TransactionCategory.food:
-        return AppTheme.orange500;
-      case TransactionCategory.grocery:
-        return AppTheme.blue500;
-      case TransactionCategory.cook:
-        return AppTheme.green600;
-      case TransactionCategory.topup:
-        return const Color(0xFF8B5CF6);
-      case TransactionCategory.refund:
-        return AppTheme.green500;
+  Future<void> _loadMutasi() async {
+    try {
+      Map<String, String> query = {};
+      if (_mutationMonth != 'Semua') {
+        final bulanIndex = _monthOptions.indexOf(_mutationMonth);
+        if (bulanIndex >= 1 && bulanIndex <= 12) {
+          query['bulan'] = bulanIndex.toString().padLeft(2, '0');
+        }
+      }
+      if (_mutationYear != 0) {
+        query['tahun'] = _mutationYear.toString();
+      }
+      String url = '/keuangan/mutasi';
+      if (query.isNotEmpty) {
+        url += '?' + query.entries.map((e) => '${e.key}=${e.value}').join('&');
+      }
+      final resp = await ApiService.get(url);
+      if (resp['success'] == true) {
+        List list = resp['data'];
+        setState(() {
+          _groupedMutasi = list.map((e) => GroupedMutasi.fromJson(e)).toList();
+        });
+      }
+    } catch (e) {
+      print('Error load mutasi: $e');
     }
   }
 
-  Color _categoryBg(TransactionCategory c) {
-    switch (c) {
-      case TransactionCategory.food:
-        return AppTheme.orange50;
-      case TransactionCategory.grocery:
-        return AppTheme.blue50;
-      case TransactionCategory.cook:
-        return AppTheme.green50;
-      case TransactionCategory.topup:
-        return AppTheme.purple50;
-      case TransactionCategory.refund:
-        return AppTheme.green50;
-    }
+  void _applyFilter(String month, int year) {
+    setState(() {
+      _mutationMonth = month;
+      _mutationYear = year;
+    });
+    _loadMutasi();
   }
-
-  List<_Transaction> get _filteredTransactions {
-    return _transactions.where((t) {
-      final monthMatch = _mutationMonth == 'Semua' ||
-          t.month == _monthOptions.indexOf(_mutationMonth);
-      final yearMatch = _mutationYear == 0 || t.year == _mutationYear;
-      return monthMatch && yearMatch;
-    }).toList();
-  }
-
-  Map<String, List<_Transaction>> get _grouped {
-    final map = <String, List<_Transaction>>{};
-    for (final t in _filteredTransactions) {
-      map.putIfAbsent(t.date, () => []).add(t);
-    }
-    return map;
-  }
-
-  String _formatRp(double v) => v.abs().toStringAsFixed(0).replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.');
 
   void _showMonthPicker() {
     showModalBottomSheet(
@@ -350,22 +127,47 @@ class _FinancePageState extends State<FinancePage> {
         currentYear: _mutationYear,
         monthOptions: _monthOptions,
         yearOptions: _yearOptions,
-        onSelect: (month, year) => setState(() {
-          _mutationMonth = month;
-          _mutationYear = year;
-        }),
+        onSelect: _applyFilter,
       ),
     );
   }
 
+  String _formatRp(double v) => v.toStringAsFixed(0).replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.');
+
+  List<FlSpot> get _lineSpots {
+    return _grafikData.asMap().entries.map((entry) {
+      return FlSpot(entry.key.toDouble(), entry.value.jumlah);
+    }).toList();
+  }
+
+  Map<String, List<FinanceMutasiModel>> get _groupedMutasiMap {
+    final map = <String, List<FinanceMutasiModel>>{};
+    for (final group in _groupedMutasi) {
+      map[group.tanggalLabel] = group.transaksi;
+    }
+    return map;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final totalOut =
-        _transactions.where((t) => t.isDebit).fold(0.0, (s, t) => s + t.amount);
-    final totalIn = _transactions
-        .where((t) => !t.isDebit)
-        .fold(0.0, (s, t) => s + t.amount);
-    final balance = totalIn - totalOut;
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: context.colors.surface,
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (_error.isNotEmpty) {
+      return Scaffold(
+        backgroundColor: context.colors.surface,
+        body: Center(child: Text('Error: $_error')),
+      );
+    }
+    if (_ringkasan == null) return const SizedBox.shrink();
+
+    final totalPemasukan = _ringkasan!.totalPemasukan;
+    final totalPengeluaran = _ringkasan!.totalPengeluaran;
+    final saldo = _ringkasan!.saldo;
 
     return Scaffold(
       backgroundColor: context.colors.surface,
@@ -455,9 +257,9 @@ class _FinancePageState extends State<FinancePage> {
                             letterSpacing: 1.5)),
                     const SizedBox(height: 6),
                     Text(
-                      'Rp ${_formatRp(balance)}',
+                      'Rp ${_formatRp(saldo)}',
                       style: TextStyle(
-                        color: balance >= 0 ? Colors.white : AppTheme.red500,
+                        color: saldo >= 0 ? Colors.white : AppTheme.red500,
                         fontSize: 30,
                         fontWeight: FontWeight.w900,
                         letterSpacing: -1,
@@ -472,7 +274,7 @@ class _FinancePageState extends State<FinancePage> {
                         Expanded(
                             child: _BalanceItem(
                                 label: 'Pemasukan',
-                                amount: totalIn,
+                                amount: totalPemasukan,
                                 isPositive: true)),
                         Container(
                             width: 1,
@@ -481,7 +283,7 @@ class _FinancePageState extends State<FinancePage> {
                         Expanded(
                             child: _BalanceItem(
                                 label: 'Pengeluaran',
-                                amount: totalOut,
+                                amount: totalPengeluaran,
                                 isPositive: false)),
                       ],
                     ),
@@ -489,22 +291,23 @@ class _FinancePageState extends State<FinancePage> {
                 ),
               ),
               const SizedBox(height: 20),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
                   children: [
                     Expanded(
                         child: _SummaryChip(
                             label: 'Rata-rata/Hari',
-                            value: 'Rp 34.285',
+                            value: 'Rp ${_formatRp(_ringkasan!.rataPerHari)}',
                             icon: Icons.bar_chart_rounded,
                             color: AppTheme.blue500,
                             bg: AppTheme.blue50)),
-                    SizedBox(width: 12),
+                    const SizedBox(width: 12),
                     Expanded(
                         child: _SummaryChip(
                             label: 'Prediksi Akhir',
-                            value: 'Rp 1.028.000',
+                            value:
+                                'Rp ${_formatRp(_ringkasan!.prediksiAkhirBulan)}',
                             icon: Icons.warning_rounded,
                             color: AppTheme.red500,
                             bg: AppTheme.red50,
@@ -521,25 +324,29 @@ class _FinancePageState extends State<FinancePage> {
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: AppTheme.orange200),
                 ),
-                child: const Row(
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.error_outline_rounded,
+                    const Icon(Icons.error_outline_rounded,
                         color: AppTheme.orange600, size: 22),
-                    SizedBox(width: 12),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Prediksi Akhir Bulan: Defisit',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF431407),
-                                  fontSize: 13)),
-                          SizedBox(height: 4),
                           Text(
-                            'Dengan pengeluaran saat ini, diprediksi total pengeluaran akhir bulan mencapai Rp1.028.000 (melebihi budget Rp900.000). Kurangi jajan di luar!',
-                            style: TextStyle(
+                            _ringkasan!.prediksiDefisit
+                                ? 'Prediksi Akhir Bulan: Defisit'
+                                : 'Prediksi Akhir Bulan: Aman',
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF431407),
+                                fontSize: 13),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _ringkasan!.pesanPrediksi,
+                            style: const TextStyle(
                                 fontSize: 12,
                                 color: Color(0xFF9A3412),
                                 fontWeight: FontWeight.w500,
@@ -577,83 +384,91 @@ class _FinancePageState extends State<FinancePage> {
                     const SizedBox(height: 24),
                     SizedBox(
                       height: 160,
-                      child: LineChart(LineChartData(
-                        gridData: FlGridData(
-                          show: true,
-                          drawVerticalLine: false,
-                          horizontalInterval: 20000,
-                          getDrawingHorizontalLine: (_) => FlLine(
-                              color: context.colors.border, strokeWidth: 1),
-                        ),
-                        titlesData: FlTitlesData(
-                          leftTitles: AxisTitles(
-                              sideTitles: SideTitles(
-                            showTitles: true,
-                            reservedSize: 38,
-                            interval: 20000,
-                            getTitlesWidget: (v, m) => Text(
-                              '${(v / 1000).toInt()}k',
-                              style: TextStyle(
-                                  fontSize: 9,
-                                  color: context.colors.textHint,
-                                  fontWeight: FontWeight.w600),
-                            ),
-                          )),
-                          rightTitles: const AxisTitles(
-                              sideTitles: SideTitles(showTitles: false)),
-                          topTitles: const AxisTitles(
-                              sideTitles: SideTitles(showTitles: false)),
-                          bottomTitles: AxisTitles(
-                              sideTitles: SideTitles(
-                            showTitles: true,
-                            getTitlesWidget: (v, m) => Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: Text(
-                                v.toInt() < _days.length
-                                    ? _days[v.toInt()]
-                                    : '',
-                                style: TextStyle(
-                                    fontSize: 10,
-                                    color: context.colors.textHint,
-                                    fontWeight: FontWeight.w600),
+                      child: _grafikData.isEmpty
+                          ? const Center(child: Text('Tidak ada data'))
+                          : LineChart(LineChartData(
+                              gridData: FlGridData(
+                                show: true,
+                                drawVerticalLine: false,
+                                horizontalInterval: 20000,
+                                getDrawingHorizontalLine: (_) => FlLine(
+                                    color: context.colors.border,
+                                    strokeWidth: 1),
                               ),
-                            ),
-                          )),
-                        ),
-                        borderData: FlBorderData(show: false),
-                        lineBarsData: [
-                          LineChartBarData(
-                            spots: _lineSpots,
-                            isCurved: true,
-                            color: AppTheme.orange600,
-                            barWidth: 3,
-                            isStrokeCapRound: true,
-                            dotData: FlDotData(
-                              show: true,
-                              getDotPainter: (_, __, ___, ____) =>
-                                  FlDotCirclePainter(
-                                radius: 4,
-                                color: AppTheme.orange600,
-                                strokeWidth: 2,
-                                strokeColor: context.colors.cardBackground,
+                              titlesData: FlTitlesData(
+                                leftTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                  showTitles: true,
+                                  reservedSize: 38,
+                                  interval: 20000,
+                                  getTitlesWidget: (v, m) => Text(
+                                    '${(v / 1000).toInt()}k',
+                                    style: TextStyle(
+                                        fontSize: 9,
+                                        color: context.colors.textHint,
+                                        fontWeight: FontWeight.w600),
+                                  ),
+                                )),
+                                rightTitles: const AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false)),
+                                topTitles: const AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false)),
+                                bottomTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                  showTitles: true,
+                                  getTitlesWidget: (v, m) => Padding(
+                                    padding: const EdgeInsets.only(top: 8),
+                                    child: Text(
+                                      v.toInt() < _grafikData.length
+                                          ? '${_grafikData[v.toInt()].hari}'
+                                          : '',
+                                      style: TextStyle(
+                                          fontSize: 10,
+                                          color: context.colors.textHint,
+                                          fontWeight: FontWeight.w600),
+                                    ),
+                                  ),
+                                )),
                               ),
-                            ),
-                            belowBarData: BarAreaData(
-                              show: true,
-                              gradient: LinearGradient(
-                                colors: [
-                                  AppTheme.orange500.withValues(alpha: 0.18),
-                                  AppTheme.orange500.withValues(alpha: 0)
-                                ],
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                              ),
-                            ),
-                          ),
-                        ],
-                        minY: 0,
-                        maxY: 80000,
-                      )),
+                              borderData: FlBorderData(show: false),
+                              lineBarsData: [
+                                LineChartBarData(
+                                  spots: _lineSpots,
+                                  isCurved: true,
+                                  color: AppTheme.orange600,
+                                  barWidth: 3,
+                                  isStrokeCapRound: true,
+                                  dotData: FlDotData(
+                                    show: true,
+                                    getDotPainter: (_, __, ___, ____) =>
+                                        FlDotCirclePainter(
+                                      radius: 4,
+                                      color: AppTheme.orange600,
+                                      strokeWidth: 2,
+                                      strokeColor:
+                                          context.colors.cardBackground,
+                                    ),
+                                  ),
+                                  belowBarData: BarAreaData(
+                                    show: true,
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        AppTheme.orange500
+                                            .withValues(alpha: 0.18),
+                                        AppTheme.orange500.withValues(alpha: 0)
+                                      ],
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              minY: 0,
+                              maxY: _grafikData
+                                      .map((e) => e.jumlah)
+                                      .reduce((a, b) => a > b ? a : b) +
+                                  10000,
+                            )),
                     ),
                   ],
                 ),
@@ -700,25 +515,21 @@ class _FinancePageState extends State<FinancePage> {
                                           ?.touchedSectionIndex ??
                                       -1);
                                 }),
-                                sections: [
-                                  PieChartSectionData(
-                                      value: 150000,
-                                      color: AppTheme.orange500,
-                                      radius: _touchedIndex == 0 ? 32 : 28,
-                                      showTitle: false),
-                                  PieChartSectionData(
-                                      value: 90000,
-                                      color: AppTheme.blue500,
-                                      radius: _touchedIndex == 1 ? 32 : 28,
-                                      showTitle: false),
-                                  PieChartSectionData(
-                                      value: 60000,
-                                      color: AppTheme.green500,
-                                      radius: _touchedIndex == 2 ? 32 : 28,
-                                      showTitle: false),
-                                ],
+                                sections: _ringkasan!.komposisi
+                                    .asMap()
+                                    .entries
+                                    .map((entry) {
+                                  final idx = entry.key;
+                                  final item = entry.value;
+                                  return PieChartSectionData(
+                                    value: item.jumlah,
+                                    color: _getColorFromString(item.warna),
+                                    radius: _touchedIndex == idx ? 32 : 28,
+                                    showTitle: false,
+                                  );
+                                }).toList(),
                               )),
-                              Text('62%',
+                              Text('${_ringkasan!.persenMasak}%',
                                   style: TextStyle(
                                       fontWeight: FontWeight.w900,
                                       fontSize: 15,
@@ -727,25 +538,18 @@ class _FinancePageState extends State<FinancePage> {
                           ),
                         ),
                         const SizedBox(width: 20),
-                        const Expanded(
+                        Expanded(
                             child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _LegendItem(
-                                color: AppTheme.orange500,
-                                label: 'Masak Sendiri',
-                                value: 'Rp 150.000'),
-                            SizedBox(height: 12),
-                            _LegendItem(
-                                color: AppTheme.blue500,
-                                label: 'Beli di Luar',
-                                value: 'Rp 90.000'),
-                            SizedBox(height: 12),
-                            _LegendItem(
-                                color: AppTheme.green500,
-                                label: 'Belanja Bahan',
-                                value: 'Rp 60.000'),
-                          ],
+                          children: _ringkasan!.komposisi.map((item) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: _LegendItem(
+                                  color: _getColorFromString(item.warna),
+                                  label: item.kategori,
+                                  value: 'Rp ${_formatRp(item.jumlah)}'),
+                            );
+                          }).toList(),
                         )),
                       ],
                     ),
@@ -849,7 +653,7 @@ class _FinancePageState extends State<FinancePage> {
                 ),
               ),
               const SizedBox(height: 12),
-              if (_grouped.isEmpty)
+              if (_groupedMutasiMap.isEmpty)
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 20),
                   padding: const EdgeInsets.symmetric(vertical: 40),
@@ -880,7 +684,7 @@ class _FinancePageState extends State<FinancePage> {
                   ),
                 )
               else
-                ..._grouped.entries.map((entry) => Column(
+                ..._groupedMutasiMap.entries.map((entry) => Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
@@ -898,7 +702,7 @@ class _FinancePageState extends State<FinancePage> {
                                     color: context.colors.border, height: 1)),
                             const SizedBox(width: 8),
                             Text(
-                              '- Rp ${_formatRp(entry.value.where((t) => t.isDebit).fold(0.0, (s, t) => s + t.amount))}',
+                              '- Rp ${_formatRp(entry.value.where((t) => t.isDebit).fold(0.0, (s, t) => s + t.jumlah))}',
                               style: const TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,
@@ -926,9 +730,10 @@ class _FinancePageState extends State<FinancePage> {
                               return _MutationRow(
                                 transaction: t,
                                 isLast: isLast,
-                                categoryIcon: _categoryIcon(t.category),
-                                categoryColor: _categoryColor(t.category),
-                                categoryBg: _categoryBg(t.category),
+                                categoryIcon: _categoryIcon(t.jenisPengeluaran),
+                                categoryColor:
+                                    _categoryColor(t.jenisPengeluaran),
+                                categoryBg: _categoryBg(t.jenisPengeluaran),
                               );
                             }).toList(),
                           ),
@@ -941,6 +746,240 @@ class _FinancePageState extends State<FinancePage> {
           ),
         ],
       ),
+    );
+  }
+
+  Color _getColorFromString(String color) {
+    switch (color) {
+      case 'orange':
+        return AppTheme.orange500;
+      case 'blue':
+        return AppTheme.blue500;
+      case 'green':
+        return AppTheme.green500;
+      default:
+        return AppTheme.orange500;
+    }
+  }
+
+  IconData _categoryIcon(String jenis) {
+    switch (jenis) {
+      case 'food':
+        return Icons.restaurant_rounded;
+      case 'grocery':
+        return Icons.shopping_basket_rounded;
+      case 'cook':
+        return Icons.outdoor_grill_rounded;
+      case 'topup':
+        return Icons.add_circle_rounded;
+      case 'refund':
+        return Icons.undo_rounded;
+      default:
+        return Icons.receipt_rounded;
+    }
+  }
+
+  Color _categoryColor(String jenis) {
+    switch (jenis) {
+      case 'food':
+        return AppTheme.orange500;
+      case 'grocery':
+        return AppTheme.blue500;
+      case 'cook':
+        return AppTheme.green600;
+      case 'topup':
+        return const Color(0xFF8B5CF6);
+      case 'refund':
+        return AppTheme.green500;
+      default:
+        return AppTheme.slate500;
+    }
+  }
+
+  Color _categoryBg(String jenis) {
+    switch (jenis) {
+      case 'food':
+        return AppTheme.orange50;
+      case 'grocery':
+        return AppTheme.blue50;
+      case 'cook':
+        return AppTheme.green50;
+      case 'topup':
+        return AppTheme.purple50;
+      case 'refund':
+        return AppTheme.green50;
+      default:
+        return AppTheme.slate50;
+    }
+  }
+}
+
+// ============ WIDGET BANTUAN (TIDAK BERUBAH) ============
+class _BalanceItem extends StatelessWidget {
+  final String label;
+  final double amount;
+  final bool isPositive;
+  const _BalanceItem(
+      {required this.label, required this.amount, required this.isPositive});
+
+  String _fmt(double v) => v.toStringAsFixed(0).replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.');
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(children: [
+      Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+        Icon(
+            isPositive
+                ? Icons.arrow_downward_rounded
+                : Icons.arrow_upward_rounded,
+            size: 13,
+            color: isPositive ? AppTheme.green500 : AppTheme.red500),
+        const SizedBox(width: 4),
+        Text(label,
+            style: const TextStyle(
+                color: AppTheme.slate400,
+                fontSize: 10,
+                fontWeight: FontWeight.w600)),
+      ]),
+      const SizedBox(height: 4),
+      Text('Rp ${_fmt(amount)}',
+          style: TextStyle(
+              color: isPositive ? AppTheme.green500 : AppTheme.red500,
+              fontWeight: FontWeight.w800,
+              fontSize: 13)),
+    ]);
+  }
+}
+
+class _SummaryChip extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+  final Color bg;
+  final bool isWarning;
+  const _SummaryChip(
+      {required this.label,
+      required this.value,
+      required this.icon,
+      required this.color,
+      required this.bg,
+      this.isWarning = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withValues(alpha: 0.3))),
+      child: Row(children: [
+        Icon(icon, color: color, size: 18),
+        const SizedBox(width: 8),
+        Expanded(
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(label,
+              style: TextStyle(
+                  fontSize: 10, fontWeight: FontWeight.w700, color: color)),
+          const SizedBox(height: 2),
+          Text(value,
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                  color: isWarning
+                      ? AppTheme.red600
+                      : context.colors.textPrimary)),
+        ])),
+      ]),
+    );
+  }
+}
+
+class _LegendItem extends StatelessWidget {
+  final Color color;
+  final String label;
+  final String value;
+  const _LegendItem(
+      {required this.color, required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(children: [
+      Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+      const SizedBox(width: 8),
+      Expanded(
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(label,
+            style: TextStyle(
+                fontSize: 11,
+                color: context.colors.textSecondary,
+                fontWeight: FontWeight.w600)),
+        Text(value,
+            style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: context.colors.textPrimary)),
+      ])),
+    ]);
+  }
+}
+
+class _PeriodPicker extends StatelessWidget {
+  final String current;
+  final Function(String) onSelect;
+  const _PeriodPicker({required this.current, required this.onSelect});
+
+  @override
+  Widget build(BuildContext context) {
+    const options = ['Hari Ini', 'Minggu Ini', 'Bulan Ini', '3 Bulan Terakhir'];
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SizedBox(height: 12),
+        Container(
+            width: 36,
+            height: 4,
+            decoration: BoxDecoration(
+                color: context.colors.border,
+                borderRadius: BorderRadius.circular(2))),
+        const SizedBox(height: 16),
+        Text('Pilih Periode',
+            style: TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 16,
+                color: context.colors.textPrimary)),
+        const SizedBox(height: 12),
+        ...options.map((o) => ListTile(
+              leading: Icon(
+                o == current
+                    ? Icons.radio_button_checked_rounded
+                    : Icons.radio_button_unchecked_rounded,
+                color:
+                    o == current ? AppTheme.orange600 : context.colors.textHint,
+                size: 20,
+              ),
+              title: Text(o,
+                  style: TextStyle(
+                    fontWeight:
+                        o == current ? FontWeight.w700 : FontWeight.w500,
+                    color: o == current
+                        ? AppTheme.orange600
+                        : context.colors.textSecondary,
+                  )),
+              onTap: () {
+                onSelect(o);
+                Navigator.pop(context);
+              },
+            )),
+        const SizedBox(height: 16),
+      ],
     );
   }
 }
@@ -1143,7 +1182,7 @@ class _MutationFilterPickerState extends State<_MutationFilterPicker> {
 }
 
 class _MutationRow extends StatelessWidget {
-  final _Transaction transaction;
+  final FinanceMutasiModel transaction;
   final bool isLast;
   final IconData categoryIcon;
   final Color categoryColor;
@@ -1177,13 +1216,13 @@ class _MutationRow extends StatelessWidget {
                 child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(transaction.title,
+                Text(transaction.judul,
                     style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 13,
                         color: context.colors.textPrimary)),
                 const SizedBox(height: 2),
-                Text(transaction.subtitle,
+                Text(transaction.keterangan,
                     style: TextStyle(
                         fontSize: 11,
                         color: context.colors.textHint,
@@ -1194,7 +1233,7 @@ class _MutationRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '${transaction.isDebit ? '-' : '+'}Rp ${_fmt(transaction.amount)}',
+                  '${transaction.isDebit ? '-' : '+'}Rp ${_fmt(transaction.jumlah)}',
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 13,
@@ -1205,7 +1244,7 @@ class _MutationRow extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(transaction.time,
+                Text(transaction.waktu,
                     style: TextStyle(
                         fontSize: 10,
                         color: context.colors.textHint,
@@ -1216,175 +1255,6 @@ class _MutationRow extends StatelessWidget {
         ),
         if (!isLast)
           Divider(height: 1, color: context.colors.border, indent: 68),
-      ],
-    );
-  }
-}
-
-class _BalanceItem extends StatelessWidget {
-  final String label;
-  final double amount;
-  final bool isPositive;
-  const _BalanceItem(
-      {required this.label, required this.amount, required this.isPositive});
-
-  String _fmt(double v) => v.toStringAsFixed(0).replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.');
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(children: [
-      Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Icon(
-            isPositive
-                ? Icons.arrow_downward_rounded
-                : Icons.arrow_upward_rounded,
-            size: 13,
-            color: isPositive ? AppTheme.green500 : AppTheme.red500),
-        const SizedBox(width: 4),
-        Text(label,
-            style: const TextStyle(
-                color: AppTheme.slate400,
-                fontSize: 10,
-                fontWeight: FontWeight.w600)),
-      ]),
-      const SizedBox(height: 4),
-      Text('Rp ${_fmt(amount)}',
-          style: TextStyle(
-              color: isPositive ? AppTheme.green500 : AppTheme.red500,
-              fontWeight: FontWeight.w800,
-              fontSize: 13)),
-    ]);
-  }
-}
-
-class _SummaryChip extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color color;
-  final Color bg;
-  final bool isWarning;
-  const _SummaryChip(
-      {required this.label,
-      required this.value,
-      required this.icon,
-      required this.color,
-      required this.bg,
-      this.isWarning = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withValues(alpha: 0.3))),
-      child: Row(children: [
-        Icon(icon, color: color, size: 18),
-        const SizedBox(width: 8),
-        Expanded(
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(label,
-              style: TextStyle(
-                  fontSize: 10, fontWeight: FontWeight.w700, color: color)),
-          const SizedBox(height: 2),
-          Text(value,
-              style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w900,
-                  color: isWarning
-                      ? AppTheme.red600
-                      : context.colors.textPrimary)),
-        ])),
-      ]),
-    );
-  }
-}
-
-class _LegendItem extends StatelessWidget {
-  final Color color;
-  final String label;
-  final String value;
-  const _LegendItem(
-      {required this.color, required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(children: [
-      Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-      const SizedBox(width: 8),
-      Expanded(
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label,
-            style: TextStyle(
-                fontSize: 11,
-                color: context.colors.textSecondary,
-                fontWeight: FontWeight.w600)),
-        Text(value,
-            style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-                color: context.colors.textPrimary)),
-      ])),
-    ]);
-  }
-}
-
-class _PeriodPicker extends StatelessWidget {
-  final String current;
-  final Function(String) onSelect;
-  const _PeriodPicker({required this.current, required this.onSelect});
-
-  @override
-  Widget build(BuildContext context) {
-    const options = ['Hari Ini', 'Minggu Ini', 'Bulan Ini', '3 Bulan Terakhir'];
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const SizedBox(height: 12),
-        Container(
-            width: 36,
-            height: 4,
-            decoration: BoxDecoration(
-                color: context.colors.border,
-                borderRadius: BorderRadius.circular(2))),
-        const SizedBox(height: 16),
-        Text('Pilih Periode',
-            style: TextStyle(
-                fontWeight: FontWeight.w900,
-                fontSize: 16,
-                color: context.colors.textPrimary)),
-        const SizedBox(height: 12),
-        ...options.map((o) => ListTile(
-              leading: Icon(
-                o == current
-                    ? Icons.radio_button_checked_rounded
-                    : Icons.radio_button_unchecked_rounded,
-                color:
-                    o == current ? AppTheme.orange600 : context.colors.textHint,
-                size: 20,
-              ),
-              title: Text(o,
-                  style: TextStyle(
-                    fontWeight:
-                        o == current ? FontWeight.w700 : FontWeight.w500,
-                    color: o == current
-                        ? AppTheme.orange600
-                        : context.colors.textSecondary,
-                  )),
-              onTap: () {
-                onSelect(o);
-                Navigator.pop(context);
-              },
-            )),
-        const SizedBox(height: 16),
       ],
     );
   }

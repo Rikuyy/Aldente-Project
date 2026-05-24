@@ -7,106 +7,76 @@ use App\Models\Keuangan;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Carbon\Carbon;
+use MongoDB\BSON\ObjectId;
 
 class KeuanganController extends Controller
 {
-    // ============================================================
-    // Helper: ambil ID pengguna dari token login
-    // ============================================================
     private function idPengguna(Request $request): string
     {
-        return $request->user()->id;
+        return (string) $request->user()->_id;
+    }
+
+    private function getBudget(Request $request): float
+    {
+        $user = $request->user();
+        return (float) ($user->Budget_Bulanan ?? 300000);
     }
 
     // ============================================================
-    // 1. GET /api/keuangan/ringkasan?bulan=2025-05
-    // Ringkasan pengeluaran bulanan: total, rata-rata, prediksi, tren
+    // 1. RINGKASAN
     // ============================================================
     public function ringkasan(Request $request): JsonResponse
     {
         try {
             $idPengguna = $this->idPengguna($request);
+            $bulanQuery = $request->query('bulan', Carbon::now()->format('Y-m'));
+            $parsed = Carbon::createFromFormat('Y-m', $bulanQuery);
+            $startDate = $parsed->copy()->startOfMonth()->toDateString();
+            $endDate = $parsed->copy()->endOfMonth()->toDateString();
 
-            $bulan  = $request->query('bulan', Carbon::now()->format('Y-m'));
-            $parsed = Carbon::createFromFormat('Y-m', $bulan);
-
-            $awalBulan      = $parsed->copy()->startOfMonth()->toDateString();
-            $akhirBulan     = $parsed->copy()->endOfMonth()->toDateString();
-            $hariDalamBulan = $parsed->daysInMonth;
-
-            $transaksi = Keuangan::where('id_pengguna', $idPengguna)
-                ->whereBetween('tanggal', [$awalBulan, $akhirBulan])
+            $transaksis = Keuangan::where('Id_User', $idPengguna)
+                ->whereBetween('Tanggal', [$startDate, $endDate])
                 ->get();
 
-            // ── Total & rata-rata ────────────────────────────────────
-            $totalPengeluaran = $transaksi->where('is_debit', true)->sum('jumlah');
-            $totalPemasukan   = $transaksi->where('is_debit', false)->sum('jumlah');
-            $saldo            = $totalPemasukan - $totalPengeluaran;
+            $totalPengeluaran = $transaksis->sum('Total_Pengeluaran');
+            $budget = $this->getBudget($request);
+            $totalPemasukan = $budget;
+            $saldo = $budget - $totalPengeluaran;
 
-            $jumlahHari  = $transaksi->where('is_debit', true)->groupBy('tanggal')->count();
-            $rataPerHari = $jumlahHari > 0
-                ? round($totalPengeluaran / $jumlahHari)
-                : 0;
+            $hariDenganTransaksi = $transaksis->groupBy('Tanggal')->count();
+            $rataPerHari = $hariDenganTransaksi > 0 ? round($totalPengeluaran / $hariDenganTransaksi) : 0;
 
-            // ── Prediksi akhir bulan ─────────────────────────────────
-            $hariIni       = min(Carbon::now()->day, $hariDalamBulan);
-            $prediksiAkhir = $hariDalamBulan > 0
-                ? round(($totalPengeluaran / max($hariIni, 1)) * $hariDalamBulan)
-                : 0;
+            $hariIni = min(Carbon::now()->day, $parsed->daysInMonth);
+            $prediksiAkhir = $hariIni > 0 ? round(($totalPengeluaran / $hariIni) * $parsed->daysInMonth) : 0;
 
-            // ── Komposisi 3 kategori (sesuai pie chart Flutter) ──────
-            // jenis_pengeluaran: 'Masak Sendiri' | 'Beli di Luar' | 'Belanja Bahan'
-            $totalMasak    = $transaksi->where('jenis_pengeluaran', 'Masak Sendiri')->sum('jumlah');
-            $totalBeliLuar = $transaksi->where('jenis_pengeluaran', 'Beli di Luar')->sum('jumlah');
-            $totalBelanja  = $transaksi->where('jenis_pengeluaran', 'Belanja Bahan')->sum('jumlah');
+            $totalMasak = $transaksis->where('Jenis_Pengeluaran', 'Masak')->sum('Total_Pengeluaran');
+            $totalBeliLuar = $transaksis->where('Jenis_Pengeluaran', 'Beli')->sum('Total_Pengeluaran');
+            $persenMasak = $totalPengeluaran > 0 ? round(($totalMasak / $totalPengeluaran) * 100) : 0;
 
-            $persenMasak = $totalPengeluaran > 0
-                ? round(($totalMasak / $totalPengeluaran) * 100)
-                : 0;
-
-            // ── Tren vs bulan lalu ───────────────────────────────────
-            $awalBulanLalu  = $parsed->copy()->subMonth()->startOfMonth()->toDateString();
-            $akhirBulanLalu = $parsed->copy()->subMonth()->endOfMonth()->toDateString();
-
-            $totalBulanLalu = Keuangan::where('id_pengguna', $idPengguna)
-                ->whereBetween('tanggal', [$awalBulanLalu, $akhirBulanLalu])
-                ->where('is_debit', true)
-                ->sum('jumlah');
-
-            $trenPersen = $totalBulanLalu > 0
-                ? round((($totalPengeluaran - $totalBulanLalu) / $totalBulanLalu) * 100, 1)
-                : 0;
-
-            // ── Status prediksi ──────────────────────────────────────
-            // Ambil budget bulan ini dari koleksi keuangan (pemasukan/topup)
-            $totalBudget     = $transaksi->where('jenis_pengeluaran', 'Pengisian Budget')->sum('jumlah');
-            $isDefisit       = $prediksiAkhir > $totalBudget && $totalBudget > 0;
-            $pesanPrediksi   = $isDefisit
-                ? "Dengan pengeluaran saat ini, diprediksi total pengeluaran akhir bulan mencapai Rp " .
-                  number_format($prediksiAkhir, 0, ',', '.') .
-                  " (melebihi budget Rp " . number_format($totalBudget, 0, ',', '.') . "). Kurangi jajan di luar!"
-                : null;
+            $isDefisit = $prediksiAkhir > $budget;
+            $pesanPrediksi = $isDefisit
+                ? "Diprediksi total pengeluaran mencapai Rp " . number_format($prediksiAkhir, 0, ',', '.') . " (Melebihi budget Anda)."
+                : "Pengeluaran Anda bulan ini diprediksi masih aman sesuai budget.";
 
             return response()->json([
                 'success' => true,
                 'message' => 'Ringkasan keuangan berhasil diambil.',
-                'data'    => [
-                    'bulan'             => $bulan,
-                    'saldo'             => $saldo,
-                    'total_pemasukan'   => $totalPemasukan,
-                    'total_pengeluaran' => $totalPengeluaran,
-                    'rata_per_hari'     => $rataPerHari,
-                    'prediksi_akhir_bulan' => $prediksiAkhir,
-                    'tren_persen'       => $trenPersen, // positif = naik, negatif = turun
-                    'prediksi_defisit'  => $isDefisit,
-                    'pesan_prediksi'    => $pesanPrediksi,
-                    'komposisi'         => [
-                        // Urutan sesuai pie chart Flutter
-                        ['kategori' => 'Masak Sendiri',  'jumlah' => $totalMasak,    'warna' => 'orange'],
-                        ['kategori' => 'Beli di Luar',   'jumlah' => $totalBeliLuar, 'warna' => 'blue'],
-                        ['kategori' => 'Belanja Bahan',  'jumlah' => $totalBelanja,  'warna' => 'green'],
-                    ],
-                    'persen_masak' => $persenMasak,
+                'data' => [
+                    'data' => [
+                        'saldo'                => (double) $saldo,
+                        'total_pemasukan'      => (double) $totalPemasukan,
+                        'total_pengeluaran'    => (double) $totalPengeluaran,
+                        'rata_per_hari'        => (double) $rataPerHari,
+                        'prediksi_akhir_bulan' => (double) $prediksiAkhir,
+                        'prediksi_defisit'     => $isDefisit,
+                        'pesan_prediksi'       => $pesanPrediksi,
+                        'persen_masak'         => (int) $persenMasak,
+                        'komposisi'            => [
+                            ['kategori' => 'Masak Sendiri', 'jumlah' => (double) $totalMasak, 'warna' => 'orange'],
+                            ['kategori' => 'Beli di Luar',  'jumlah' => (double) $totalBeliLuar, 'warna' => 'blue'],
+                            ['kategori' => 'Belanja Bahan',  'jumlah' => 0.0, 'warna' => 'green'],
+                        ],
+                    ]
                 ],
             ], 200);
 
@@ -116,40 +86,30 @@ class KeuanganController extends Controller
     }
 
     // ============================================================
-    // 2. GET /api/keuangan/grafik?bulan=2025-05
-    // Data grafik tren pengeluaran harian dalam satu bulan
+    // 2. GRAFIK
     // ============================================================
     public function grafik(Request $request): JsonResponse
     {
         try {
             $idPengguna = $this->idPengguna($request);
+            $bulanQuery = $request->query('bulan', Carbon::now()->format('Y-m'));
+            $parsed = Carbon::createFromFormat('Y-m', $bulanQuery);
+            $startDate = $parsed->copy()->startOfMonth()->toDateString();
+            $endDate = $parsed->copy()->endOfMonth()->toDateString();
 
-            $bulan  = $request->query('bulan', Carbon::now()->format('Y-m'));
-            $parsed = Carbon::createFromFormat('Y-m', $bulan);
+            $transaksis = Keuangan::where('Id_User', $idPengguna)
+                ->whereBetween('Tanggal', [$startDate, $endDate])
+                ->get();
 
-            $awalBulan  = $parsed->copy()->startOfMonth()->toDateString();
-            $akhirBulan = $parsed->copy()->endOfMonth()->toDateString();
+            $grouped = $transaksis->groupBy('Tanggal')->map(fn($items) => $items->sum('Total_Pengeluaran'));
 
-            $transaksi = Keuangan::where('id_pengguna', $idPengguna)
-                ->whereBetween('tanggal', [$awalBulan, $akhirBulan])
-                ->where('is_debit', true)
-                ->get(['tanggal', 'jumlah']);
-
-            // Kelompokkan per tanggal, jumlahkan pengeluaran per hari
-            $dikelompokkan = $transaksi
-                ->groupBy('tanggal')
-                ->map(fn($baris) => $baris->sum('jumlah'));
-
-            // Buat array lengkap semua hari dalam bulan (hari tanpa transaksi = 0)
-            $hariDalamBulan = $parsed->daysInMonth;
-            $dataGrafik     = [];
-
-            for ($hari = 1; $hari <= $hariDalamBulan; $hari++) {
-                $tanggal      = $parsed->copy()->day($hari)->toDateString();
+            $dataGrafik = [];
+            for ($hari = 1; $hari <= $parsed->daysInMonth; $hari++) {
+                $tanggal = $parsed->copy()->day($hari)->toDateString();
                 $dataGrafik[] = [
                     'tanggal' => $tanggal,
                     'hari'    => $hari,
-                    'jumlah'  => $dikelompokkan[$tanggal] ?? 0,
+                    'jumlah'  => (double) ($grouped[$tanggal] ?? 0),
                 ];
             }
 
@@ -157,7 +117,7 @@ class KeuanganController extends Controller
                 'success' => true,
                 'message' => 'Data grafik keuangan berhasil diambil.',
                 'data'    => [
-                    'bulan'       => $bulan,
+                    'bulan'       => $bulanQuery,
                     'per_tanggal' => $dataGrafik,
                 ],
             ], 200);
@@ -168,48 +128,41 @@ class KeuanganController extends Controller
     }
 
     // ============================================================
-    // 3. GET /api/keuangan/mutasi?bulan=2025-05&tahun=2025&page=1
-    // Daftar mutasi pengeluaran, dikelompokkan per tanggal
-    // Filter: bulan (1-12 atau 0=semua) & tahun (0=semua)
+    // 3. MUTASI (dengan filter bulan & tahun opsional)
     // ============================================================
     public function mutasi(Request $request): JsonResponse
     {
         try {
             $idPengguna = $this->idPengguna($request);
+            $bulan = $request->query('bulan');
+            $tahun = $request->query('tahun');
 
-            $bulan = (int) $request->query('bulan', 0);  // 0 = semua bulan
-            $tahun = (int) $request->query('tahun', 0);  // 0 = semua tahun
+            $query = Keuangan::where('Id_User', $idPengguna);
 
-            $query = Keuangan::where('id_pengguna', $idPengguna)
-                ->orderBy('tanggal', 'desc')
-                ->orderBy('waktu', 'desc');
-
-            // Filter bulan & tahun sesuai pilihan di Flutter
-            if ($tahun > 0) {
-                $query->whereYear('tanggal', $tahun);
-            }
-            if ($bulan > 0) {
-                $query->whereMonth('tanggal', $bulan);
+            if ($bulan && $tahun) {
+                // Buat tanggal awal dan akhir bulan
+                $date = Carbon::createFromDate((int) $tahun, (int) $bulan, 1);
+                $startDate = $date->copy()->startOfMonth()->toDateString();
+                $endDate = $date->copy()->endOfMonth()->toDateString();
+                $query->whereBetween('Tanggal', [$startDate, $endDate]);
             }
 
-            $data = $query->paginate(20);
+            $transaksis = $query->orderBy('Tanggal', 'desc')
+                                ->orderBy('Waktu', 'desc')
+                                ->get();
 
-            // Format & kelompokkan per tanggal (seperti tampilan Flutter)
-            $dikelompokkan = collect($data->items())
-                ->groupBy(fn($item) => $this->labelTanggal($item->tanggal))
+            $dikelompokkan = $transaksis
+                ->groupBy(fn($item) => $this->labelTanggal($item['Tanggal']))
                 ->map(fn($items, $label) => [
-                    'tanggal'         => $label,
-                    'total_keluar'    => $items->where('is_debit', true)->sum('jumlah'),
-                    'transaksi'       => $items->map(fn($item) => $this->formatKeuangan($item))->values(),
+                    'tanggal_label' => $label,
+                    'total_keluar'  => (double) $items->sum('Total_Pengeluaran'),
+                    'transaksi'     => $items->map(fn($item) => $this->formatKeuangan($item))->values(),
                 ])->values();
 
             return response()->json([
-                'success'      => true,
-                'message'      => 'Data mutasi keuangan berhasil diambil.',
-                'data'         => $dikelompokkan,
-                'halaman'      => $data->currentPage(),
-                'total_halaman' => $data->lastPage(),
-                'total_data'   => $data->total(),
+                'success' => true,
+                'message' => 'Data mutasi berhasil diambil.',
+                'data'    => $dikelompokkan,
             ], 200);
 
         } catch (\Exception $e) {
@@ -218,22 +171,20 @@ class KeuanganController extends Controller
     }
 
     // ============================================================
-    // 4. GET /api/keuangan/{id}
-    // Detail satu transaksi keuangan berdasarkan ID
+    // 4. DETAIL
     // ============================================================
     public function detail(Request $request, string $id): JsonResponse
     {
         try {
             $idPengguna = $this->idPengguna($request);
-
-            $transaksi = Keuangan::where('id_pengguna', $idPengguna)
-                ->where('_id', $id)
+            $transaksi = Keuangan::where('Id_User', $idPengguna)
+                ->where('_id', new ObjectId($id))
                 ->first();
 
             if (!$transaksi) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Data transaksi tidak ditemukan.',
+                    'message' => 'Transaksi tidak ditemukan.',
                 ], 404);
             }
 
@@ -242,61 +193,62 @@ class KeuanganController extends Controller
                 'message' => 'Detail transaksi berhasil diambil.',
                 'data'    => $this->formatKeuangan($transaksi),
             ], 200);
-
         } catch (\Exception $e) {
             return $this->serverError($e);
         }
     }
 
     // ============================================================
-    // Helper: label tanggal relatif (Hari ini, Kemarin, tgl bulan)
-    // Sesuai tampilan grup mutasi di Flutter
+    // HELPER
     // ============================================================
     private function labelTanggal(string $tanggal): string
     {
-        $tgl   = Carbon::parse($tanggal)->startOfDay();
-        $hari  = Carbon::now()->startOfDay();
+        $tgl = Carbon::parse($tanggal)->startOfDay();
+        $hariIni = Carbon::now()->startOfDay();
 
-        if ($tgl->equalTo($hari)) {
+        if ($tgl->equalTo($hariIni)) {
             return 'Hari ini';
-        } elseif ($tgl->equalTo($hari->copy()->subDay())) {
+        } elseif ($tgl->equalTo($hariIni->copy()->subDay())) {
             return 'Kemarin';
         } elseif ($tgl->year === Carbon::now()->year) {
-            return $tgl->translatedFormat('j M'); // "14 Mei"
+            return $tgl->translatedFormat('j M');
         } else {
-            return $tgl->translatedFormat('j M Y'); // "20 Des 2024"
+            return $tgl->translatedFormat('j M Y');
         }
     }
 
-    // ============================================================
-    // Helper: format data keuangan ke response JSON
-    // Sesuai field _Transaction di Flutter
-    // ============================================================
     private function formatKeuangan(Keuangan $keuangan): array
     {
+        $jenisMapping = ['Masak' => 'cook', 'Beli' => 'food'];
+        $jenis = $jenisMapping[$keuangan->Jenis_Pengeluaran] ?? 'food';
+
+        $detail = $keuangan->Detail_Beli;
+        $judul = '';
+        $keterangan = '';
+        if ($detail && is_array($detail) && count($detail) > 0) {
+            $judul = $detail[0]['nama'] ?? 'Transaksi';
+            $keterangan = count($detail) . ' item';
+        } else {
+            $judul = $keuangan->Jenis_Pengeluaran == 'Masak' ? 'Masak sendiri' : 'Beli di luar';
+            $keterangan = '';
+        }
+
+        $tanggalParsed = Carbon::parse($keuangan->Tanggal);
+
         return [
-            '_id'              => $keuangan->_id,
-            'judul'            => $keuangan->judul,            // title di Flutter
-            'keterangan'       => $keuangan->keterangan,       // subtitle di Flutter
-            'waktu'            => $keuangan->waktu,            // time di Flutter
-            'tanggal'          => $keuangan->tanggal,          // date di Flutter
-            'jumlah'           => $keuangan->jumlah,           // amount di Flutter
-            'is_debit'         => $keuangan->is_debit,         // isDebit di Flutter
-            'jenis_pengeluaran' => $keuangan->jenis_pengeluaran, // category di Flutter
-            // Nilai category Flutter:
-            // 'Masak Sendiri' → cook (hijau)
-            // 'Beli di Luar'  → food (orange)
-            // 'Belanja Bahan' → grocery (biru)
-            // 'Pengisian Budget' → topup (ungu)
-            // 'Refund'        → refund (hijau muda)
-            'bulan'            => $keuangan->bulan,
-            'tahun'            => $keuangan->tahun,
+            '_id'               => (string) $keuangan->_id,
+            'judul'             => $judul,
+            'keterangan'        => $keterangan,
+            'waktu'             => $keuangan->Waktu,
+            'tanggal'           => $keuangan->Tanggal,
+            'jumlah'            => (double) $keuangan->Total_Pengeluaran,
+            'is_debit'          => true,
+            'jenis_pengeluaran' => $jenis,
+            'bulan'             => (int) $tanggalParsed->month,
+            'tahun'             => (int) $tanggalParsed->year,
         ];
     }
 
-    // ============================================================
-    // Helper: response error 500 jika terjadi kendala server
-    // ============================================================
     private function serverError(\Exception $e): JsonResponse
     {
         return response()->json([

@@ -5,20 +5,19 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  // Ubah bagian ini menjadi dinamis
+  // Base URL dinamis berdasarkan platform
   static String get baseUrl {
     if (kIsWeb) {
-      return 'http://127.0.0.1:8000/api'; // Untuk Edge / Chrome
+      return 'http://127.0.0.1:8000/api';
     } else if (Platform.isAndroid) {
-      return 'http://10.0.2.2:8000/api'; // Untuk Emulator Android
+      return 'http://10.0.2.2:8000/api';
     } else {
-      // Untuk HP Fisik (harus pakai IP Wi-Fi, contoh 192.168.1.16)
-      // Ganti IP ini sesuai dengan IP laptopmu saat testing di HP asli
+      // Ganti dengan IP laptop Anda untuk HP fisik
       return 'http://192.168.1.16:8000/api';
     }
   }
 
-  // Ambil token dari SharedPreferences (sama seperti AuthService)
+  // Ambil token dari SharedPreferences
   static Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('jwt_token');
@@ -33,7 +32,7 @@ class ApiService {
     };
   }
 
-  // ── GET ─────────────────────────────────────
+  // ── GENERIC METHODS ─────────────────────────────────────
   static Future<Map<String, dynamic>> get(String endpoint) async {
     try {
       final response = await http.get(
@@ -46,7 +45,6 @@ class ApiService {
     }
   }
 
-  // ── POST ────────────────────────────────────
   static Future<Map<String, dynamic>> post(
       String endpoint, Map<String, dynamic> body) async {
     try {
@@ -61,7 +59,6 @@ class ApiService {
     }
   }
 
-  // ── PUT ─────────────────────────────────────
   static Future<Map<String, dynamic>> put(
       String endpoint, Map<String, dynamic> body) async {
     try {
@@ -76,7 +73,6 @@ class ApiService {
     }
   }
 
-  // ── DELETE ───────────────────────────────────
   static Future<Map<String, dynamic>> delete(String endpoint) async {
     try {
       final response = await http.delete(
@@ -88,4 +84,15 @@ class ApiService {
       return {'success': false, 'message': 'Gagal terhubung ke server: $e'};
     }
   }
+
+  // ── HELPER METHODS UNTUK INVENTORY (optional, panggil generic di UI) ──
+  // Sebenarnya tidak perlu, tapi biar rapi bisa ditambahkan:
+  static Future<Map<String, dynamic>> getInventory() => get('/inventory');
+  static Future<Map<String, dynamic>> createStock(Map<String, dynamic> data) =>
+      post('/inventory', data);
+  static Future<Map<String, dynamic>> updateStock(
+          String id, Map<String, dynamic> data) =>
+      put('/inventory/$id', data);
+  static Future<Map<String, dynamic>> deleteStock(String id) =>
+      delete('/inventory/$id');
 }

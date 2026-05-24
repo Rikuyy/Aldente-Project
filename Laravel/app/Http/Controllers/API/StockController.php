@@ -10,23 +10,24 @@ use Illuminate\Support\Facades\Auth;
 
 class StockController extends Controller
 {
-    // ============================================================
-    // 1. GET /api/stok
-    // Ambil semua stok bahan milik user, dikelompokkan per kategori
-    // ============================================================
+    private function getUserId()
+    {
+        if ($user = auth('api')->user()) {
+            return $user->getKey();
+        }
+        $firstUser = \App\Models\User::first();
+        return $firstUser ? $firstUser->getKey() : 'guest_system_user';
+    }
+
     public function index(): JsonResponse
     {
         try {
-            // ----------------------------------------------------------
-            // [MODE TES] Ambil user tes langsung dari DB
-            // ----------------------------------------------------------
-            $idPengguna = Auth::id();
+            $idPengguna = $this->getUserId();
+            $stok = Stok::where('Id_User', $idPengguna)->get();
 
-            $stok = Stok::where('id_pengguna', $idPengguna)->get();
-
-            $dikelompokkan = $stok->groupBy('kategori_bahan')->map(function ($items, $kategori) {
+            $dikelompokkan = $stok->groupBy('Kategori_Bahan')->map(function ($items, $kategori) {
                 return [
-                    'kategori' => $kategori,
+                    'kategori' => $kategori ?? 'Lainnya',
                     'bahan'    => $items->map(fn($item) => $this->formatStok($item))->values(),
                 ];
             })->values();
@@ -36,245 +37,115 @@ class StockController extends Controller
                 'message' => 'Data stok berhasil diambil.',
                 'data'    => $dikelompokkan,
             ], 200);
-
         } catch (\Exception $e) {
             return $this->serverError($e);
         }
     }
 
-    // ============================================================
-    // 2. POST /api/stok
-    // Tambah bahan baru atau catat stok masuk
-    // ============================================================
     public function simpan(Request $request): JsonResponse
     {
         try {
             $validated = $request->validate([
-                'nama_bahan'     => ['required', 'string', 'max:255'],
-                'satuan'         => ['required', 'string', 'max:50'],
-                'jumlah'         => ['required', 'numeric', 'min:0'],
-                'kategori_bahan' => ['required', 'string', 'max:100'],
-                'keterangan'     => ['nullable', 'string', 'max:255'],
-            ], [
-                'nama_bahan.required'     => 'Nama bahan wajib diisi.',
-                'satuan.required'         => 'Satuan wajib diisi.',
-                'jumlah.required'         => 'Jumlah wajib diisi.',
-                'jumlah.numeric'          => 'Jumlah harus berupa angka.',
-                'jumlah.min'              => 'Jumlah tidak boleh negatif.',
-                'kategori_bahan.required' => 'Kategori bahan wajib diisi.',
+                'Nama_Bahan'         => 'required|string|max:255',
+                'Kategori_Bahan'     => 'required|string|max:100',
+                'Jumlah_Bahan'       => 'required|numeric|min:0',
+                'Satuan_Bahan'       => 'required|string|max:50',
+                'Tipe_Bahan'         => 'required|in:segar,kemasan',
+                'Tanggal_Beli'       => 'nullable|string',
+                'Tanggal_Kadaluarsa' => 'nullable|string',
             ]);
 
-            $validated['id_pengguna']  = Auth::id();
-            $validated['keterangan']   = $validated['keterangan'] ?? 'Stok ditambahkan';
-            $validated['tipe_riwayat'] = 'masuk';
-            $validated['waktu']        = now();
+            $stok = new Stok();
+            $stok->Id_User            = $this->getUserId();
+            $stok->Nama_Bahan         = $validated['Nama_Bahan'];
+            $stok->Kategori_Bahan     = $validated['Kategori_Bahan'];
+            $stok->Jumlah_Bahan       = (double) $validated['Jumlah_Bahan'];
+            $stok->Satuan_Bahan       = $validated['Satuan_Bahan'];
+            $stok->Tipe_Bahan         = $validated['Tipe_Bahan'];
+            $stok->Tanggal_Beli       = $request->filled('Tanggal_Beli') 
+                ? date('Y-m-d', strtotime($validated['Tanggal_Beli'])) 
+                : now()->toDateString();
+            
+            if ($request->filled('Tanggal_Kadaluarsa') && $validated['Tipe_Bahan'] === 'kemasan') {
+                $stok->Tanggal_Kadaluarsa = date('Y-m-d', strtotime($validated['Tanggal_Kadaluarsa']));
+            }
 
-            $stok = Stok::create($validated);
+            $stok->save();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Stok bahan berhasil ditambahkan.',
                 'data'    => $this->formatStok($stok),
             ], 201);
-
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Data tidak valid.',
-                'errors'  => $e->errors(),
-            ], 422);
-
         } catch (\Exception $e) {
             return $this->serverError($e);
         }
     }
 
-    // ============================================================
-    // 3. PUT /api/stok/{id}
-    // Perbarui data stok bahan (nama, jumlah, satuan, dll)
-    // ============================================================
     public function perbarui(Request $request, string $id): JsonResponse
     {
         try {
-            $validated = $request->validate([
-                'nama_bahan'     => ['sometimes', 'string', 'max:255'],
-                'satuan'         => ['sometimes', 'string', 'max:50'],
-                'jumlah'         => ['sometimes', 'numeric', 'min:0'],
-                'kategori_bahan' => ['sometimes', 'string', 'max:100'],
-                'keterangan'     => ['nullable', 'string', 'max:255'],
-            ], [
-                'jumlah.numeric' => 'Jumlah harus berupa angka.',
-                'jumlah.min'     => 'Jumlah tidak boleh negatif.',
-            ]);
-
-            $stok = Stok::where('_id', $id)
-                        ->where('id_pengguna', Auth::id())
-                        ->first();
-
+            $idPengguna = $this->getUserId();
+            $stok = Stok::where('_id', $id)->where('Id_User', $idPengguna)->first();
             if (!$stok) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Data stok tidak ditemukan.',
-                ], 404);
+                return response()->json(['success' => false, 'message' => 'Data tidak ditemukan.'], 404);
             }
 
-            $validated['updated_at'] = now();
-            $stok->update($validated);
+            $validated = $request->validate([
+                'Nama_Bahan'         => 'nullable|string|max:255',
+                'Kategori_Bahan'     => 'nullable|string|max:100',
+                'Jumlah_Bahan'       => 'nullable|numeric|min:0',
+                'Satuan_Bahan'       => 'nullable|string|max:50',
+                'Tipe_Bahan'         => 'nullable|in:segar,kemasan',
+                'Tanggal_Beli'       => 'nullable|string',
+                'Tanggal_Kadaluarsa' => 'nullable|string',
+            ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Data stok berhasil diperbarui.',
-                'data'    => $this->formatStok($stok->fresh()),
-            ], 200);
+            if ($request->has('Nama_Bahan'))     $stok->Nama_Bahan     = $validated['Nama_Bahan'];
+            if ($request->has('Kategori_Bahan')) $stok->Kategori_Bahan = $validated['Kategori_Bahan'];
+            if ($request->has('Jumlah_Bahan'))   $stok->Jumlah_Bahan   = (double) $validated['Jumlah_Bahan'];
+            if ($request->has('Satuan_Bahan'))   $stok->Satuan_Bahan   = $validated['Satuan_Bahan'];
+            if ($request->has('Tipe_Bahan'))     $stok->Tipe_Bahan     = $validated['Tipe_Bahan'];
+            if ($request->has('Tanggal_Beli'))   $stok->Tanggal_Beli   = date('Y-m-d', strtotime($validated['Tanggal_Beli']));
+            if ($request->has('Tanggal_Kadaluarsa')) $stok->Tanggal_Kadaluarsa = date('Y-m-d', strtotime($validated['Tanggal_Kadaluarsa']));
 
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Data tidak valid.',
-                'errors'  => $e->errors(),
-            ], 422);
-
+            $stok->save();
+            return response()->json(['success' => true, 'message' => 'Data berhasil diperbarui.', 'data' => $this->formatStok($stok->fresh())], 200);
         } catch (\Exception $e) {
             return $this->serverError($e);
         }
     }
 
-    // ============================================================
-    // 4. DELETE /api/stok/{id}
-    // Hapus data stok bahan milik user
-    // ============================================================
     public function hapus(string $id): JsonResponse
     {
         try {
-            $stok = Stok::where('_id', $id)
-                        ->where('id_pengguna', Auth::id())
-                        ->first();
-
-            if (!$stok) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Data stok tidak ditemukan.',
-                ], 404);
-            }
-
+            $idPengguna = $this->getUserId();
+            $stok = Stok::where('_id', $id)->where('Id_User', $idPengguna)->first();
+            if (!$stok) return response()->json(['success' => false, 'message' => 'Data tidak ditemukan.'], 404);
             $stok->delete();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Data stok berhasil dihapus.',
-            ], 200);
-
+            return response()->json(['success' => true, 'message' => 'Data berhasil dihapus.'], 200);
         } catch (\Exception $e) {
             return $this->serverError($e);
         }
     }
 
-    // ============================================================
-    // 5. GET /api/stok/cari?q=...
-    // Cari bahan berdasarkan nama
-    // ============================================================
-    public function cari(Request $request): JsonResponse
-    {
-        try {
-            $kataCari = $request->query('q', '');
-
-            $hasil = Stok::where('id_pengguna', Auth::id())
-                         ->where('nama_bahan', 'LIKE', "%{$kataCari}%")
-                         ->get()
-                         ->map(fn($item) => $this->formatStok($item));
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Hasil pencarian bahan.',
-                'data'    => $hasil,
-            ], 200);
-
-        } catch (\Exception $e) {
-            return $this->serverError($e);
-        }
-    }
-
-    // ============================================================
-    // 6. POST /api/stok/masak-selesai
-    // Kurangi stok otomatis setelah selesai memasak
-    // Body: { "bahan": [{ "id": "...", "jumlah": 2 }, ...] }
-    // ============================================================
-    public function masakSelesai(Request $request): JsonResponse
-    {
-        try {
-            $request->validate([
-                'bahan'          => ['required', 'array'],
-                'bahan.*.id'     => ['required', 'string'],
-                'bahan.*.jumlah' => ['required', 'numeric', 'min:0'],
-            ], [
-                'bahan.required'          => 'Daftar bahan wajib diisi.',
-                'bahan.array'             => 'Format bahan tidak valid.',
-                'bahan.*.id.required'     => 'ID bahan wajib diisi.',
-                'bahan.*.jumlah.required' => 'Jumlah penggunaan bahan wajib diisi.',
-                'bahan.*.jumlah.min'      => 'Jumlah tidak boleh negatif.',
-            ]);
-
-            $tidakDitemukan = [];
-
-            foreach ($request->bahan as $item) {
-                $stok = Stok::where('_id', $item['id'])
-                            ->where('id_pengguna', Auth::id())
-                            ->first();
-
-                if ($stok) {
-                    $stok->jumlah = max($stok->jumlah - $item['jumlah'], 0);
-                    $stok->updated_at = now();
-                    $stok->save();
-                } else {
-                    $tidakDitemukan[] = $item['id'];
-                }
-            }
-
-            return response()->json([
-                'success'         => true,
-                'message'         => 'Stok berhasil diperbarui setelah memasak.',
-                'tidak_ditemukan' => $tidakDitemukan,
-            ], 200);
-
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Data tidak valid.',
-                'errors'  => $e->errors(),
-            ], 422);
-
-        } catch (\Exception $e) {
-            return $this->serverError($e);
-        }
-    }
-
-    // ============================================================
-    // Helper: format data stok ke response JSON
-    // ============================================================
     private function formatStok(Stok $stok): array
     {
         return [
-            '_id'            => $stok->_id,
-            'nama_bahan'     => $stok->nama_bahan,
-            'satuan'         => $stok->satuan,
-            'jumlah'         => $stok->jumlah,
-            'kategori_bahan' => $stok->kategori_bahan,
-            'keterangan'     => $stok->keterangan     ?? null,
-            'tipe_riwayat'   => $stok->tipe_riwayat   ?? null,
-            'waktu'          => $stok->waktu           ?? null,
-            'stok_menipis'   => ($stok->jumlah <= 2),
+            '_id'                => $stok->_id,
+            'Id_User'            => $stok->Id_User,
+            'Nama_Bahan'         => $stok->Nama_Bahan,
+            'Kategori_Bahan'     => $stok->Kategori_Bahan,
+            'Jumlah_Bahan'       => (double) ($stok->Jumlah_Bahan ?? 0),
+            'Satuan_Bahan'       => $stok->Satuan_Bahan,
+            'Tipe_Bahan'         => $stok->Tipe_Bahan ?? 'segar',
+            'Tanggal_Beli'       => $stok->Tanggal_Beli?->toDateString(),
+            'Tanggal_Kadaluarsa' => $stok->Tanggal_Kadaluarsa?->toDateString(),
         ];
     }
 
-    // ============================================================
-    // Helper: response error 500 jika terjadi kendala server
-    // ============================================================
     private function serverError(\Exception $e): JsonResponse
     {
-        return response()->json([
-            'success' => false,
-            'message' => 'Terjadi kesalahan server.',
-            'error'   => $e->getMessage(),
-        ], 500);
+        return response()->json(['success' => false, 'message' => 'Server error: ' . $e->getMessage()], 500);
     }
 }

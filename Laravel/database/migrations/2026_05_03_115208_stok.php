@@ -19,7 +19,7 @@ return new class extends Migration
             $table->double('Jumlah_Bahan');
             $table->string('Satuan_Bahan');
             $table->date('Tanggal_Beli');
-            $table->date('Tanggal Kadaluarsa');
+            $table->date('Tanggal_Kadaluarsa');
             $table->timestamps();
 });
     }
