@@ -252,9 +252,9 @@ static const _stockReminders = [
                                 Text('Rp 450.000', style: TextStyle(color: Color(0xFFE2E8F0), fontSize: 20, fontWeight: FontWeight.w700)),
                               ]),
                               Row(children: [
-                                _FinanceStat(label: 'Keluar', value: 'Rp 50k', color: AppTheme.red400),
+                                const _FinanceStat(label: 'Keluar', value: 'Rp 50k', color: AppTheme.red400),
                                 const SizedBox(width: 12),
-                                _FinanceStat(label: 'Masuk', value: 'Rp 500k', color: AppTheme.green500),
+                                const _FinanceStat(label: 'Masuk', value: 'Rp 500k', color: AppTheme.green500),
                                 const SizedBox(width: 12),
                                 Container(
                                   padding: const EdgeInsets.all(8),
