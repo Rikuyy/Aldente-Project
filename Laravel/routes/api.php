@@ -31,8 +31,12 @@ Route::prefix('auth')->group(function () {
     });
 });
 
+<<<<<<< HEAD
 // Consultation tanpa auth (jika diperlukan)
 Route::post('/consultation', [ConsultationController::class, 'send']);
+=======
+Route::post('/consultation', [ConsultationController::class, 'send']); // guest dan konsultasi belum login tetap bisa akses (menggunakan JWT opsional, untuk dapat konteks lebih kaya jika login)
+>>>>>>> 3dce3ded2007c2340c53492b0ffca3ec2144b212
 
 // ── PROTECTED ROUTES (Wajib Login & Menggunakan JWT) ─────────────
 Route::middleware('auth:api')->group(function () {
@@ -45,6 +49,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/budget', [ApiDashboardController::class, 'setBudget']);
     });
 
+<<<<<<< HEAD
     // Inventory
     Route::prefix('inventory')->group(function () {
         Route::get('/', [StockController::class, 'index']);
@@ -52,6 +57,14 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/', [StockController::class, 'simpan']);
         Route::put('/{id}', [StockController::class, 'perbarui']);
         Route::delete('/{id}', [StockController::class, 'hapus']);
+=======
+    Route::prefix('stok')->group(function () { 
+        Route::get('/',               [StockController::class, 'index']);
+        Route::get('/cari',           [StockController::class, 'cari']);
+        Route::post('/',              [StockController::class, 'simpan']);
+        Route::put('/{id}',           [StockController::class, 'perbarui']);
+        Route::delete('/{id}',        [StockController::class, 'hapus']);
+>>>>>>> 3dce3ded2007c2340c53492b0ffca3ec2144b212
         Route::post('/masak-selesai', [StockController::class, 'masakSelesai']);
     });
 
@@ -71,6 +84,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/evaluasi', [ChatbotController::class, 'evaluasi']);
     });
 
+<<<<<<< HEAD
     // Profil User (termasuk verifikasi password)
     Route::prefix('profile')->group(function () {
         Route::get('/', [UserProfileController::class, 'index']);
@@ -84,10 +98,44 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/onboarding', [UserProfileController::class, 'saveOnboarding']);
 
     // Keuangan
+=======
+    Route::put('/profile',          [UserProfileController::class, 'saveOnboarding']); // Simpan data onboarding user (kategori favorit, alergi, dll)
+}); 
+ 
+    Route::prefix('keuangan')->group(function () {
+        Route::get('/ringkasan', [KeuanganController::class, 'ringkasan']);
+        Route::get('/grafik',    [KeuanganController::class, 'grafik']);
+        Route::get('/mutasi',    [KeuanganController::class, 'mutasi']);
+        // Ringkasan bulan: total, rata2, prediksi, komposisi
+        Route::get('/ringkasan', [KeuanganController::class, 'ringkasan']);
+        // Data grafik tren harian
+        Route::get('/grafik',    [KeuanganController::class, 'grafik']);
+        // List mutasi (pagination)
+        Route::get('/mutasi',    [KeuanganController::class, 'mutasi']);
+        // Detail 1 transaksi
+        Route::get('/{id}',      [KeuanganController::class, 'detail']);
+>>>>>>> 3dce3ded2007c2340c53492b0ffca3ec2144b212
     Route::prefix('keuangan')->group(function () {
         Route::get('/ringkasan', [KeuanganController::class, 'ringkasan']);
         Route::get('/grafik', [KeuanganController::class, 'grafik']);
         Route::get('/mutasi', [KeuanganController::class, 'mutasi']);
         Route::get('/{id}', [KeuanganController::class, 'detail']);
     });
+<<<<<<< HEAD
 });
+=======
+
+    Route::prefix('profile')->group(function () {
+        Route::get('/', [ProfileController::class, 'show']);
+        Route::put('/', [ProfileController::class, 'update']); 
+    });
+});
+// Konsultasi, gunakan salah satu dari dua route berikut://
+//Route::middleware('auth:sanctum')->group(function () {
+    //Route::post('/consultation/send', [ConsultationController::class, 'send'])
+        //->name('consultation.send');
+//});
+Route::post('/consultation/send', [ConsultationController::class, 'send'])
+    ->name('consultation.send');
+//============//
+>>>>>>> 3dce3ded2007c2340c53492b0ffca3ec2144b212

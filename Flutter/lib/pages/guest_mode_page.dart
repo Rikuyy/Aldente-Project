@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import 'dart:convert'; // ← tambahkan import ini
+=======
+import 'dart:convert';
+>>>>>>> 3dce3ded2007c2340c53492b0ffca3ec2144b212
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
@@ -20,8 +24,6 @@ class _GuestModePageState extends State<GuestModePage> {
   bool _isLoading = false;
   int _botMessageCount = 0;
 
-  static const String _baseUrl = 'http://127.0.0.1:8000/api';
-
   @override
   void initState() {
     super.initState();
@@ -42,7 +44,6 @@ class _GuestModePageState extends State<GuestModePage> {
     final userMessage = text.trim();
     if (userMessage.isEmpty || _isLoading) return;
 
-    // ✅ Ambil history SEBELUM setState
     final historyToSend = _messages
         .where((m) => m.status != MessageStatus.loading)
         .map((m) => {'role': m.isUser ? 'user' : 'model', 'text': m.text})
@@ -58,7 +59,7 @@ class _GuestModePageState extends State<GuestModePage> {
 
     try {
       final response = await http.post(
-        Uri.parse('$_baseUrl/consultation'),
+        Uri.parse('${ApiService.baseUrl}/consultation'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -67,7 +68,7 @@ class _GuestModePageState extends State<GuestModePage> {
           'message': userMessage,
           'history': historyToSend,
           'context': {
-            'nama': 'Tamu',
+            'nama': 'Cookmate',
             'stokBahan': [],
             'sisaBudget': 0,
             'totalBudget': 0,
