@@ -1,5 +1,3 @@
-// lib/models/finance_model.dart
-
 class FinanceRingkasanModel {
   final double saldo;
   final double totalPemasukan;
@@ -85,6 +83,10 @@ class FinanceMutasiModel {
   final double jumlah;
   final bool isDebit;
   final String jenisPengeluaran;
+  // tambahan dari jadwal makan
+  final String sesiMakan;
+  final String namaResep;
+  final String resepId;
 
   FinanceMutasiModel({
     required this.id,
@@ -95,18 +97,24 @@ class FinanceMutasiModel {
     required this.jumlah,
     required this.isDebit,
     required this.jenisPengeluaran,
+    required this.sesiMakan,
+    required this.namaResep,
+    required this.resepId,
   });
 
   factory FinanceMutasiModel.fromJson(Map<String, dynamic> json) {
     return FinanceMutasiModel(
       id: json['_id'] ?? '',
-      judul: json['judul'] ?? 'Pengeluaran',
+      judul: json['judul'] ?? 'Transaksi',
       keterangan: json['keterangan'] ?? '',
       waktu: json['waktu'] ?? '00:00',
       tanggal: json['tanggal'] ?? '',
       jumlah: (json['jumlah'] ?? 0).toDouble(),
       isDebit: json['is_debit'] ?? true,
-      jenisPengeluaran: json['jenis_pengeluaran'] ?? '',
+      jenisPengeluaran: json['jenis_pengeluaran'] ?? 'food',
+      sesiMakan: json['sesi_makan'] ?? '',
+      namaResep: json['nama_resep'] ?? '',
+      resepId: json['resep_id'] ?? '',
     );
   }
 }
@@ -114,20 +122,24 @@ class FinanceMutasiModel {
 class GroupedMutasi {
   final String tanggalLabel;
   final double totalKeluar;
+  final double totalMasuk;
   final List<FinanceMutasiModel> transaksi;
 
-  GroupedMutasi(
-      {required this.tanggalLabel,
-      required this.totalKeluar,
-      required this.transaksi});
+  GroupedMutasi({
+    required this.tanggalLabel,
+    required this.totalKeluar,
+    required this.totalMasuk,
+    required this.transaksi,
+  });
 
   factory GroupedMutasi.fromJson(Map<String, dynamic> json) {
     var list = json['transaksi'] as List? ?? [];
     List<FinanceMutasiModel> txList =
         list.map((i) => FinanceMutasiModel.fromJson(i)).toList();
     return GroupedMutasi(
-      tanggalLabel: json['tanggal_label'] ?? '', // ← ganti dari json['tanggal']
+      tanggalLabel: json['tanggal_label'] ?? '',
       totalKeluar: (json['total_keluar'] ?? 0).toDouble(),
+      totalMasuk: (json['total_masuk'] ?? 0).toDouble(),
       transaksi: txList,
     );
   }

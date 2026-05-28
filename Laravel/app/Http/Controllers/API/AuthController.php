@@ -1,5 +1,4 @@
 <?php
-// AuthController.php (FULL dengan perubahan checkNeedsOnboarding)
 
 namespace App\Http\Controllers\API;
 
@@ -64,24 +63,42 @@ class AuthController extends Controller
     }
 
     /**
-     * LOGIN - menentukan needs_onboarding berdasarkan kelengkapan data
+     * LOGIN - menggunakan username (case-insensitive) untuk MongoDB
      */
     public function login(Request $request)
     {
-        $credentials = [
-            'Email'    => strtolower($request->email),
-            'password' => $request->password
-        ];
+        $validator = Validator::make($request->all(), [
+            'username' => 'required|string',
+            'password' => 'required|string|min:6',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors'  => $validator->errors()
+            ], 422);
+        }
+
+        // Query MongoDB dengan regex case-insensitive
+        $user = User::where('Username', 'regex', '/' . preg_quote($request->username, '/') . '/i')->first();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Username tidak ditemukan'
+            ], 401);
+        }
+
+        if (!Hash::check($request->password, $user->Password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Password salah'
+            ], 401);
+        }
 
         try {
-            if (!$token = auth('api')->attempt($credentials)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Email atau password salah'
-                ], 401);
-            }
-
-            $user = auth('api')->user();
+            $token = JWTAuth::fromUser($user);
             $needsOnboarding = $this->checkNeedsOnboarding($user);
 
             return response()->json([
@@ -91,7 +108,6 @@ class AuthController extends Controller
                 'needs_onboarding' => $needsOnboarding,
                 'user'             => $user
             ], 200);
-
         } catch (JWTException $e) {
             return response()->json([
                 'success' => false,
@@ -102,28 +118,24 @@ class AuthController extends Controller
     }
 
     /**
-     * Cek apakah user perlu onboarding (data wajib belum lengkap)
-     * Perubahan: Kategori minimal 2, Alergi tidak dicek (boleh null)
+     * Cek apakah user perlu onboarding (data wajib lengkap)
+     * - Kategori_Favorit minimal 2
+     * - Budget_Bulanan > 0
+     * - Jumlah_Makan antara 2-4
      */
     private function checkNeedsOnboarding($user): bool
     {
-        // 1. Kategori_Favorit harus array minimal 2
         $kategori = $user->Kategori_Favorit ?? [];
         if (!is_array($kategori) || count($kategori) < 2) {
             return true;
         }
 
-        // 2. Alergi tidak perlu dicek (null = tidak ada alergi, dianggap lengkap)
-        //    Hapus pengecekan $user->Alergi === null
-
-        // 3. Budget_Bulanan harus > 0
-        $budget = $user->Budget_Bulanan ?? 0;
+        $budget = (float) ($user->Budget_Bulanan ?? 0);
         if ($budget <= 0) {
             return true;
         }
 
-        // 4. Jumlah_Makan harus antara 2-4
-        $jumlahMakan = $user->Jumlah_Makan ?? 0;
+        $jumlahMakan = (int) ($user->Jumlah_Makan ?? 0);
         if ($jumlahMakan < 2 || $jumlahMakan > 4) {
             return true;
         }
@@ -199,7 +211,7 @@ class AuthController extends Controller
     }
 
     /**
-     * VERIFY OTP 
+     * VERIFY OTP
      */
     public function verifyOtp(Request $request)
     {

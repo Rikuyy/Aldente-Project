@@ -14,7 +14,7 @@ class SignInScreen extends StatefulWidget {
 
 class _SignInScreenState extends State<SignInScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _usernameController = TextEditingController(); // Ganti dari email
   final _passwordController = TextEditingController();
   final AuthService _authService = AuthService();
 
@@ -27,7 +27,7 @@ class _SignInScreenState extends State<SignInScreen> {
     setState(() => _isLoading = true);
 
     final response = await _authService.login(
-      _emailController.text.trim(),
+      _usernameController.text.trim(), // Kirim username
       _passwordController.text,
     );
 
@@ -51,7 +51,8 @@ class _SignInScreenState extends State<SignInScreen> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text(response['message'] ?? "Email atau password salah"),
+            content:
+                Text(response['message'] ?? "Username atau password salah"),
             backgroundColor: Colors.red),
       );
     }
@@ -92,7 +93,7 @@ class _SignInScreenState extends State<SignInScreen> {
                     ),
                   ),
                   const Text(
-                    "Masuk dengan email dan password Anda \natau lanjutkan dengan media sosial",
+                    "Masuk dengan username dan password Anda \natau lanjutkan dengan media sosial",
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Color(0xFF757575)),
                   ),
@@ -102,11 +103,11 @@ class _SignInScreenState extends State<SignInScreen> {
                     child: Column(
                       children: [
                         TextFormField(
-                          controller: _emailController,
-                          keyboardType: TextInputType.emailAddress,
+                          controller: _usernameController,
+                          keyboardType: TextInputType.text,
                           decoration: InputDecoration(
-                            labelText: "Email",
-                            hintText: "Masukkan email Anda",
+                            labelText: "Username",
+                            hintText: "Masukkan username Anda",
                             floatingLabelBehavior: FloatingLabelBehavior.always,
                             contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 42, vertical: 20),
@@ -115,16 +116,16 @@ class _SignInScreenState extends State<SignInScreen> {
                             border: authOutlineInputBorder,
                             suffixIcon: Padding(
                               padding: const EdgeInsets.fromLTRB(0, 20, 20, 20),
-                              child: SvgPicture.string(mailIcon),
+                              child:
+                                  Icon(Icons.person, color: Color(0xFF757575)),
                             ),
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Email tidak boleh kosong';
+                              return 'Username tidak boleh kosong';
                             }
-                            if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                                .hasMatch(value)) {
-                              return 'Masukkan email yang valid';
+                            if (value.length < 3) {
+                              return 'Username minimal 3 karakter';
                             }
                             return null;
                           },
@@ -244,6 +245,3 @@ class NoAccountText extends StatelessWidget {
     );
   }
 }
-
-const mailIcon =
-    '''<svg width="18" height="13" viewBox="0 0 18 13" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M15.3576 3.39368C15.524 3.51336 15.625 3.70519 15.625 3.9103V10.7419C15.625 11.4552 15.011 12.0335 14.2541 12.0335H3.74591C2.98895 12.0335 2.375 11.4552 2.375 10.7419V3.9103C2.375 3.70519 2.47596 3.51336 2.64237 3.39368L8.41169 7.5401C8.76295 7.79255 9.23705 7.79255 9.58831 7.5401L15.3576 3.39368ZM3.74591 0.966431H14.2541C14.7709 0.966431 15.222 1.24075 15.4668 1.6508L9.00003 6.29828L2.5332 1.6508C2.77803 1.24075 3.22912 0.966431 3.74591 0.966431Z" fill="#757575"/></svg>''';

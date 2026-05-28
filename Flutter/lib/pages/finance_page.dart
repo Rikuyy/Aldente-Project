@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
@@ -36,7 +38,7 @@ class _FinancePageState extends State<FinancePage> {
     'September',
     'Oktober',
     'November',
-    'Desember',
+    'Desember'
   ];
 
   static const _yearOptions = [0, 2025, 2024, 2023];
@@ -50,16 +52,18 @@ class _FinancePageState extends State<FinancePage> {
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     try {
-      final now = DateTime.now();
-      final bulanQuery = '${now.year}-${now.month.toString().padLeft(2, '0')}';
+      const bulanQuery = '2026-05';
+      bool anyApiSuccess = false;
 
       final ringkasanResp =
           await ApiService.get('/keuangan/ringkasan?bulan=$bulanQuery');
       if (ringkasanResp['success'] == true) {
-        final ringkasanData = ringkasanResp['data']['data'];
-        _ringkasan = FinanceRingkasanModel.fromJson(ringkasanData);
+        _ringkasan =
+            FinanceRingkasanModel.fromJson(ringkasanResp['data']['data']);
+        anyApiSuccess = true;
+        print('✅ Ringkasan dari API');
       } else {
-        throw Exception(ringkasanResp['message'] ?? 'Gagal ambil ringkasan');
+        print('⚠️ Ringkasan API gagal');
       }
 
       final grafikResp =
@@ -68,15 +72,23 @@ class _FinancePageState extends State<FinancePage> {
         final perTanggal = grafikResp['data']['per_tanggal'] as List;
         _grafikData =
             perTanggal.map((j) => FinanceGrafikModel.fromJson(j)).toList();
+        anyApiSuccess = true;
+        print('✅ Grafik dari API');
       }
 
       await _loadMutasi();
+      if (_groupedMutasi.isNotEmpty) anyApiSuccess = true;
+
+      if (!anyApiSuccess) {
+        print('⚠️ Semua API gagal, fallback ke JSON lokal');
+        await _loadFromJson();
+      }
+
       setState(() => _isLoading = false);
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
+    } catch (e, stack) {
+      print('❌ Error _loadData: $e\n$stack');
+      await _loadFromJson();
+      setState(() => _isLoading = false);
     }
   }
 
@@ -97,15 +109,181 @@ class _FinancePageState extends State<FinancePage> {
         url += '?' + query.entries.map((e) => '${e.key}=${e.value}').join('&');
       }
       final resp = await ApiService.get(url);
-      if (resp['success'] == true) {
-        List list = resp['data'];
+      if (resp['success'] == true &&
+          resp['data'] != null &&
+          (resp['data'] as List).isNotEmpty) {
+        final List list = resp['data'];
         setState(() {
           _groupedMutasi = list.map((e) => GroupedMutasi.fromJson(e)).toList();
         });
+        print('✅ Mutasi dari API: ${_groupedMutasi.length} groups');
+      } else {
+        setState(() => _groupedMutasi = []);
+        print('⚠️ Mutasi API kosong');
       }
     } catch (e) {
-      print('Error load mutasi: $e');
+      print('❌ Error load mutasi: $e');
+      setState(() => _groupedMutasi = []);
     }
+  }
+
+  Future<void> _loadFromJson() async {
+    try {
+      final String jsonString =
+          await rootBundle.loadString('assets/keuangan.json');
+      final List<dynamic> jsonList = json.decode(jsonString);
+      List<FinanceMutasiModel> allTransaksi = [];
+
+      for (var item in jsonList) {
+        String id = '';
+        if (item['_id'] is Map) {
+          id = item['_id']['\$oid'] ?? '';
+        } else {
+          id = item['_id']?.toString() ?? '';
+        }
+
+        String rawTanggal = item['Tanggal'] ?? '';
+        String normalizedTanggal = _normalizeDate(rawTanggal);
+        String waktu = item['Waktu'] ?? '';
+        if (waktu.length == 5 && waktu.contains(':')) {
+          waktu = '$waktu:00';
+        }
+
+        String judul = '';
+        String keterangan = '';
+        var detail = item['Detail_Beli'];
+        if (detail != null && detail is List && detail.isNotEmpty) {
+          var first = detail[0];
+          judul = first['nama'] ?? 'Transaksi';
+          keterangan = '${detail.length} item';
+        } else {
+          judul = item['Jenis_Pengeluaran'] == 'Masak'
+              ? 'Masak sendiri'
+              : 'Beli di luar';
+          keterangan = '';
+        }
+
+        double jumlah = (item['Total_Pengeluaran'] ?? 0).toDouble();
+        String jenis = item['Jenis_Pengeluaran'] == 'Masak' ? 'cook' : 'food';
+
+        allTransaksi.add(FinanceMutasiModel(
+          id: id,
+          judul: judul,
+          keterangan: keterangan,
+          waktu: waktu,
+          tanggal: normalizedTanggal,
+          jumlah: jumlah,
+          isDebit: true,
+          jenisPengeluaran: jenis,
+          sesiMakan: '',
+          namaResep: '',
+          resepId: '',
+        ));
+      }
+
+      double totalPengeluaran = allTransaksi.fold(0, (s, t) => s + t.jumlah);
+      double budget = 3000000;
+      double saldo = budget - totalPengeluaran;
+      int hariDenganTransaksi =
+          allTransaksi.map((t) => t.tanggal).toSet().length;
+      double rataPerHari =
+          hariDenganTransaksi > 0 ? totalPengeluaran / hariDenganTransaksi : 0;
+      int daysInMonth = DateTime.now().day;
+      double prediksiAkhir = (totalPengeluaran / daysInMonth) * 30;
+      bool prediksiDefisit = prediksiAkhir > budget;
+      double totalMasak = allTransaksi
+          .where((t) => t.jenisPengeluaran == 'cook')
+          .fold(0, (s, t) => s + t.jumlah);
+      int persenMasak = totalPengeluaran > 0
+          ? ((totalMasak / totalPengeluaran) * 100).round()
+          : 0;
+
+      _ringkasan = FinanceRingkasanModel(
+        saldo: saldo,
+        totalPemasukan: budget,
+        totalPengeluaran: totalPengeluaran,
+        rataPerHari: rataPerHari,
+        prediksiAkhirBulan: prediksiAkhir,
+        prediksiDefisit: prediksiDefisit,
+        pesanPrediksi: prediksiDefisit ? "Diprediksi melebihi budget" : "Aman",
+        persenMasak: persenMasak,
+        komposisi: [
+          KomposisiKategori(
+              kategori: 'Masak Sendiri', jumlah: totalMasak, warna: 'orange'),
+          KomposisiKategori(
+              kategori: 'Beli di Luar',
+              jumlah: totalPengeluaran - totalMasak,
+              warna: 'blue'),
+        ],
+      );
+
+      Map<String, double> dailyMap = {};
+      for (var t in allTransaksi) {
+        dailyMap[t.tanggal] = (dailyMap[t.tanggal] ?? 0) + t.jumlah;
+      }
+      List<String> sortedDates = dailyMap.keys.toList()..sort();
+      _grafikData = [];
+      for (var date in sortedDates) {
+        int hari = _extractDayFromDate(date);
+        _grafikData.add(FinanceGrafikModel(
+          tanggal: date,
+          hari: hari,
+          jumlah: dailyMap[date]!,
+        ));
+      }
+
+      Map<String, List<FinanceMutasiModel>> grouped = {};
+      for (var t in allTransaksi) {
+        String label = _getLabelTanggal(t.tanggal);
+        grouped.putIfAbsent(label, () => []).add(t);
+      }
+      _groupedMutasi = grouped.entries
+          .map((e) => GroupedMutasi(
+                tanggalLabel: e.key,
+                totalKeluar: e.value.fold(0, (s, t) => s + t.jumlah),
+                totalMasuk: 0,
+                transaksi: e.value,
+              ))
+          .toList();
+
+      print('✅ Fallback JSON loaded: ${_groupedMutasi.length} groups');
+    } catch (e) {
+      print('❌ Error load JSON: $e');
+      setState(() => _error = 'Gagal load data keuangan: $e');
+    }
+  }
+
+  String _normalizeDate(String dateStr) {
+    try {
+      var parts = dateStr.split('-');
+      if (parts.length != 3) return dateStr;
+      int year = int.parse(parts[0]);
+      int month = int.parse(parts[1]);
+      int day = int.parse(parts[2]);
+      return '$year-${month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}';
+    } catch (e) {
+      return dateStr;
+    }
+  }
+
+  int _extractDayFromDate(String dateStr) {
+    try {
+      return DateTime.parse(dateStr).day;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  String _getLabelTanggal(String tanggalStr) {
+    DateTime tgl = DateTime.parse(tanggalStr);
+    DateTime now = DateTime.now();
+    if (tgl.year == now.year && tgl.month == now.month && tgl.day == now.day)
+      return 'Hari ini';
+    if (tgl.year == now.year &&
+        tgl.month == now.month &&
+        tgl.day == now.day - 1) return 'Kemarin';
+    if (tgl.year == now.year) return '${tgl.day} ${_monthOptions[tgl.month]}';
+    return '${tgl.day} ${_monthOptions[tgl.month]} ${tgl.year}';
   }
 
   void _applyFilter(String month, int year) {
@@ -128,6 +306,101 @@ class _FinancePageState extends State<FinancePage> {
         monthOptions: _monthOptions,
         yearOptions: _yearOptions,
         onSelect: _applyFilter,
+      ),
+    );
+  }
+
+  void _showPeriodPicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: context.colors.cardBackground,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (_) => _PeriodPicker(
+          current: _period, onSelect: (p) => setState(() => _period = p)),
+    );
+  }
+
+  Future<void> _showTopUpDialog() async {
+    final jumlahController = TextEditingController();
+    final keteranganController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Tambah Pemasukan'),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: jumlahController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Nominal (Rp)',
+                  border: OutlineInputBorder(),
+                  prefixText: 'Rp ',
+                ),
+                validator: (v) => v == null || v.isEmpty ? 'Isi nominal' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: keteranganController,
+                decoration: const InputDecoration(
+                  labelText: 'Keterangan (opsional)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Batal',
+                style: TextStyle(color: context.colors.textSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (formKey.currentState!.validate()) {
+                final jumlah = double.tryParse(jumlahController.text) ?? 0;
+                if (jumlah <= 0) return;
+                final keterangan = keteranganController.text.trim();
+                Navigator.pop(context);
+                setState(() => _isLoading = true);
+                try {
+                  final response =
+                      await ApiService.post('/keuangan/pemasukan', {
+                    'jumlah': jumlah,
+                    'keterangan': keterangan,
+                  });
+                  if (response['success'] == true) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('Pemasukan berhasil ditambahkan')),
+                    );
+                    await _loadData();
+                  } else {
+                    throw Exception(response['message'] ?? 'Gagal');
+                  }
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                        content: Text('Gagal: $e'),
+                        backgroundColor: Colors.red),
+                  );
+                  setState(() => _isLoading = false);
+                }
+              }
+            },
+            style:
+                ElevatedButton.styleFrom(backgroundColor: AppTheme.orange600),
+            child: const Text('Tambah'),
+          ),
+        ],
       ),
     );
   }
@@ -160,7 +433,21 @@ class _FinancePageState extends State<FinancePage> {
     if (_error.isNotEmpty) {
       return Scaffold(
         backgroundColor: context.colors.surface,
-        body: Center(child: Text('Error: $_error')),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+              const SizedBox(height: 16),
+              Text('Error: $_error'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _loadData,
+                child: const Text('Coba Lagi'),
+              ),
+            ],
+          ),
+        ),
       );
     }
     if (_ringkasan == null) return const SizedBox.shrink();
@@ -188,19 +475,33 @@ class _FinancePageState extends State<FinancePage> {
                   letterSpacing: -0.4),
             ),
             actions: [
+              // Tombol Topup
               GestureDetector(
-                onTap: () {
-                  showModalBottomSheet(
-                    context: context,
-                    backgroundColor: context.colors.cardBackground,
-                    shape: const RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.vertical(top: Radius.circular(24))),
-                    builder: (_) => _PeriodPicker(
-                        current: _period,
-                        onSelect: (p) => setState(() => _period = p)),
-                  );
-                },
+                onTap: _showTopUpDialog,
+                child: Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppTheme.green50,
+                    borderRadius: BorderRadius.circular(50),
+                    border: Border.all(color: AppTheme.green200),
+                  ),
+                  child: Row(children: [
+                    Icon(Icons.add_circle_rounded,
+                        size: 16, color: AppTheme.green600),
+                    const SizedBox(width: 4),
+                    Text('Topup',
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.green600)),
+                  ]),
+                ),
+              ),
+              // Tombol periode
+              GestureDetector(
+                onTap: _showPeriodPicker,
                 child: Container(
                   margin: const EdgeInsets.only(right: 16),
                   padding:
@@ -229,6 +530,7 @@ class _FinancePageState extends State<FinancePage> {
           ),
           SliverList(
             delegate: SliverChildListDelegate([
+              // Ringkasan saldo
               Container(
                 margin: const EdgeInsets.fromLTRB(20, 20, 20, 0),
                 padding: const EdgeInsets.all(22),
@@ -291,6 +593,7 @@ class _FinancePageState extends State<FinancePage> {
                 ),
               ),
               const SizedBox(height: 20),
+              // Summary chips
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
@@ -316,6 +619,7 @@ class _FinancePageState extends State<FinancePage> {
                 ),
               ),
               const SizedBox(height: 16),
+              // Prediksi warning
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 20),
                 padding: const EdgeInsets.all(16),
@@ -359,6 +663,7 @@ class _FinancePageState extends State<FinancePage> {
                 ),
               ),
               const SizedBox(height: 16),
+              // Grafik tren
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 20),
                 padding: const EdgeInsets.all(20),
@@ -385,7 +690,7 @@ class _FinancePageState extends State<FinancePage> {
                     SizedBox(
                       height: 160,
                       child: _grafikData.isEmpty
-                          ? const Center(child: Text('Tidak ada data'))
+                          ? const Center(child: Text('Tidak ada data grafik'))
                           : LineChart(LineChartData(
                               gridData: FlGridData(
                                 show: true,
@@ -474,6 +779,7 @@ class _FinancePageState extends State<FinancePage> {
                 ),
               ),
               const SizedBox(height: 16),
+              // Komposisi pie chart
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 20),
                 padding: const EdgeInsets.all(20),
@@ -557,6 +863,7 @@ class _FinancePageState extends State<FinancePage> {
                 ),
               ),
               const SizedBox(height: 20),
+              // Header mutasi dengan filter
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
@@ -589,14 +896,12 @@ class _FinancePageState extends State<FinancePage> {
                               ),
                             ),
                             child: Row(children: [
-                              Icon(
-                                Icons.calendar_month_rounded,
-                                size: 14,
-                                color: (_mutationMonth != 'Semua' ||
-                                        _mutationYear != 0)
-                                    ? AppTheme.orange600
-                                    : context.colors.textSecondary,
-                              ),
+                              Icon(Icons.calendar_month_rounded,
+                                  size: 14,
+                                  color: (_mutationMonth != 'Semua' ||
+                                          _mutationYear != 0)
+                                      ? AppTheme.orange600
+                                      : context.colors.textSecondary),
                               const SizedBox(width: 4),
                               Text(
                                 [
@@ -616,14 +921,12 @@ class _FinancePageState extends State<FinancePage> {
                                 ),
                               ),
                               const SizedBox(width: 2),
-                              Icon(
-                                Icons.keyboard_arrow_down_rounded,
-                                size: 14,
-                                color: (_mutationMonth != 'Semua' ||
-                                        _mutationYear != 0)
-                                    ? AppTheme.orange600
-                                    : context.colors.textHint,
-                              ),
+                              Icon(Icons.keyboard_arrow_down_rounded,
+                                  size: 14,
+                                  color: (_mutationMonth != 'Semua' ||
+                                          _mutationYear != 0)
+                                      ? AppTheme.orange600
+                                      : context.colors.textHint),
                             ]),
                           ),
                         ),
@@ -653,6 +956,7 @@ class _FinancePageState extends State<FinancePage> {
                 ),
               ),
               const SizedBox(height: 12),
+              // Daftar mutasi
               if (_groupedMutasiMap.isEmpty)
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -667,19 +971,15 @@ class _FinancePageState extends State<FinancePage> {
                       Icon(Icons.receipt_long_rounded,
                           size: 40, color: context.colors.textHint),
                       const SizedBox(height: 12),
-                      Text(
-                        'Tidak ada mutasi ditemukan',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
-                            color: context.colors.textSecondary),
-                      ),
+                      Text('Tidak ada mutasi ditemukan',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                              color: context.colors.textSecondary)),
                       const SizedBox(height: 4),
-                      Text(
-                        'Coba ubah filter bulan atau tahun',
-                        style: TextStyle(
-                            fontSize: 12, color: context.colors.textHint),
-                      ),
+                      Text('Coba ubah filter bulan atau tahun',
+                          style: TextStyle(
+                              fontSize: 12, color: context.colors.textHint)),
                     ],
                   ),
                 )
@@ -730,10 +1030,6 @@ class _FinancePageState extends State<FinancePage> {
                               return _MutationRow(
                                 transaction: t,
                                 isLast: isLast,
-                                categoryIcon: _categoryIcon(t.jenisPengeluaran),
-                                categoryColor:
-                                    _categoryColor(t.jenisPengeluaran),
-                                categoryBg: _categoryBg(t.jenisPengeluaran),
                               );
                             }).toList(),
                           ),
@@ -761,70 +1057,18 @@ class _FinancePageState extends State<FinancePage> {
         return AppTheme.orange500;
     }
   }
-
-  IconData _categoryIcon(String jenis) {
-    switch (jenis) {
-      case 'food':
-        return Icons.restaurant_rounded;
-      case 'grocery':
-        return Icons.shopping_basket_rounded;
-      case 'cook':
-        return Icons.outdoor_grill_rounded;
-      case 'topup':
-        return Icons.add_circle_rounded;
-      case 'refund':
-        return Icons.undo_rounded;
-      default:
-        return Icons.receipt_rounded;
-    }
-  }
-
-  Color _categoryColor(String jenis) {
-    switch (jenis) {
-      case 'food':
-        return AppTheme.orange500;
-      case 'grocery':
-        return AppTheme.blue500;
-      case 'cook':
-        return AppTheme.green600;
-      case 'topup':
-        return const Color(0xFF8B5CF6);
-      case 'refund':
-        return AppTheme.green500;
-      default:
-        return AppTheme.slate500;
-    }
-  }
-
-  Color _categoryBg(String jenis) {
-    switch (jenis) {
-      case 'food':
-        return AppTheme.orange50;
-      case 'grocery':
-        return AppTheme.blue50;
-      case 'cook':
-        return AppTheme.green50;
-      case 'topup':
-        return AppTheme.purple50;
-      case 'refund':
-        return AppTheme.green50;
-      default:
-        return AppTheme.slate50;
-    }
-  }
 }
 
-// ============ WIDGET BANTUAN (TIDAK BERUBAH) ============
+// ============ WIDGET BANTUAN ============
+
 class _BalanceItem extends StatelessWidget {
   final String label;
   final double amount;
   final bool isPositive;
   const _BalanceItem(
       {required this.label, required this.amount, required this.isPositive});
-
   String _fmt(double v) => v.toStringAsFixed(0).replaceAllMapped(
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.');
-
   @override
   Widget build(BuildContext context) {
     return Column(children: [
@@ -866,7 +1110,6 @@ class _SummaryChip extends StatelessWidget {
       required this.color,
       required this.bg,
       this.isWarning = false});
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -904,7 +1147,6 @@ class _LegendItem extends StatelessWidget {
   final String value;
   const _LegendItem(
       {required this.color, required this.label, required this.value});
-
   @override
   Widget build(BuildContext context) {
     return Row(children: [
@@ -935,52 +1177,46 @@ class _PeriodPicker extends StatelessWidget {
   final String current;
   final Function(String) onSelect;
   const _PeriodPicker({required this.current, required this.onSelect});
-
   @override
   Widget build(BuildContext context) {
     const options = ['Hari Ini', 'Minggu Ini', 'Bulan Ini', '3 Bulan Terakhir'];
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const SizedBox(height: 12),
-        Container(
-            width: 36,
-            height: 4,
-            decoration: BoxDecoration(
-                color: context.colors.border,
-                borderRadius: BorderRadius.circular(2))),
-        const SizedBox(height: 16),
-        Text('Pilih Periode',
-            style: TextStyle(
-                fontWeight: FontWeight.w900,
-                fontSize: 16,
-                color: context.colors.textPrimary)),
-        const SizedBox(height: 12),
-        ...options.map((o) => ListTile(
-              leading: Icon(
+    return Column(mainAxisSize: MainAxisSize.min, children: [
+      const SizedBox(height: 12),
+      Container(
+          width: 36,
+          height: 4,
+          decoration: BoxDecoration(
+              color: context.colors.border,
+              borderRadius: BorderRadius.circular(2))),
+      const SizedBox(height: 16),
+      Text('Pilih Periode',
+          style: TextStyle(
+              fontWeight: FontWeight.w900,
+              fontSize: 16,
+              color: context.colors.textPrimary)),
+      const SizedBox(height: 12),
+      ...options.map((o) => ListTile(
+            leading: Icon(
                 o == current
                     ? Icons.radio_button_checked_rounded
                     : Icons.radio_button_unchecked_rounded,
                 color:
                     o == current ? AppTheme.orange600 : context.colors.textHint,
-                size: 20,
-              ),
-              title: Text(o,
-                  style: TextStyle(
+                size: 20),
+            title: Text(o,
+                style: TextStyle(
                     fontWeight:
                         o == current ? FontWeight.w700 : FontWeight.w500,
                     color: o == current
                         ? AppTheme.orange600
-                        : context.colors.textSecondary,
-                  )),
-              onTap: () {
-                onSelect(o);
-                Navigator.pop(context);
-              },
-            )),
-        const SizedBox(height: 16),
-      ],
-    );
+                        : context.colors.textSecondary)),
+            onTap: () {
+              onSelect(o);
+              Navigator.pop(context);
+            },
+          )),
+      const SizedBox(height: 16),
+    ]);
   }
 }
 
@@ -990,15 +1226,12 @@ class _MutationFilterPicker extends StatefulWidget {
   final List<String> monthOptions;
   final List<int> yearOptions;
   final void Function(String month, int year) onSelect;
-
-  const _MutationFilterPicker({
-    required this.currentMonth,
-    required this.currentYear,
-    required this.monthOptions,
-    required this.yearOptions,
-    required this.onSelect,
-  });
-
+  const _MutationFilterPicker(
+      {required this.currentMonth,
+      required this.currentYear,
+      required this.monthOptions,
+      required this.yearOptions,
+      required this.onSelect});
   @override
   State<_MutationFilterPicker> createState() => _MutationFilterPickerState();
 }
@@ -1006,7 +1239,6 @@ class _MutationFilterPicker extends StatefulWidget {
 class _MutationFilterPickerState extends State<_MutationFilterPicker> {
   late String _selectedMonth;
   late int _selectedYear;
-
   @override
   void initState() {
     super.initState();
@@ -1017,245 +1249,238 @@ class _MutationFilterPickerState extends State<_MutationFilterPicker> {
   @override
   Widget build(BuildContext context) {
     return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Center(
-          child: Padding(
-            padding: const EdgeInsets.only(top: 12, bottom: 16),
-            child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                    color: context.colors.border,
-                    borderRadius: BorderRadius.circular(2))),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Text('Filter Mutasi',
-              style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 16,
-                  color: context.colors.textPrimary)),
-        ),
-        const SizedBox(height: 20),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Text('Tahun',
-              style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  color: context.colors.textSecondary,
-                  letterSpacing: 0.5)),
-        ),
-        const SizedBox(height: 10),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: widget.yearOptions.map((y) {
-              final isSelected = y == _selectedYear;
-              final label = y == 0 ? 'Semua' : '$y';
-              return GestureDetector(
-                onTap: () => setState(() => _selectedYear = y),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
-                  decoration: BoxDecoration(
-                    color:
-                        isSelected ? AppTheme.orange600 : context.colors.border,
-                    borderRadius: BorderRadius.circular(50),
-                  ),
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: isSelected
-                          ? Colors.white
-                          : context.colors.textSecondary,
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-        const SizedBox(height: 20),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Text('Bulan',
-              style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  color: context.colors.textSecondary,
-                  letterSpacing: 0.5)),
-        ),
-        const SizedBox(height: 10),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: widget.monthOptions.map((m) {
-              final isSelected = m == _selectedMonth;
-              return GestureDetector(
-                onTap: () => setState(() => _selectedMonth = m),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-                  decoration: BoxDecoration(
-                    color:
-                        isSelected ? AppTheme.orange600 : context.colors.border,
-                    borderRadius: BorderRadius.circular(50),
-                  ),
-                  child: Text(
-                    m,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: isSelected
-                          ? Colors.white
-                          : context.colors.textSecondary,
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-        const SizedBox(height: 24),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Row(
-            children: [
-              GestureDetector(
-                onTap: () {
-                  widget.onSelect('Semua', 0);
-                  Navigator.pop(context);
-                },
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
-                  decoration: BoxDecoration(
-                    color: context.colors.border,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Text('Reset',
-                      style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: context.colors.textSecondary)),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: GestureDetector(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+              child: Padding(
+                  padding: const EdgeInsets.only(top: 12, bottom: 16),
+                  child: Container(
+                      width: 36,
+                      height: 4,
+                      decoration: BoxDecoration(
+                          color: context.colors.border,
+                          borderRadius: BorderRadius.circular(2))))),
+          Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Text('Filter Mutasi',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 16,
+                      color: context.colors.textPrimary))),
+          const SizedBox(height: 20),
+          Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Text('Tahun',
+                  style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: context.colors.textSecondary,
+                      letterSpacing: 0.5))),
+          const SizedBox(height: 10),
+          Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: widget.yearOptions.map((y) {
+                    final isSelected = y == _selectedYear;
+                    final label = y == 0 ? 'Semua' : '$y';
+                    return GestureDetector(
+                      onTap: () => setState(() => _selectedYear = y),
+                      child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 18, vertical: 9),
+                          decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppTheme.orange600
+                                  : context.colors.border,
+                              borderRadius: BorderRadius.circular(50)),
+                          child: Text(label,
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: isSelected
+                                      ? Colors.white
+                                      : context.colors.textSecondary))),
+                    );
+                  }).toList())),
+          const SizedBox(height: 20),
+          Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Text('Bulan',
+                  style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: context.colors.textSecondary,
+                      letterSpacing: 0.5))),
+          const SizedBox(height: 10),
+          Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: widget.monthOptions.map((m) {
+                    final isSelected = m == _selectedMonth;
+                    return GestureDetector(
+                      onTap: () => setState(() => _selectedMonth = m),
+                      child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 9),
+                          decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppTheme.orange600
+                                  : context.colors.border,
+                              borderRadius: BorderRadius.circular(50)),
+                          child: Text(m,
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: isSelected
+                                      ? Colors.white
+                                      : context.colors.textSecondary))),
+                    );
+                  }).toList())),
+          const SizedBox(height: 24),
+          Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(children: [
+                GestureDetector(
                   onTap: () {
-                    widget.onSelect(_selectedMonth, _selectedYear);
+                    widget.onSelect('Semua', 0);
                     Navigator.pop(context);
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 13),
-                    decoration: BoxDecoration(
-                      color: AppTheme.orange600,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    alignment: Alignment.center,
-                    child: const Text('Terapkan',
-                        style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white)),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 13),
+                      decoration: BoxDecoration(
+                          color: context.colors.border,
+                          borderRadius: BorderRadius.circular(14)),
+                      child: Text('Reset',
+                          style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: context.colors.textSecondary))),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      widget.onSelect(_selectedMonth, _selectedYear);
+                      Navigator.pop(context);
+                    },
+                    child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                        decoration: BoxDecoration(
+                            color: AppTheme.orange600,
+                            borderRadius: BorderRadius.circular(14)),
+                        alignment: Alignment.center,
+                        child: const Text('Terapkan',
+                            style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white))),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 32),
-      ],
-    );
+              ])),
+          const SizedBox(height: 32),
+        ]);
   }
 }
 
 class _MutationRow extends StatelessWidget {
   final FinanceMutasiModel transaction;
   final bool isLast;
-  final IconData categoryIcon;
-  final Color categoryColor;
-  final Color categoryBg;
-  const _MutationRow(
-      {required this.transaction,
-      required this.isLast,
-      required this.categoryIcon,
-      required this.categoryColor,
-      required this.categoryBg});
+  const _MutationRow({required this.transaction, required this.isLast});
 
   String _fmt(double v) => v.toStringAsFixed(0).replaceAllMapped(
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.');
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                  color: categoryBg, borderRadius: BorderRadius.circular(12)),
-              child: Icon(categoryIcon, color: categoryColor, size: 18),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-                child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(transaction.judul,
-                    style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
-                        color: context.colors.textPrimary)),
-                const SizedBox(height: 2),
-                Text(transaction.keterangan,
-                    style: TextStyle(
-                        fontSize: 11,
-                        color: context.colors.textHint,
-                        fontWeight: FontWeight.w500)),
-              ],
-            )),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  '${transaction.isDebit ? '-' : '+'}Rp ${_fmt(transaction.jumlah)}',
+    IconData categoryIcon;
+    Color categoryColor;
+    Color categoryBg;
+    switch (transaction.jenisPengeluaran) {
+      case 'food':
+        categoryIcon = Icons.restaurant_rounded;
+        categoryColor = AppTheme.orange500;
+        categoryBg = AppTheme.orange50;
+        break;
+      case 'cook':
+        categoryIcon = Icons.outdoor_grill_rounded;
+        categoryColor = AppTheme.green600;
+        categoryBg = AppTheme.green50;
+        break;
+      case 'topup':
+        categoryIcon = Icons.add_circle_rounded;
+        categoryColor = Colors.purple;
+        categoryBg = Colors.purple.shade50;
+        break;
+      default:
+        categoryIcon = Icons.receipt_rounded;
+        categoryColor = AppTheme.slate500;
+        categoryBg = AppTheme.slate50;
+    }
+
+    String judulUtama = transaction.judul;
+    if (transaction.namaResep.isNotEmpty) {
+      judulUtama = transaction.namaResep;
+    }
+    String subJudul = transaction.keterangan;
+    if (transaction.sesiMakan.isNotEmpty) {
+      subJudul = '${transaction.sesiMakan} • $subJudul';
+    }
+
+    return Column(children: [
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+                color: categoryBg, borderRadius: BorderRadius.circular(12)),
+            child: Icon(categoryIcon, color: categoryColor, size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(judulUtama,
                   style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      color: context.colors.textPrimary)),
+              const SizedBox(height: 2),
+              Text(subJudul,
+                  style: TextStyle(
+                      fontSize: 11,
+                      color: context.colors.textHint,
+                      fontWeight: FontWeight.w500)),
+            ]),
+          ),
+          Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+            Text(
+                (transaction.isDebit ? '- ' : '+ ') +
+                    'Rp ${_fmt(transaction.jumlah)}',
+                style: TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 13,
                     color: transaction.isDebit
                         ? context.colors.textPrimary
                         : AppTheme.green600,
-                    letterSpacing: -0.3,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(transaction.waktu,
-                    style: TextStyle(
-                        fontSize: 10,
-                        color: context.colors.textHint,
-                        fontWeight: FontWeight.w500)),
-              ],
-            ),
+                    letterSpacing: -0.3)),
+            const SizedBox(height: 2),
+            Text(transaction.waktu,
+                style: TextStyle(
+                    fontSize: 10,
+                    color: context.colors.textHint,
+                    fontWeight: FontWeight.w500)),
           ]),
-        ),
-        if (!isLast)
-          Divider(height: 1, color: context.colors.border, indent: 68),
-      ],
-    );
+        ]),
+      ),
+      if (!isLast) Divider(height: 1, color: context.colors.border, indent: 68),
+    ]);
   }
 }

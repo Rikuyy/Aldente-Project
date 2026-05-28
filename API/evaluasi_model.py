@@ -7,10 +7,9 @@ import io
 import re
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.metrics import classification_report, accuracy_score
 from collections import Counter
 
-# Opsional: Stemming (install Sastrawi dulu)
+# Optional stemming
 try:
     from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
     factory = StemmerFactory()
@@ -18,145 +17,147 @@ try:
     USE_STEMMING = True
 except ImportError:
     USE_STEMMING = False
-    print("⚠️ Sastrawi tidak terinstall, stemming di-skip", file=sys.stderr)
+
+def clean_text(text):
+    if not isinstance(text, str):
+        text = str(text)
+    text = re.sub(r'[^\x20-\x7E\x0A\x0D\u00A0-\u024F]', ' ', text)
+    text = re.sub(r'\s+', ' ', text)
+    text = text.strip().lower()
+    if USE_STEMMING and len(text) > 3:
+        try:
+            text = stemmer.stem(text)
+        except:
+            pass
+    return text
 
 def run_evaluation():
+    # UTF-8 handling for Windows
     if sys.platform == 'win32':
         sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
         sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
-    
+
     try:
-        # ---------- 1. PATH & LOAD ----------
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
         path_model = os.path.join(BASE_DIR, 'model_cookcash.pkl')
         path_csv   = os.path.join(BASE_DIR, 'Cookcash_Data_Test.csv')
 
+        # Load model
         with open(path_model, 'rb') as f:
             model_data = pickle.load(f)
-            
+
         if isinstance(model_data, tuple) and len(model_data) == 3:
             tfidf, tfidf_matrix, df_train = model_data
-        elif isinstance(model_data, dict):
-            tfidf = model_data.get('tfidf') or model_data.get('vectorizer')
-            tfidf_matrix = model_data.get('tfidf_matrix') or model_data.get('matrix')
-            df_train = model_data.get('df_train') or model_data.get('dataframe')
+        else:
+            tfidf = model_data.get('tfidf')
+            tfidf_matrix = model_data.get('tfidf_matrix')
+            df_train = model_data.get('df_train')
 
-        # Baca CSV
-        encodings_to_try = ['utf-8', 'latin1', 'iso-8859-1', 'cp1252']
+        # Load test data
+        encodings = ['utf-8', 'latin1', 'iso-8859-1', 'cp1252']
         df_test = None
-        for encoding in encodings_to_try:
+        for enc in encodings:
             try:
-                df_test = pd.read_csv(path_csv, encoding=encoding)
+                df_test = pd.read_csv(path_csv, encoding=enc)
                 break
-            except (UnicodeDecodeError, UnicodeError):
+            except:
                 continue
+        if df_test is None:
+            raise Exception("Tidak dapat membaca file CSV test")
 
-        # ---------- 2. PARAMETER EVALUASI ----------
-        K = 5  #  UBAH SESUAI KEBUTUHAN (1, 3, 5, 7)
-        SIMILARITY_THRESHOLD = 0.25  #  Threshold minimal
-        
-        def clean_text(text):
-            if not isinstance(text, str):
-                text = str(text)
-            text = re.sub(r'[^\x20-\x7E\x0A\x0D\u00A0-\u024F]', ' ', text)
-            text = re.sub(r'\s+', ' ', text)
-            text = text.strip().lower()
-            
-            # Stemming (kalau Sastrawi tersedia)
-            if USE_STEMMING and len(text) > 3:
-                try:
-                    text = stemmer.stem(text)
-                except:
-                    pass
-            return text
+        # Parameters (sama dengan Jupyter)
+        K = 5
+        THRESHOLD = 0.3
 
-        # ---------- 3. PROSES EVALUASI ----------
-        y_true = []
-        y_pred = []
+        y_true = []      # kategori asli (untuk laporan per kategori)
+        y_pred = []      # kategori prediksi (voting dari top-K)
+        precision_scores = []
+        recall_scores = []
         detail_hasil = []
-        
-        for index, row in df_test.iterrows():
+
+        for idx, row in df_test.iterrows():
             query = clean_text(row['Ingredients Cleaned'])
-            target_asli = clean_text(row['Category'])
-            
-            if not query or pd.isna(query):
-                continue
-                
-            try:
-                vec = tfidf.transform([query])
-                sim = cosine_similarity(vec, tfidf_matrix).flatten()
-                
-                #  K-NN (bukan 1-NN)
-                top_k_indices = sim.argsort()[-K:][::-1]
-                top_k_categories = [clean_text(df_train['Category'].iloc[i]) 
-                                   for i in top_k_indices]
-                top_k_similarities = sim[top_k_indices]
-                
-                # Ambil similarity tertinggi
-                best_similarity = top_k_similarities[0]
-                
-                # Voting
-                category_votes = Counter(top_k_categories)
-                prediksi_kategori = category_votes.most_common(1)[0][0]
-                
-                #  Threshold: kalau terlalu rendah, anggap "Tidak Diketahui"
-                if best_similarity < SIMILARITY_THRESHOLD:
-                    prediksi_kategori = "tidak diketahui"
-                
-                y_true.append(target_asli)
-                y_pred.append(prediksi_kategori)
-                
-                detail_hasil.append({
-                    "no": len(detail_hasil) + 1,
-                    "soal": query[:100],
-                    "target": target_asli,
-                    "prediksi": prediksi_kategori,
-                    "similarity": round(float(best_similarity) * 100, 2),
-                    "status": "Benar" if prediksi_kategori == target_asli else "Salah"
-                })
-                
-            except Exception as e:
+            target_cat = clean_text(row['Category'])
+            if not query:
                 continue
 
-        # ---------- 4. METRIK ----------
-        akurasi = accuracy_score(y_true, y_pred) * 100
+            # Vektor query dan similarity
+            vec = tfidf.transform([query])
+            sim = cosine_similarity(vec, tfidf_matrix).flatten()
+            top_k_idx = sim.argsort()[-K:][::-1]
+            top_k_sim = sim[top_k_idx]
+
+            # --- Precision@K dan Recall@K berdasarkan threshold similarity ---
+            relevan = sum(top_k_sim >= THRESHOLD)
+            total_relevan = sum(sim >= THRESHOLD)
+            precision = relevan / K
+            recall = relevan / total_relevan if total_relevan > 0 else 0
+            precision_scores.append(precision)
+            recall_scores.append(recall)
+
+            # --- Untuk laporan per kategori: voting dari top-K ---
+            top_cats = [clean_text(df_train['Category'].iloc[i]) for i in top_k_idx]
+            pred_cat = Counter(top_cats).most_common(1)[0][0]
+            if max(top_k_sim) < THRESHOLD:
+                pred_cat = "tidak diketahui"
+
+            y_true.append(target_cat)
+            y_pred.append(pred_cat)
+
+            detail_hasil.append({
+                "no": len(detail_hasil) + 1,
+                "soal": query[:100],
+                "target": target_cat,
+                "prediksi": pred_cat,
+                "similarity": round(max(top_k_sim) * 100, 2),
+                "status": "Benar" if pred_cat == target_cat else "Salah"
+            })
+
+        # Rata-rata precision dan recall
+        avg_precision = np.mean(precision_scores) * 100
+        avg_recall = np.mean(recall_scores) * 100
+
+        # Akurasi klasifikasi (opsional, untuk tabel per kategori)
+        from sklearn.metrics import classification_report, accuracy_score
+        akurasi_klasifikasi = accuracy_score(y_true, y_pred) * 100
         report = classification_report(y_true, y_pred, output_dict=True, zero_division=0)
-        
-        benar = sum(1 for a, b in zip(y_true, y_pred) if a == b)
-        salah = sum(1 for a, b in zip(y_true, y_pred) if a != b)
 
+        # Siapkan output JSON (struktur tetap kompatibel dengan frontend)
         output = {
             "status": "success",
             "konfigurasi": {
                 "K_value": K,
-                "similarity_threshold": SIMILARITY_THRESHOLD,
-                "gunakan_stemming": USE_STEMMING
+                "similarity_threshold": THRESHOLD,
+                "gunakan_stemming": USE_STEMMING,
+                "metrik": "Precision@K dan Recall@K (berdasarkan threshold cosine similarity)"
             },
             "ringkasan": {
-                "akurasi": round(akurasi, 2),
+                # Ganti "akurasi" dengan Precision@K agar frontend menampilkan metrik yang benar
+                "akurasi": round(avg_precision, 2),
+                "recall": round(avg_recall, 2),
                 "total_data_diproses": len(y_true),
-                "prediksi_benar": benar,
-                "prediksi_salah": salah
+                "prediksi_benar": sum(1 for a,b in zip(y_true,y_pred) if a==b),
+                "prediksi_salah": sum(1 for a,b in zip(y_true,y_pred) if a!=b)
             },
             "per_kategori": {
-                kategori: {
+                kat: {
                     "precision": round(metrics['precision'] * 100, 2),
                     "recall": round(metrics['recall'] * 100, 2),
                     "f1_score": round(metrics['f1-score'] * 100, 2),
                     "support": int(metrics['support'])
                 }
-                for kategori, metrics in report.items()
-                if kategori not in ['accuracy', 'macro avg', 'weighted avg']
+                for kat, metrics in report.items()
+                if kat not in ['accuracy', 'macro avg', 'weighted avg']
             },
             "detail_hasil": detail_hasil,
             "rekomendasi": [
-                f" Gunakan K={K} (bukan K=1) untuk voting",
-                " Tambah data latih kategori dengan F1 < 70%",
-                " Coba ngram_range=(1,2) untuk tangkap bigram",
-                "Jika akurasi masih < 75%, pertimbangkan metode lain (SVM/Random Forest)"
+                f"📊 Precision@{K}: {avg_precision:.2f}% | Recall@{K}: {avg_recall:.2f}% (threshold={THRESHOLD})",
+                "✅ Evaluasi menggunakan logika yang sama dengan Jupyter Notebook.",
+                "💡 Jika precision rendah, coba tingkatkan threshold atau tambah data latih.",
+                "🔁 Jika recall rendah, perbesar K atau gunakan reranking."
             ]
         }
-        
+
         print(json.dumps(output, ensure_ascii=False, indent=2))
 
     except Exception as e:

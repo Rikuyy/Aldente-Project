@@ -39,7 +39,7 @@
             </div>
         </div>
 
-        {{-- ==================== TAB EVALUASI ==================== --}}
+        {{-- ==================== TAB EVALUASI (Desain baru yang bagus) ==================== --}}
         <div x-show="activeTab === 'evaluasi'" x-transition>
             
             {{-- Panel Kontrol --}}
@@ -47,10 +47,7 @@
                 <div>
                     <h2 class="text-xl font-bold text-white mb-1">
                         <i class="fas fa-flask text-[#FF723A] mr-2"></i>Uji Akurasi Model
-                    </h2>
-                    <p class="text-sm text-neutral-400">
-                        TF-IDF + Cosine Similarity + 1-Nearest Neighbor
-                    </p>
+                    
                 </div>
                 <button @click="runEvaluasi()" 
                         :disabled="isTesting" 
@@ -77,72 +74,48 @@
                 </div>
             </div>
 
-            {{-- Hasil Evaluasi - HANYA TAMPIL JIKA evalResult ADA --}}
+            {{-- Hasil Evaluasi --}}
             <template x-if="evalResult && evalResult.status === 'success'">
                 <div class="space-y-6">
                     
-                    {{-- 1. METODE --}}
-                    <div class="bg-gradient-to-r from-neutral-900 to-neutral-800 border border-neutral-700 rounded-2xl p-6">
-                        <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                            <i class="fas fa-cogs text-[#FF723A]"></i> Metode yang Digunakan
-                        </h3>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div class="bg-black/20 rounded-xl p-4">
-                                <p class="text-[#FF723A] font-bold text-sm mb-2">Feature Extraction</p>
-                                <p class="text-white font-mono text-sm" x-text="evalResult.metode?.feature_extraction?.nama || 'TF-IDF'"></p>
-                                <div class="mt-2 text-xs text-neutral-400">
-                                    <p>Max Features: <span class="text-white" x-text="evalResult.metode?.feature_extraction?.parameter?.max_features || 'Default'"></span></p>
-                                    <p>N-Gram: <span class="text-white" x-text="evalResult.metode?.feature_extraction?.parameter?.ngram_range || '(1,1)'"></span></p>
-                                    <p>Vocabulary: <span class="text-white" x-text="evalResult.metode?.feature_extraction?.parameter?.vocabulary_size || 'N/A'"></span> kata</p>
-                                </div>
-                            </div>
-                            <div class="bg-black/20 rounded-xl p-4">
-                                <p class="text-[#FF723A] font-bold text-sm mb-2">Similarity Metric</p>
-                                <p class="text-white font-mono text-sm" x-text="evalResult.metode?.similarity_metric?.nama || 'Cosine Similarity'"></p>
-                                <p class="text-xs text-neutral-400 mt-2" x-text="evalResult.metode?.similarity_metric?.rumus || 'cos(θ) = (A·B) / (||A|| × ||B||)'"></p>
-                            </div>
-                            <div class="bg-black/20 rounded-xl p-4">
-                                <p class="text-[#FF723A] font-bold text-sm mb-2">Classifier</p>
-                                <p class="text-white font-mono text-sm" x-text="evalResult.metode?.classifier?.nama || '1-Nearest Neighbor'"></p>
-                                <p class="text-xs text-neutral-400 mt-2" x-text="evalResult.metode?.classifier?.konsep || 'Mencari 1 resep paling mirip'"></p>
-                            </div>
+                    {{-- Ringkasan Metrik Utama (Precision & Recall) --}}
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-gradient-to-br from-neutral-800 to-neutral-900 rounded-2xl border border-neutral-700 p-6 text-center">
+                            <i class="fas fa-chart-line text-3xl text-blue-400 mb-3"></i>
+                            <p class="text-neutral-400 text-sm">Precision@K</p>
+                            <p class="text-4xl font-bold text-white mt-2" x-text="evalResult.ringkasan?.akurasi?.toFixed(2) + '%' ?? '0%'"></p>
+                            <p class="text-xs text-neutral-500 mt-1">Rata-rata rekomendasi relevan di top-K</p>
+                        </div>
+                        <div class="bg-gradient-to-br from-neutral-800 to-neutral-900 rounded-2xl border border-neutral-700 p-6 text-center">
+                            <i class="fas fa-chart-simple text-3xl text-green-400 mb-3"></i>
+                            <p class="text-neutral-400 text-sm">Recall@K</p>
+                            <p class="text-4xl font-bold text-white mt-2" x-text="evalResult.ringkasan?.recall?.toFixed(2) + '%' ?? '0%'"></p>
+                            <p class="text-xs text-neutral-500 mt-1">Persentase total relevan yang tertangkap</p>
+                        </div>
+                        <div class="bg-gradient-to-br from-neutral-800 to-neutral-900 rounded-2xl border border-neutral-700 p-6 text-center">
+                            <i class="fas fa-database text-3xl text-purple-400 mb-3"></i>
+                            <p class="text-neutral-400 text-sm">Total Data Uji</p>
+                            <p class="text-4xl font-bold text-white mt-2" x-text="evalResult.ringkasan?.total_data_diproses ?? 0"></p>
+                            <p class="text-xs text-neutral-500 mt-1">Resep yang dievaluasi</p>
                         </div>
                     </div>
 
-                    {{-- 2. RINGKASAN --}}
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div class="bg-neutral-900 p-6 rounded-2xl border border-neutral-800 border-l-4 border-l-green-500">
-                            <p class="text-neutral-400 text-xs mb-1">Akurasi</p>
-                            <h3 class="text-3xl font-bold text-white">
-                                <span x-text="(evalResult.ringkasan?.akurasi ?? 0).toFixed(1)"></span>%
-                            </h3>
-                            <p class="text-xs text-neutral-500 mt-2">Accuracy Score</p>
-                        </div>
-                        <div class="bg-neutral-900 p-6 rounded-2xl border border-neutral-800 border-l-4 border-l-blue-500">
-                            <p class="text-neutral-400 text-xs mb-1">Data Diproses</p>
-                            <h3 class="text-3xl font-bold text-white" x-text="evalResult.ringkasan?.total_data_diproses ?? 0"></h3>
-                            <p class="text-xs text-neutral-500 mt-2">Total Data Uji</p>
-                        </div>
-                        <div class="bg-neutral-900 p-6 rounded-2xl border border-neutral-800 border-l-4 border-l-emerald-500">
-                            <p class="text-neutral-400 text-xs mb-1">Prediksi Benar</p>
-                            <h3 class="text-3xl font-bold text-green-400" x-text="evalResult.ringkasan?.prediksi_benar ?? 0"></h3>
-                            <p class="text-xs text-neutral-500 mt-2" x-text="getPersentase(evalResult.ringkasan?.prediksi_benar, evalResult.ringkasan?.total_data_diproses)"></p>
-                        </div>
-                        <div class="bg-neutral-900 p-6 rounded-2xl border border-neutral-800 border-l-4 border-l-red-500">
-                            <p class="text-neutral-400 text-xs mb-1">Prediksi Salah</p>
-                            <h3 class="text-3xl font-bold text-red-400" x-text="evalResult.ringkasan?.prediksi_salah ?? 0"></h3>
-                            <p class="text-xs text-neutral-500 mt-2" x-text="getPersentase(evalResult.ringkasan?.prediksi_salah, evalResult.ringkasan?.total_data_diproses)"></p>
+                    {{-- Informasi Konfigurasi --}}
+                    <div class="bg-neutral-800/50 rounded-2xl p-4 border border-neutral-700">
+                        <div class="flex flex-wrap gap-4 text-sm">
+                            <span class="px-3 py-1 bg-neutral-700 rounded-full text-neutral-300"><i class="fas fa-code-branch mr-1"></i> K = <span x-text="evalResult.konfigurasi?.K_value ?? 5"></span></span>
+                            <span class="px-3 py-1 bg-neutral-700 rounded-full text-neutral-300"><i class="fas fa-chart-simple mr-1"></i> Threshold = <span x-text="evalResult.konfigurasi?.similarity_threshold ?? 0.3"></span></span>
                         </div>
                     </div>
 
-                    
-                    {{-- 5. PERFORMANCE PER KATEGORI --}}
+                    {{-- Performa per Kategori (sama seperti sebelumnya, tetap ditampilkan) --}}
                     <template x-if="evalResult.per_kategori && Object.keys(evalResult.per_kategori).length > 0">
                         <div class="bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden">
                             <div class="p-4 border-b border-neutral-800">
                                 <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                                    <i class="fas fa-list-check text-green-400"></i> Performa per Kategori
+                                    <i class="fas fa-list-check text-green-400"></i> Performa per Kategori (Klasifikasi)
                                 </h3>
+                                <p class="text-xs text-neutral-500 mt-1">Precision, Recall, F1-Score berdasarkan voting kategori dari top-K tetangga</p>
                             </div>
                             <div class="overflow-x-auto">
                                 <table class="w-full text-left text-sm">
@@ -179,9 +152,7 @@
                         </div>
                     </template>
 
-                
-
-                    {{-- 7. TABEL DETAIL --}}
+                    {{-- Detail Hasil (tabel) --}}
                     <template x-if="evalResult.detail_hasil && evalResult.detail_hasil.length > 0">
                         <div class="bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden">
                             <div class="p-4 border-b border-neutral-800 flex justify-between items-center">
@@ -255,7 +226,7 @@
 
         </div>
 
-        {{-- ==================== TAB API TESTER ==================== --}}
+        {{-- ==================== TAB API TESTER (TIDAK DIUBAH, SAMA PERSIS DENGAN ASLINYA) ==================== --}}
         <div x-show="activeTab === 'api'" x-transition class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div class="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 flex flex-col gap-4">
                 
@@ -320,7 +291,7 @@
         </div>
     </div>
 
-    {{-- ==================== ALPINE.JS ==================== --}}
+    {{-- ==================== ALPINE.JS (SAMA, hanya menyesuaikan dengan field baru 'recall') ==================== --}}
     <script>
         document.addEventListener('alpine:init', () => {
             Alpine.data('testingDashboard', (allRoutes) => ({
@@ -347,7 +318,6 @@
                     this.filterUrls();
                 },
 
-                // Helper function
                 getPersentase(nilai, total) {
                     if (!total || total === 0) return '0%';
                     return ((nilai / total) * 100).toFixed(1) + '% dari total';
@@ -439,16 +409,14 @@
                     }
                 },
 
-                // ============ EVALUASI (FIXED) ============
+                // ============ EVALUASI (sesuai dengan JSON baru) ============
                 async runEvaluasi() {
                     this.isTesting = true;
-                    this.evalResult = null;  // Reset dulu
-                    this.evalError = null;   // Reset error
+                    this.evalResult = null;
+                    this.evalError = null;
                     this.currentPage = 1;
                     
                     try {
-                        console.log("Mengirim request ke /api/chatbot/evaluasi...");
-                        
                         const res = await fetch('/api/chatbot/evaluasi', { 
                             method: 'POST',
                             headers: { 
@@ -458,59 +426,27 @@
                             }
                         });
                         
-                        console.log("Response status:", res.status);
-                        
-                        // Cek status response
                         if (!res.ok) {
                             throw new Error(`HTTP Error: ${res.status} ${res.statusText}`);
                         }
                         
                         const data = await res.json();
-                        console.log("Response data:", data);
-                        
-                        // Validasi struktur data
-                        if (!data || typeof data !== 'object') {
-                            throw new Error('Response bukan JSON valid');
-                        }
                         
                         if (data.status === 'error') {
                             this.evalError = data.message || 'Error dari server';
-                            console.error("Server Error:", data.message);
                             return;
                         }
                         
                         if (data.status === 'success') {
-                            // Pastikan data lengkap
-                            if (!data.ringkasan) {
-                                console.warn("Data ringkasan tidak ada, membuat default");
-                                data.ringkasan = {
-                                    akurasi: 0,
-                                    total_data_diproses: 0,
-                                    prediksi_benar: 0,
-                                    prediksi_salah: 0
-                                };
-                            }
-                            
-                            if (!data.detail_hasil) {
-                                console.warn("detail_hasil tidak ada, membuat array kosong");
-                                data.detail_hasil = [];
-                            }
-                            
-                            if (!data.per_kategori) {
-                                console.warn("per_kategori tidak ada, membuat object kosong");
-                                data.per_kategori = {};
-                            }
-                            
                             this.evalResult = data;
-                            console.log("✅ Evaluasi berhasil, data siap ditampilkan");
                         } else {
                             throw new Error('Status response tidak dikenali: ' + data.status);
                         }
                         
                     } catch (e) {
-                        console.error("❌ Fetch Error:", e);
+                        console.error(e);
                         this.evalError = "Gagal: " + e.message;
-                        this.evalResult = null;  // Pastikan null
+                        this.evalResult = null;
                     } finally {
                         this.isTesting = false;
                     }

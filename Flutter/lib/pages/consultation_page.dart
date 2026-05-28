@@ -1,13 +1,6 @@
-<<<<<<< HEAD
-import 'dart:convert';
-=======
 import '../models/chat_message.dart';
->>>>>>> 3dce3ded2007c2340c53492b0ffca3ec2144b212
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:http/http.dart' as http;
-import '../models/chat_message.dart';
-import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -234,10 +227,7 @@ class _ConsultationPageState extends State<ConsultationPage> {
           // Chat area
           Expanded(
             child: ListView.builder(
-<<<<<<< HEAD
-=======
               controller: _scrollController,
->>>>>>> 3dce3ded2007c2340c53492b0ffca3ec2144b212
               padding: const EdgeInsets.all(20),
               itemCount: _messages.length,
               itemBuilder: (context, index) {
@@ -939,13 +929,8 @@ class _BotMessage extends StatelessWidget {
       alignment: Alignment.centerLeft,
       child: Container(
         constraints:
-<<<<<<< HEAD
-            BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.85),
-        padding: const EdgeInsets.all(18),
-=======
             BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.9),
         padding: const EdgeInsets.all(16),
->>>>>>> 3dce3ded2007c2340c53492b0ffca3ec2144b212
         decoration: BoxDecoration(
           color: context.colors.cardBackground,
           borderRadius: const BorderRadius.only(
@@ -1020,9 +1005,6 @@ class _QuickChip extends StatelessWidget {
   final Color color;
   final Color textColor;
   final Color borderColor;
-<<<<<<< HEAD
-  final VoidCallback? onTap; // ← tambahkan ini
-=======
   final VoidCallback onTap;
   const _QuickChip({
     required this.label,
@@ -1031,19 +1013,11 @@ class _QuickChip extends StatelessWidget {
     required this.borderColor,
     required this.onTap,
   });
->>>>>>> 3dce3ded2007c2340c53492b0ffca3ec2144b212
 
-  const _QuickChip({
-    required this.label,
-    required this.color,
-    required this.textColor,
-    required this.borderColor,
-    this.onTap, // ← tambahkan ini
-  });
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap, // ← gunakan onTap di sini
+      onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(

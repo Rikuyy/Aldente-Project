@@ -70,4 +70,26 @@ class DashboardService {
       return {'success': false, 'message': 'Gagal terhubung ke server: $e'};
     }
   }
+
+  // Tambahan untuk mengambil stok dari inventory
+  Future<Map<String, dynamic>> getInventory() async {
+    final token = await _getToken();
+    if (token == null) {
+      return {'success': false, 'message': 'Token tidak ditemukan'};
+    }
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/inventory'),
+        headers: _headers(token),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {'success': true, 'data': data['data']};
+      } else {
+        return {'success': false, 'message': 'Gagal memuat stok'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Gagal terhubung ke server: $e'};
+    }
+  }
 }

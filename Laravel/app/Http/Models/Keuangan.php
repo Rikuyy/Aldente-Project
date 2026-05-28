@@ -1,4 +1,5 @@
 <?php
+// app/Models/Keuangan.php
 
 namespace App\Models;
 
@@ -9,36 +10,36 @@ class Keuangan extends Model
     protected $connection = 'mongodb';
     protected $collection = 'keuangan';
     
-    // Primary key default MongoDB adalah '_id', tapi Anda juga punya 'Id_Keuangan'
-    // Biarkan pakai '_id' agar tidak ribet
     protected $primaryKey = '_id';
     
-    // Field yang boleh diisi (mass assignment)
     protected $fillable = [
-        'Id_Keuangan',
         'Id_User',
         'Id_JadwalMakan',
         'Tanggal',
         'Waktu',
-        'Jenis_Pengeluaran', // 'Beli' atau 'Masak'
-        'Detail_Beli',      // array untuk 'Beli', null untuk 'Masak'
-        'Total_Pengeluaran',
+        'Jenis_Pengeluaran', // 'Beli', 'Masak', 'Topup'
+        'Detail_Beli',
+        'Total_Pengeluaran', // nominal positif
+        'is_debit',          // true = pengeluaran, false = pemasukan
     ];
 
-    // Casting tipe data
     protected $casts = [
-        'Id_Keuangan' => 'integer',
-        'Id_User' => 'integer',
-        'Id_JadwalMakan' => 'integer',
+        'Id_User' => 'string',
+        'Id_JadwalMakan' => 'string',
         'Total_Pengeluaran' => 'double',
         'Detail_Beli' => 'array',
-        'Tanggal' => 'string',
-        'Waktu' => 'string',
+        'is_debit' => 'boolean',
     ];
 
-    // Relasi ke JadwalMakan (jika ingin pakai Eloquent)
+    // Relasi ke JadwalMakan
     public function jadwalMakan()
     {
-        return $this->belongsTo(JadwalMakan::class, 'Id_JadwalMakan', 'Id_JadwalMakan');
+        return $this->belongsTo(JadwalMakan::class, 'Id_JadwalMakan');
+    }
+
+    // Relasi ke User
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'Id_User');
     }
 }

@@ -4,27 +4,65 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Symfony\Component\Process\Process;
+use Illuminate\Support\Facades\Log;
 
 class ChatbotController extends Controller
 {
-public function rekomendasi(Request $request)
-{
-    $query = $request->input('query');
-    
-    $user = auth()->user(); 
-    $alergi = $user->riwayat_alergi; 
+    /**
+     * Mendapatkan path absolut ke script Python
+     * Prioritas: folder API eksternal -> app/Python -> root Laravel
+     */
+    protected function getPythonScriptPath($scriptName)
+    {
+        // 1. Folder API di luar Laravel (sesuai struktur Anda)
+        $externalPath = 'C:/laragon/www/Projeksmt4/API/' . $scriptName;
+        if (file_exists($externalPath)) {
+            return $externalPath;
+        }
+        // 2. Folder app/Python di dalam Laravel (alternatif)
+        $internalPath = base_path('app/Python/' . $scriptName);
+        if (file_exists($internalPath)) {
+            return $internalPath;
+        }
+        // 3. Root Laravel (opsi lama)
+        return base_path($scriptName);
+    }
 
-    $pythonExe = env('PYTHON_EXE', 'python');
-    $scriptPath = base_path('rekomendasi.py');
+    /**
+     * Endpoint untuk mendapatkan rekomendasi resep berdasarkan query dan alergi user
+     */
+    public function rekomendasi(Request $request)
+    {
+        $query = $request->input('query');
+        $user = auth()->user();
+        $alergi = $user->riwayat_alergi ?? '';
 
-    // Kirim query dan data alergi dari database ke Python
-    $process = new Process([$pythonExe, $scriptPath, $query, $alergi], null, [
-        'SYSTEMROOT' => getenv('SYSTEMROOT') ?: 'C:\\Windows',
-        'PATH' => getenv('PATH')
-    ]);
+        $pythonExe = env('PYTHON_EXE', 'python');
+        $scriptPath = $this->getPythonScriptPath('rekomendasi.py');
+
+        if (!file_exists($scriptPath)) {
+            Log::error('Script rekomendasi.py tidak ditemukan di: ' . $scriptPath);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Script rekomendasi.py tidak ditemukan'
+            ], 500);
+        }
+
+        // 🔧 KRUSIAL: set working directory ke folder script
+        $process = new Process([$pythonExe, $scriptPath, $query, $alergi]);
+        $process->setWorkingDirectory(dirname($scriptPath));
+
+        $process->setEnv([
+            'PYTHONIOENCODING' => 'utf-8',
+            'PYTHONUTF8' => '1',
+            'SYSTEMROOT' => getenv('SYSTEMROOT') ?: 'C:\\Windows',
+            'PATH' => getenv('PATH')
+        ]);
+
         $process->run();
 
         if (!$process->isSuccessful()) {
+            Log::error('Rekomendasi AI gagal: ' . $process->getErrorOutput());
             return response()->json([
                 'status' => 'error',
                 'message' => 'Gagal menjalankan AI',
@@ -33,27 +71,44 @@ public function rekomendasi(Request $request)
         }
 
         $result = json_decode($process->getOutput(), true);
-
         return response()->json([
             'status' => 'success',
             'results' => $result
         ]);
     }
+
+    /**
+     * Endpoint untuk memperbarui model AI (melatih ulang dengan data terbaru dari MongoDB)
+     */
     public function updateModel()
     {
         $pythonExe = env('PYTHON_EXE', 'python');
-        $scriptPath = base_path('update_model.py');
+        $scriptPath = $this->getPythonScriptPath('update_model.py');
 
-        // PASTIKAN BARIS INI SAMA (Ada tambahan SYSTEMROOT)
-        $process = new Process([$pythonExe, $scriptPath], null, [
+        if (!file_exists($scriptPath)) {
+            Log::error('Script update_model.py tidak ditemukan di: ' . $scriptPath);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Script update_model.py tidak ditemukan'
+            ], 500);
+        }
+
+        // 🔧 set working directory
+        $process = new Process([$pythonExe, $scriptPath]);
+        $process->setWorkingDirectory(dirname($scriptPath));
+
+        $process->setEnv([
+            'PYTHONIOENCODING' => 'utf-8',
+            'PYTHONUTF8' => '1',
             'SYSTEMROOT' => getenv('SYSTEMROOT') ?: 'C:\\Windows',
             'PATH' => getenv('PATH')
         ]);
-        
-        $process->setTimeout(180); // Waktu 3 menit buat AI belajar
+
+        $process->setTimeout(180); // 3 menit
         $process->run();
 
         if (!$process->isSuccessful()) {
+            Log::error('Update model gagal: ' . $process->getErrorOutput());
             return response()->json([
                 'status' => 'error',
                 'message' => 'Gagal memperbarui model AI',
@@ -67,12 +122,29 @@ public function rekomendasi(Request $request)
         ]);
     }
 
+    /**
+     * Endpoint untuk mengevaluasi model (Precision@K, Recall@K)
+     */
     public function evaluasi()
     {
         $pythonExe = env('PYTHON_EXE', 'python');
-        $scriptPath = base_path('evaluasi_model.py');
+        $scriptPath = $this->getPythonScriptPath('evaluasi_model.py');
 
-        $process = new Process([$pythonExe, $scriptPath], null, [
+        if (!file_exists($scriptPath)) {
+            Log::error('Script evaluasi_model.py tidak ditemukan di: ' . $scriptPath);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Script evaluasi_model.py tidak ditemukan'
+            ], 500);
+        }
+
+        // 🔧 set working directory
+        $process = new Process([$pythonExe, $scriptPath]);
+        $process->setWorkingDirectory(dirname($scriptPath));
+
+        $process->setEnv([
+            'PYTHONIOENCODING' => 'utf-8',
+            'PYTHONUTF8' => '1',
             'SYSTEMROOT' => getenv('SYSTEMROOT') ?: 'C:\\Windows',
             'PATH' => getenv('PATH')
         ]);
@@ -80,6 +152,7 @@ public function rekomendasi(Request $request)
         $process->run();
 
         if (!$process->isSuccessful()) {
+            Log::error('Evaluasi model gagal: ' . $process->getErrorOutput());
             return response()->json([
                 'status' => 'error',
                 'message' => 'Gagal menjalankan evaluasi model AI',
@@ -88,7 +161,6 @@ public function rekomendasi(Request $request)
         }
 
         $result = json_decode($process->getOutput(), true);
-
         return response()->json($result);
     }
 }
