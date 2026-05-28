@@ -18,7 +18,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   static const int _totalSteps = 4;
 
   // STEP 1
-  List<String> _selectedCategories = [];
+  final List<String> _selectedCategories = [];
   List<String> _availableCategories = [];
   bool _isLoadingCategories = true;
   String? _loadCategoriesError;
@@ -54,7 +54,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
         backendOnboarded = response['data']?['status_onboarding'] ?? false;
       }
     } catch (e) {
-      print('Error checking backend onboarding: $e');
+      debugPrint('Error checking backend onboarding: $e');
     }
 
     if (backendOnboarded) {
@@ -87,7 +87,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
         throw Exception('Format kategori tidak dikenal');
       }
 
-      final List<String> categories = (raw as List)
+      final List<String> categories = (raw)
           .map<String>((e) => e.toString())
           .where((s) => s.isNotEmpty)
           .toList();
@@ -98,7 +98,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
       setState(() => _availableCategories = categories);
     } catch (e) {
-      print('ERROR fetch categories: $e');
+      debugPrint('ERROR fetch categories: $e');
       setState(() => _loadCategoriesError = 'Gagal memuat kategori: $e');
       _showError(
           'Gagal memuat kategori makanan. Periksa koneksi atau backend.');
@@ -145,7 +145,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
         'Jumlah_Makan': _mealFreq,
       };
 
-      print('Onboarding payload: $payload');
+      debugPrint('Onboarding payload: $payload');
 
       final response = await ApiService.post('/onboarding', payload);
 
