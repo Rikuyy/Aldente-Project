@@ -145,9 +145,15 @@ class _OnboardingPageState extends State<OnboardingPage> {
         'Jumlah_Makan': _mealFreq,
       };
 
+<<<<<<< Updated upstream
       print('Onboarding payload: $payload');
 
       final response = await ApiService.post('/onboarding', payload);
+=======
+      final response = await ApiService.put('/profile/onboarding', payload);
+      // ignore: avoid_print
+      print('Onboarding PUT response: $response');
+>>>>>>> Stashed changes
 
       if (!mounted) return;
 

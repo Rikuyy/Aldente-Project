@@ -8,7 +8,8 @@ class Keuangan extends Model
 {
     protected $connection = 'mongodb';
     protected $collection = 'keuangan';
-    protected $primaryKey = 'Id_Keuangan';
+    protected $table = 'keuangan';
+    //protected $primaryKey = 'Id_Keuangan';
 
     protected $fillable = [
         'Id_User', 
