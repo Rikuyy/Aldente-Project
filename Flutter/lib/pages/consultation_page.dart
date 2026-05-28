@@ -1,10 +1,10 @@
 import '../models/chat_message.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../theme/app_theme.dart';
-import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../services/api_service.dart';
+import '../theme/app_theme.dart';
+import 'dart:convert';
 
 class ConsultationPage extends StatefulWidget {
   const ConsultationPage({super.key});
@@ -112,7 +112,7 @@ class _ConsultationPageState extends State<ConsultationPage> {
     } catch (e) {
       setState(() {
         _messages.removeLast();
-        _messages.add(ChatMessage(
+        _messages.add(const ChatMessage(
           text: 'Waduh, ada gangguan koneksi nih. Coba lagi ya! 🙏',
           isUser: false,
           status: MessageStatus.error,
@@ -251,9 +251,9 @@ class _ConsultationPageState extends State<ConsultationPage> {
 
   Widget _buildBotContent(ChatMessage msg) {
     if (msg.status == MessageStatus.loading) {
-      return Row(
+      return const Row(
         mainAxisSize: MainAxisSize.min,
-        children: const [
+        children: [
           SizedBox(
             width: 16,
             height: 16,
@@ -886,7 +886,6 @@ class _StepTile extends StatelessWidget {
     );
   }
 }
-
 // ─────────────────────────────────────────
 // Section title
 // ─────────────────────────────────────────
@@ -1013,7 +1012,6 @@ class _QuickChip extends StatelessWidget {
     required this.borderColor,
     required this.onTap,
   });
-
   @override
   Widget build(BuildContext context) {
     return GestureDetector(

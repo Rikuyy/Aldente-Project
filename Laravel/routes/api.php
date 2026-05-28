@@ -97,7 +97,6 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/jadwal/rebuild-queue', [TodoCookController::class, 'rebuildQueue']);
 });
 
-// ========== TAMBAHAN ROUTE DARI KODE KEDUA (YANG BELUM ADA) ==========
 Route::middleware('auth:api')->group(function () {
     // Profile routes (GET dan PUT untuk profil biasa)
     Route::prefix('profile')->group(function () {

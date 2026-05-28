@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import '../services/auth_services.dart';
 
@@ -105,17 +104,17 @@ class _SignInScreenState extends State<SignInScreen> {
                         TextFormField(
                           controller: _usernameController,
                           keyboardType: TextInputType.text,
-                          decoration: InputDecoration(
+                          decoration: const InputDecoration(
                             labelText: "Username",
                             hintText: "Masukkan username Anda",
                             floatingLabelBehavior: FloatingLabelBehavior.always,
-                            contentPadding: const EdgeInsets.symmetric(
+                            contentPadding: EdgeInsets.symmetric(
                                 horizontal: 42, vertical: 20),
                             enabledBorder: authOutlineInputBorder,
                             focusedBorder: authOutlineInputBorder,
                             border: authOutlineInputBorder,
                             suffixIcon: Padding(
-                              padding: const EdgeInsets.fromLTRB(0, 20, 20, 20),
+                              padding: EdgeInsets.fromLTRB(0, 20, 20, 20),
                               child:
                                   Icon(Icons.person, color: Color(0xFF757575)),
                             ),

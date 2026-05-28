@@ -61,9 +61,9 @@ class _FinancePageState extends State<FinancePage> {
         _ringkasan =
             FinanceRingkasanModel.fromJson(ringkasanResp['data']['data']);
         anyApiSuccess = true;
-        print('✅ Ringkasan dari API');
+        debugPrint('✅ Ringkasan dari API');
       } else {
-        print('⚠️ Ringkasan API gagal');
+        debugPrint('⚠️ Ringkasan API gagal');
       }
 
       final grafikResp =
@@ -73,20 +73,20 @@ class _FinancePageState extends State<FinancePage> {
         _grafikData =
             perTanggal.map((j) => FinanceGrafikModel.fromJson(j)).toList();
         anyApiSuccess = true;
-        print('✅ Grafik dari API');
+        debugPrint('✅ Grafik dari API');
       }
 
       await _loadMutasi();
       if (_groupedMutasi.isNotEmpty) anyApiSuccess = true;
 
       if (!anyApiSuccess) {
-        print('⚠️ Semua API gagal, fallback ke JSON lokal');
+        debugPrint('⚠️ Semua API gagal, fallback ke JSON lokal');
         await _loadFromJson();
       }
 
       setState(() => _isLoading = false);
     } catch (e, stack) {
-      print('❌ Error _loadData: $e\n$stack');
+      debugPrint('❌ Error _loadData: $e\n$stack');
       await _loadFromJson();
       setState(() => _isLoading = false);
     }
@@ -106,7 +106,7 @@ class _FinancePageState extends State<FinancePage> {
       }
       String url = '/keuangan/mutasi';
       if (query.isNotEmpty) {
-        url += '?' + query.entries.map((e) => '${e.key}=${e.value}').join('&');
+        url += '?${query.entries.map((e) => '${e.key}=${e.value}').join('&')}';
       }
       final resp = await ApiService.get(url);
       if (resp['success'] == true &&
@@ -116,13 +116,13 @@ class _FinancePageState extends State<FinancePage> {
         setState(() {
           _groupedMutasi = list.map((e) => GroupedMutasi.fromJson(e)).toList();
         });
-        print('✅ Mutasi dari API: ${_groupedMutasi.length} groups');
+        debugPrint('✅ Mutasi dari API: ${_groupedMutasi.length} groups');
       } else {
         setState(() => _groupedMutasi = []);
-        print('⚠️ Mutasi API kosong');
+        debugPrint('⚠️ Mutasi API kosong');
       }
     } catch (e) {
-      print('❌ Error load mutasi: $e');
+      debugPrint('❌ Error load mutasi: $e');
       setState(() => _groupedMutasi = []);
     }
   }
@@ -246,9 +246,9 @@ class _FinancePageState extends State<FinancePage> {
               ))
           .toList();
 
-      print('✅ Fallback JSON loaded: ${_groupedMutasi.length} groups');
+      debugPrint('✅ Fallback JSON loaded: ${_groupedMutasi.length} groups');
     } catch (e) {
-      print('❌ Error load JSON: $e');
+      debugPrint('❌ Error load JSON: $e');
       setState(() => _error = 'Gagal load data keuangan: $e');
     }
   }
