@@ -4,7 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ResepController;
-use App\Http\Controllers\ChatbotController; // <--- WAJIB IMPORT
+use App\Http\Controllers\ChatbotController;
 use Illuminate\Support\Facades\Route;
 
 // 1. Arahkan halaman utama ke login
@@ -25,8 +25,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('/api/resep/{id}', [ResepController::class, 'update']);
     Route::delete('/api/resep/{id}', [ResepController::class, 'destroy']);
 
-    // --- PENTING: Route Evaluasi untuk Testing Page ---
-    // Dipindahkan ke web agar menggunakan Session Login, bukan JWT
+    // --- ROUTE EVALUASI UNTUK TESTING (WEB) ---
+    // Menggunakan prefix /api agar konsisten dengan panggilan dari frontend
     Route::post('/api/chatbot/evaluasi', [ChatbotController::class, 'evaluasi']);
 
     // Manajemen Bahan
@@ -36,7 +36,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/manajemen-user', [UserController::class, 'index'])->name('users.index');
     Route::delete('/manajemen-user/{id}', [UserController::class, 'destroy'])->name('users.destroy');
 
-    // Halaman Uji Algoritma
+    // Halaman Uji Algoritma (Testing)
     Route::get('/testing', function () {
         $routes = collect(Route::getRoutes())->filter(function($route) {
             return str_contains($route->uri, 'api/') && !str_contains($route->uri, 'sanctum');

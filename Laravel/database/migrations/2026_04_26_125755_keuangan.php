@@ -19,7 +19,7 @@ return new class extends Migration
             // Kolom ini yang akan menampung banyak barang sekaligus!
             $table->json('Detail_Beli')->nullable(); 
             
-            $table->decimal('Total Pengeluaran', 15, 2);
+            $table->decimal('Total_Pengeluaran', 15, 2);
             $table->timestamps();
         });
     }

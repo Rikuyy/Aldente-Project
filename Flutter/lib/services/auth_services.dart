@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import "../services/api_service.dart";
 
 class AuthService {
+  // Register (tetap pakai email)
   Future<Map<String, dynamic>> register(String username, String email,
       String password, String passwordConfirmation) async {
     try {
@@ -31,13 +32,14 @@ class AuthService {
     }
   }
 
-  Future<Map<String, dynamic>> login(String email, String password) async {
+  // LOGIN - ganti email menjadi username
+  Future<Map<String, dynamic>> login(String username, String password) async {
     try {
       final response = await http.post(
         Uri.parse('${ApiService.baseUrl}/auth/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'email': email,
+          'username': username,
           'password': password,
         }),
       );
@@ -54,6 +56,7 @@ class AuthService {
     }
   }
 
+  // Forgot Password (tetap email)
   Future<Map<String, dynamic>> forgotPassword(String email) async {
     try {
       final response = await http.post(
@@ -68,6 +71,7 @@ class AuthService {
     }
   }
 
+  // Verify OTP (tetap email)
   Future<Map<String, dynamic>> verifyOtp(String email, String otpCode) async {
     try {
       final response = await http.post(
@@ -85,6 +89,7 @@ class AuthService {
     }
   }
 
+  // Reset Password (tetap email)
   Future<Map<String, dynamic>> resetPassword(
       String email, String password, String passwordConfirmation) async {
     try {
@@ -104,6 +109,7 @@ class AuthService {
     }
   }
 
+  // Get Profile
   Future<Map<String, dynamic>> getProfile() async {
     final token = await getToken();
     try {
@@ -129,6 +135,7 @@ class AuthService {
     }
   }
 
+  // Logout
   Future<void> logout() async {
     final token = await getToken();
     try {
@@ -146,6 +153,7 @@ class AuthService {
     }
   }
 
+  // Token management
   Future<void> saveToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('jwt_token', token);
