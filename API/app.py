@@ -15,12 +15,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
 )
-logger = logging.getLogger(__name__)
-
-# ---------------------------------------------------------------------------
-# Muat Model TF-IDF
-# Struktur model.pkl: tuple(TfidfVectorizer, csr_matrix, DataFrame)
-# ---------------------------------------------------------------------------
+logger = logging.getLogger(__name__) 
 tfidf = None
 tfidf_matrix = None
 df_recipes = None
@@ -32,7 +27,7 @@ try:
 except FileNotFoundError:
     logger.warning("File model_cookcash.pkl tidak ditemukan.")
 except Exception as e:
-    logger.error(f"Gagal memuat model: {e}")
+    logger.error(f"Gagal memuat model : {e}")
 
 
 # ---------------------------------------------------------------------------

@@ -1,5 +1,11 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import '../theme/app_theme.dart';
+import '../services/api_service.dart';
+import '../services/auth_services.dart';
+
+// ==================== MODEL ====================
 
 class Resep {
   final String id;
@@ -7,6 +13,7 @@ class Resep {
   final String ingredients;
   final String steps;
   final String category;
+
   Resep({
     required this.id,
     required this.title,
@@ -14,24 +21,39 @@ class Resep {
     required this.steps,
     required this.category,
   });
+
+  factory Resep.fromJson(Map<String, dynamic> json) {
+    return Resep(
+      id: json['id'].toString(),
+      title: json['title'] ?? '',
+      ingredients: json['ingredients'] ?? '',
+      steps: json['steps'] ?? '',
+      category: json['category'] ?? '',
+    );
+  }
 }
 
 class _TodoItem {
   final String id;
   final String title;
   final int sesi;
+  final String sesiLabel; // "Sarapan", "Makan Siang", dst
   final String resepId;
   final String category;
   bool isDone;
+
   _TodoItem({
     required this.id,
     required this.title,
     required this.sesi,
+    required this.sesiLabel,
     required this.resepId,
     required this.category,
     this.isDone = false,
   });
 }
+
+// ==================== HALAMAN UTAMA ====================
 
 class TodoPage extends StatefulWidget {
   const TodoPage({super.key});
@@ -41,44 +63,13 @@ class TodoPage extends StatefulWidget {
 }
 
 class _TodoPageState extends State<TodoPage> {
-  final Map<String, Resep> mockResepMap = {
-    'resep1': Resep(
-      id: 'resep1',
-      title: 'Nasi Goreng Sosis',
-      ingredients:
-          'Nasi, sosis, telur, kecap manis, bawang merah, bawang putih',
-      steps:
-          '1. Tumis bawang. 2. Masukkan sosis. 3. Tambahkan nasi dan telur. 4. Bumbui. 5. Sajikan.',
-      category: 'Makan Siang',
-    ),
-    'resep2': Resep(
-      id: 'resep2',
-      title: 'Soto Ayam',
-      ingredients: 'Ayam, tauge, kol, soun, daun bawang, seledri, bumbu soto',
-      steps:
-          '1. Rebus ayam dengan bumbu. 2. Suwir ayam. 3. Sajikan dengan pelengkap.',
-      category: 'Makan Siang',
-    ),
-    'resep3': Resep(
-      id: 'resep3',
-      title: 'Bubur Ayam',
-      ingredients: 'Beras, ayam, cakwe, kacang, seledri',
-      steps: '1. Masak bubur. 2. Buat kuah ayam. 3. Sajikan.',
-      category: 'Sarapan',
-    ),
-    'resep4': Resep(
-      id: 'resep4',
-      title: 'Pisang Goreng',
-      ingredients: 'Pisang kepok, tepung terigu, tepung beras, gula, vanili',
-      steps: '1. Campur adonan. 2. Celup pisang. 3. Goreng hingga keemasan.',
-      category: 'Cemilan',
-    ),
-  };
-
+  final Map<String, Resep> _resepMap = {};
   List<_TodoItem> _todos = [];
   String _filter = 'Semua';
+  bool _isLoading = true;
+  String? _errorMessage;
+  String? _token; // cache token agar tidak async tiap request
 
-  // State form inline - hanya untuk kontrol visibilitas
   Set<String> _openBeli = {};
   Set<String> _openMasak = {};
 
@@ -93,23 +84,128 @@ class _TodoPageState extends State<TodoPage> {
   @override
   void initState() {
     super.initState();
+    _initToken();
+  }
+
+  // Ambil token sekali saat halaman dibuka, lalu load todos
+  Future<void> _initToken() async {
+    _token = await AuthService().getToken();
+    print('TOKEN: $_token');
     _loadTodos();
   }
 
-  void _loadTodos() {
-    final list = mockResepMap.values.toList();
-    for (int i = 0; i < list.length; i++) {
-      _todos.add(_TodoItem(
-        id: 'todo_$i',
-        title: list[i].title,
-        sesi: i + 1,
-        resepId: list[i].id,
-        category: list[i].category,
-      ));
+  // ---------------------------------------------------------------------------
+  // FETCH: Generate jadwal hari ini dari API
+  // ---------------------------------------------------------------------------
+  Future<void> _loadTodos() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    // Kalau token belum siap (misal user tekan refresh manual), ambil lagi
+    _token ??= await AuthService().getToken();
+
+    try {
+      final tanggal = DateTime.now().toIso8601String().substring(0, 10);
+      final uri =
+          Uri.parse('${ApiService.baseUrl}/jadwal/generate?tanggal=$tanggal');
+
+      final response = await http.get(uri, headers: {
+        'Authorization': 'Bearer $_token',
+        'Accept': 'application/json',
+      });
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        final List items = body['data'];
+
+        final todos = <_TodoItem>[];
+        for (final item in items) {
+          final resepJson = item['resep'];
+          if (resepJson == null) continue;
+
+          final resep = Resep.fromJson(resepJson);
+          _resepMap[resep.id] = resep;
+
+          todos.add(_TodoItem(
+            id: 'todo_${item['sesi_ke']}',
+            title: resep.title,
+            sesi: item['sesi_ke'],
+            sesiLabel: item['sesi'],
+            resepId: resep.id,
+            category: resep.category,
+            isDone: item['is_done'] ?? false,
+          ));
+        }
+
+        setState(() => _todos = todos);
+      } else if (response.statusCode == 422) {
+        final body = jsonDecode(response.body);
+        setState(() => _errorMessage = body['message']);
+      } else {
+        setState(() => _errorMessage = 'Gagal memuat jadwal. Coba lagi.');
+      }
+    } catch (e) {
+      setState(() => _errorMessage = 'Tidak dapat terhubung ke server.');
+    } finally {
+      setState(() => _isLoading = false);
     }
-    setState(() {});
   }
 
+  // ---------------------------------------------------------------------------
+  // POST: Simpan ke jadwal_makan saat user selesai (centang)
+  // ---------------------------------------------------------------------------
+  Future<void> _simpanJadwal(String resepId, String sesiLabel, String jenis,
+      List<Map<String, dynamic>> detailBeli,
+      {double? totalPengeluaran}) async {
+    final tanggal = DateTime.now().toIso8601String().substring(0, 10);
+
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiService.baseUrl}/jadwal-makan'),
+        headers: {
+          'Authorization': 'Bearer $_token',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({
+          'Id_Resep': resepId,
+          'Sesi Makan': sesiLabel,
+          'Tanggal': tanggal,
+          'Jenis_Pengeluaran': jenis,
+          'Detail_Beli': detailBeli,
+          if (jenis == 'Masak' && totalPengeluaran != null)
+            'Total_Pengeluaran': totalPengeluaran,
+        }),
+      );
+
+      if (response.statusCode != 201) {
+        final body = jsonDecode(response.body);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(body['message'] ?? 'Gagal menyimpan jadwal.'),
+              backgroundColor: AppTheme.red500,
+            ),
+          );
+        }
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Gagal menyimpan, cek koneksimu.'),
+            backgroundColor: AppTheme.red500,
+          ),
+        );
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // DIALOG: Detail resep
+  // ---------------------------------------------------------------------------
   void _showDetailResep(Resep resep) {
     showDialog(
       context: context,
@@ -147,7 +243,7 @@ class _TodoPageState extends State<TodoPage> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(_),
+            onPressed: () => Navigator.pop(context),
             child: Text('Tutup', style: TextStyle(color: AppTheme.orange600)),
           ),
         ],
@@ -155,25 +251,19 @@ class _TodoPageState extends State<TodoPage> {
     );
   }
 
-  void _simpanJadwal(String resepId, int sesi) {
-    // Simulasi penyimpanan ke jadwal_makan
-    print('Simpan ke jadwal_makan: resepId=$resepId, sesi=$sesi');
-  }
-
+  // ---------------------------------------------------------------------------
+  // BUILD
+  // ---------------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
-    // Hitung sapaan berdasarkan waktu
     final hour = DateTime.now().hour;
-    String greeting;
-    if (hour < 12) {
-      greeting = 'Selamat Pagi';
-    } else if (hour < 15) {
-      greeting = 'Selamat Siang';
-    } else if (hour < 18) {
-      greeting = 'Selamat Sore';
-    } else {
-      greeting = 'Selamat Malam';
-    }
+    final greeting = hour < 12
+        ? 'Selamat Pagi'
+        : hour < 15
+            ? 'Selamat Siang'
+            : hour < 18
+                ? 'Selamat Sore'
+                : 'Selamat Malam';
 
     return Scaffold(
       backgroundColor: context.colors.surface,
@@ -199,7 +289,7 @@ class _TodoPageState extends State<TodoPage> {
             padding: const EdgeInsets.all(20),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                // Header sapaan (dipindah ke atas, menggantikan Rencana Memasak)
+                // Header sapaan
                 Container(
                   margin: const EdgeInsets.only(bottom: 16),
                   padding:
@@ -235,78 +325,53 @@ class _TodoPageState extends State<TodoPage> {
                     ],
                   ),
                 ),
-                // Progress card
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppTheme.white,
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: context.colors.border),
-                    boxShadow: [
-                      BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2))
-                    ],
-                  ),
-                  child: Column(children: [
-                    Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('$_doneCount dari ${_todos.length} selesai',
-                              style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: context.colors.textPrimary)),
-                          Text(
-                              '${_todos.isEmpty ? 0 : (_doneCount / _todos.length * 100).round()}%',
-                              style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w900,
-                                  color: AppTheme.orange600)),
-                        ]),
-                    const SizedBox(height: 10),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(50),
-                      child: LinearProgressIndicator(
-                        value: _todos.isEmpty ? 0 : _doneCount / _todos.length,
-                        minHeight: 8,
-                        backgroundColor: context.colors.border,
-                        valueColor: const AlwaysStoppedAnimation<Color>(
-                            AppTheme.orange500),
-                      ),
+
+                // Loading / Error / Progress
+                if (_isLoading)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 40),
+                      child:
+                          CircularProgressIndicator(color: AppTheme.orange500),
                     ),
-                  ]),
-                ),
-                const SizedBox(height: 16),
-                // Filter chips
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                      children: ['Semua', 'Aktif', 'Selesai'].map((f) {
-                    final isSel = _filter == f;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: FilterChip(
-                        label: Text(f),
-                        selected: isSel,
-                        onSelected: (_) => setState(() => _filter = f),
-                        selectedColor: AppTheme.orange500,
-                        backgroundColor: AppTheme.white,
-                        checkmarkColor: AppTheme.white,
-                        labelStyle: TextStyle(
-                            color: isSel
-                                ? AppTheme.white
-                                : context.colors.textSecondary),
-                        side: BorderSide(color: context.colors.border),
-                      ),
-                    );
-                  }).toList()),
-                ),
-                const SizedBox(height: 16),
-                // Daftar todo item
-                ..._filtered.map((todo) => _buildTodoItem(todo)).toList(),
-                const SizedBox(height: 30),
+                  )
+                else if (_errorMessage != null)
+                  _buildErrorState()
+                else ...[
+                  // Progress card
+                  _buildProgressCard(),
+                  const SizedBox(height: 16),
+
+                  // Filter chips
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                        children: ['Semua', 'Aktif', 'Selesai'].map((f) {
+                      final isSel = _filter == f;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: FilterChip(
+                          label: Text(f),
+                          selected: isSel,
+                          onSelected: (_) => setState(() => _filter = f),
+                          selectedColor: AppTheme.orange500,
+                          backgroundColor: AppTheme.white,
+                          checkmarkColor: AppTheme.white,
+                          labelStyle: TextStyle(
+                              color: isSel
+                                  ? AppTheme.white
+                                  : context.colors.textSecondary),
+                          side: BorderSide(color: context.colors.border),
+                        ),
+                      );
+                    }).toList()),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Daftar todo
+                  ..._filtered.map((todo) => _buildTodoItem(todo)).toList(),
+                  const SizedBox(height: 30),
+                ],
               ]),
             ),
           ),
@@ -315,11 +380,84 @@ class _TodoPageState extends State<TodoPage> {
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // WIDGETS HELPER
+  // ---------------------------------------------------------------------------
+
+  Widget _buildProgressCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: context.colors.border),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 6,
+              offset: const Offset(0, 2))
+        ],
+      ),
+      child: Column(children: [
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          Text('$_doneCount dari ${_todos.length} selesai',
+              style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: context.colors.textPrimary)),
+          Text(
+              '${_todos.isEmpty ? 0 : (_doneCount / _todos.length * 100).round()}%',
+              style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  color: AppTheme.orange600)),
+        ]),
+        const SizedBox(height: 10),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(50),
+          child: LinearProgressIndicator(
+            value: _todos.isEmpty ? 0 : _doneCount / _todos.length,
+            minHeight: 8,
+            backgroundColor: context.colors.border,
+            valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.orange500),
+          ),
+        ),
+      ]),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 40),
+        child: Column(
+          children: [
+            const Icon(Icons.restaurant_outlined,
+                size: 48, color: AppTheme.orange300),
+            const SizedBox(height: 12),
+            Text(_errorMessage!,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: context.colors.textSecondary)),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadTodos,
+              style:
+                  ElevatedButton.styleFrom(backgroundColor: AppTheme.orange500),
+              child: const Text('Coba Lagi',
+                  style: TextStyle(color: AppTheme.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildTodoItem(_TodoItem todo) {
-    final resep = mockResepMap[todo.resepId]!;
+    final resep = _resepMap[todo.resepId];
+    if (resep == null) return const SizedBox.shrink();
+
     return Column(
       children: [
-        // Card todo utama
         Dismissible(
           key: Key(todo.id),
           direction: DismissDirection.endToStart,
@@ -340,10 +478,7 @@ class _TodoPageState extends State<TodoPage> {
               decoration: BoxDecoration(
                 color: todo.isDone ? context.colors.surface : AppTheme.white,
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                    color: todo.isDone
-                        ? context.colors.border
-                        : context.colors.border),
+                border: Border.all(color: context.colors.border),
                 boxShadow: todo.isDone
                     ? null
                     : [
@@ -356,11 +491,11 @@ class _TodoPageState extends State<TodoPage> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  // Checkbox bulat
                   GestureDetector(
                     onTap: () {
                       setState(() {
                         todo.isDone = !todo.isDone;
-                        // Tutup form apapun yang terbuka untuk todo ini ketika status berubah
                         _openBeli.remove(todo.id);
                         _openMasak.remove(todo.id);
                       });
@@ -385,12 +520,15 @@ class _TodoPageState extends State<TodoPage> {
                     ),
                   ),
                   const SizedBox(width: 12),
+
+                  // Info resep
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
+                            // Badge sesi label (Sarapan / Makan Siang / dst)
                             Container(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 2),
@@ -399,7 +537,7 @@ class _TodoPageState extends State<TodoPage> {
                                   borderRadius: BorderRadius.circular(12),
                                   border:
                                       Border.all(color: AppTheme.orange200)),
-                              child: Text('Sesi ${todo.sesi}',
+                              child: Text(todo.sesiLabel,
                                   style: const TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.w700,
@@ -422,24 +560,17 @@ class _TodoPageState extends State<TodoPage> {
                                 ),
                               ),
                             ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                  color: context.colors.border,
-                                  borderRadius: BorderRadius.circular(50)),
-                              child: Text(todo.category,
-                                  style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w700,
-                                      color: context.colors.surface)),
-                            ),
                           ],
                         ),
+                        const SizedBox(height: 2),
+                        Text(todo.category,
+                            style: TextStyle(
+                                fontSize: 11, color: context.colors.textHint)),
                       ],
                     ),
                   ),
-                  // Dua tombol: Beli dan Masak
+
+                  // Tombol Beli & Masak
                   Row(
                     children: [
                       _actionButton(
@@ -449,11 +580,9 @@ class _TodoPageState extends State<TodoPage> {
                             : () => setState(() {
                                   if (_openMasak.contains(todo.id))
                                     _openMasak.remove(todo.id);
-                                  if (_openBeli.contains(todo.id)) {
-                                    _openBeli.remove(todo.id);
-                                  } else {
-                                    _openBeli.add(todo.id);
-                                  }
+                                  _openBeli.contains(todo.id)
+                                      ? _openBeli.remove(todo.id)
+                                      : _openBeli.add(todo.id);
                                 }),
                         enabled: !todo.isDone,
                       ),
@@ -465,11 +594,9 @@ class _TodoPageState extends State<TodoPage> {
                             : () => setState(() {
                                   if (_openBeli.contains(todo.id))
                                     _openBeli.remove(todo.id);
-                                  if (_openMasak.contains(todo.id)) {
-                                    _openMasak.remove(todo.id);
-                                  } else {
-                                    _openMasak.add(todo.id);
-                                  }
+                                  _openMasak.contains(todo.id)
+                                      ? _openMasak.remove(todo.id)
+                                      : _openMasak.add(todo.id);
                                 }),
                         enabled: !todo.isDone,
                       ),
@@ -480,36 +607,40 @@ class _TodoPageState extends State<TodoPage> {
             ),
           ),
         ),
-        // Form inline beli (stateful, tidak kehilangan fokus)
+
+        // Form inline Beli
         if (_openBeli.contains(todo.id) && !todo.isDone)
           _BeliFormInline(
             todo: todo,
             resep: resep,
-            onSaved: () {
+            onSaved: (List<Map<String, dynamic>> detail) {
               setState(() {
                 todo.isDone = true;
                 _openBeli.remove(todo.id);
               });
               ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Data beli tersimpan')));
-              _simpanJadwal(todo.resepId, todo.sesi);
+              _simpanJadwal(todo.resepId, todo.sesiLabel, 'Beli', detail);
             },
           ),
-        // Form inline masak (stateful, tidak kehilangan fokus)
+
+        // Form inline Masak
         if (_openMasak.contains(todo.id) && !todo.isDone)
           _MasakFormInline(
             todo: todo,
             resep: resep,
-            onSaved: () {
+            onSaved: (List<Map<String, dynamic>> detail, double total) {
               setState(() {
                 todo.isDone = true;
                 _openMasak.remove(todo.id);
               });
               ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Data masak tersimpan')));
-              _simpanJadwal(todo.resepId, todo.sesi);
+              _simpanJadwal(todo.resepId, todo.sesiLabel, 'Masak', detail,
+                  totalPengeluaran: total);
             },
           ),
+
         const SizedBox(height: 4),
       ],
     );
@@ -533,11 +664,12 @@ class _TodoPageState extends State<TodoPage> {
   }
 }
 
-// ==================== FORM BELI STATEFUL (tidak kehilangan fokus) ====================
+// ==================== FORM BELI (tidak berubah dari versi asli) ====================
+
 class _BeliFormInline extends StatefulWidget {
   final _TodoItem todo;
   final Resep resep;
-  final VoidCallback onSaved;
+  final void Function(List<Map<String, dynamic>> detail) onSaved;
 
   const _BeliFormInline({
     required this.todo,
@@ -550,7 +682,6 @@ class _BeliFormInline extends StatefulWidget {
 }
 
 class _BeliFormInlineState extends State<_BeliFormInline> {
-  // Data beli: list of (nama, nominal)
   late List<MapEntry<String, String>> _items;
   final _formKey = GlobalKey<FormState>();
   final List<TextEditingController> _namaControllers = [];
@@ -559,7 +690,7 @@ class _BeliFormInlineState extends State<_BeliFormInline> {
   @override
   void initState() {
     super.initState();
-    _items = [MapEntry('', '')];
+    _items = [const MapEntry('', '')];
     _initControllers();
   }
 
@@ -572,19 +703,15 @@ class _BeliFormInlineState extends State<_BeliFormInline> {
 
   @override
   void dispose() {
-    for (var c in _namaControllers) {
-      c.dispose();
-    }
-    for (var c in _nominalControllers) {
-      c.dispose();
-    }
+    for (var c in _namaControllers) c.dispose();
+    for (var c in _nominalControllers) c.dispose();
     super.dispose();
   }
 
   void _addItem() {
     if (_items.length >= 3) return;
     setState(() {
-      _items.add(MapEntry('', ''));
+      _items.add(const MapEntry('', ''));
       _namaControllers.add(TextEditingController());
       _nominalControllers.add(TextEditingController());
     });
@@ -700,7 +827,7 @@ class _BeliFormInlineState extends State<_BeliFormInline> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton(
-                  onPressed: () => widget.onSaved(), // batal tutup form
+                  onPressed: () => widget.onSaved([]),
                   child: Text('Batal',
                       style: TextStyle(color: context.colors.textSecondary)),
                 ),
@@ -708,9 +835,15 @@ class _BeliFormInlineState extends State<_BeliFormInline> {
                 ElevatedButton(
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
-                      // Simpan data (bisa ditambahkan ke database)
-                      print('Data beli: $_items');
-                      widget.onSaved();
+                      final detail = List.generate(
+                          _items.length,
+                          (i) => {
+                                'nama': _namaControllers[i].text.trim(),
+                                'nominal': double.tryParse(
+                                        _nominalControllers[i].text.trim()) ??
+                                    0.0,
+                              });
+                      widget.onSaved(detail);
                     }
                   },
                   style: ElevatedButton.styleFrom(
@@ -727,11 +860,12 @@ class _BeliFormInlineState extends State<_BeliFormInline> {
   }
 }
 
-// ==================== FORM MASAK STATEFUL ====================
+// ==================== FORM MASAK (tidak berubah dari versi asli) ====================
+
 class _MasakFormInline extends StatefulWidget {
   final _TodoItem todo;
   final Resep resep;
-  final VoidCallback onSaved;
+  final void Function(List<Map<String, dynamic>> detail, double total) onSaved;
 
   const _MasakFormInline({
     required this.todo,
@@ -836,7 +970,7 @@ class _MasakFormInlineState extends State<_MasakFormInline> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton(
-                  onPressed: widget.onSaved, // batal tutup form
+                  onPressed: () => widget.onSaved([], 0),
                   child: Text('Batal',
                       style: TextStyle(color: context.colors.textSecondary)),
                 ),
@@ -844,9 +978,16 @@ class _MasakFormInlineState extends State<_MasakFormInline> {
                 ElevatedButton(
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
-                      print(
-                          'Simpan data masak: nama=${_namaController.text}, nominal=${_nominalController.text}');
-                      widget.onSaved();
+                      final nama = _auto
+                          ? widget.resep.title
+                          : _namaController.text.trim();
+                      final total =
+                          double.tryParse(_nominalController.text.trim()) ??
+                              0.0;
+                      final detail = [
+                        {'nama': nama, 'nominal': total}
+                      ];
+                      widget.onSaved(detail, total);
                     }
                   },
                   style: ElevatedButton.styleFrom(

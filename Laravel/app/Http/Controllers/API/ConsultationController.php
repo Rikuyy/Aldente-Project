@@ -83,8 +83,6 @@ PROMPT;
 
             $geminiResponse = $chat->sendMessage($userMessage);
             $rawText        = $geminiResponse->text();
-
-            // Bersihkan pembungkus markdown jika Gemini nakal
             $cleanedText = trim($rawText);
             $cleanedText = preg_replace('/^```json\s*/i', '', $cleanedText);
             $cleanedText = preg_replace('/^```\s*/i', '', $cleanedText);

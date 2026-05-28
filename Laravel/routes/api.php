@@ -10,6 +10,13 @@ use App\Http\Controllers\API\KeuanganController;
 use App\Http\Controllers\API\UserProfileController;
 use App\Http\Controllers\ResepController;
 use App\Http\Controllers\ChatbotController;
+<<<<<<< Updated upstream
+=======
+use App\Http\Controllers\API\TodoCookController;
+use Illuminate\Support\Facades\Password;
+
+// AUTH PUBLIC
+>>>>>>> Stashed changes
 
 /*
 |--------------------------------------------------------------------------
@@ -36,7 +43,18 @@ Route::prefix('auth')->group(function () {
 Route::post('/consultation', [ConsultationController::class, 'send']);
 =======
 Route::post('/consultation', [ConsultationController::class, 'send']); // guest dan konsultasi belum login tetap bisa akses (menggunakan JWT opsional, untuk dapat konteks lebih kaya jika login)
+<<<<<<< Updated upstream
 >>>>>>> 3dce3ded2007c2340c53492b0ffca3ec2144b212
+=======
+// Konsultasi, gunakan salah satu dari dua route berikut://
+//Route::middleware('auth:sanctum')->group(function () {
+    //Route::post('/consultation/send', [ConsultationController::class, 'send'])
+        //->name('consultation.send');
+
+//});
+Route::post('/consultation/send', [ConsultationController::class, 'send'])
+    ->name('consultation.send');
+>>>>>>> Stashed changes
 
 // ── PROTECTED ROUTES (Wajib Login & Menggunakan JWT) ─────────────
 Route::middleware('auth:api')->group(function () {
@@ -49,6 +67,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/budget', [ApiDashboardController::class, 'setBudget']);
     });
 
+<<<<<<< Updated upstream
 <<<<<<< HEAD
     // Inventory
     Route::prefix('inventory')->group(function () {
@@ -59,6 +78,9 @@ Route::middleware('auth:api')->group(function () {
         Route::delete('/{id}', [StockController::class, 'hapus']);
 =======
     Route::prefix('stok')->group(function () { 
+=======
+    Route::prefix('inventory')->group(function () {
+>>>>>>> Stashed changes
         Route::get('/',               [StockController::class, 'index']);
         Route::get('/cari',           [StockController::class, 'cari']);
         Route::post('/',              [StockController::class, 'simpan']);
@@ -80,6 +102,7 @@ Route::middleware('auth:api')->group(function () {
     // Chatbot
     Route::prefix('chatbot')->group(function () {
         Route::post('/rekomendasi', [ChatbotController::class, 'rekomendasi']);
+<<<<<<< Updated upstream
         Route::post('/update-ai', [ChatbotController::class, 'updateModel']);
         Route::post('/evaluasi', [ChatbotController::class, 'evaluasi']);
     });
@@ -101,6 +124,13 @@ Route::middleware('auth:api')->group(function () {
 =======
     Route::put('/profile',          [UserProfileController::class, 'saveOnboarding']); // Simpan data onboarding user (kategori favorit, alergi, dll)
 }); 
+=======
+        Route::post('/update-ai', [ChatbotController::class, 'updateModel']); 
+        Route::post('/evaluasi', [ChatbotController::class, 'evaluasi']); 
+    });
+
+    Route::put('/profile/onboarding', [UserProfileController::class, 'saveOnboarding']); 
+>>>>>>> Stashed changes
  
     Route::prefix('keuangan')->group(function () {
         Route::get('/ringkasan', [KeuanganController::class, 'ringkasan']);
@@ -113,6 +143,7 @@ Route::middleware('auth:api')->group(function () {
         // List mutasi (pagination)
         Route::get('/mutasi',    [KeuanganController::class, 'mutasi']);
         // Detail 1 transaksi
+<<<<<<< Updated upstream
         Route::get('/{id}',      [KeuanganController::class, 'detail']);
 >>>>>>> 3dce3ded2007c2340c53492b0ffca3ec2144b212
     Route::prefix('keuangan')->group(function () {
@@ -139,3 +170,14 @@ Route::post('/consultation/send', [ConsultationController::class, 'send'])
     ->name('consultation.send');
 //============//
 >>>>>>> 3dce3ded2007c2340c53492b0ffca3ec2144b212
+=======
+        Route::get('/{id}',      [KeuanganController::class, 'detail']); 
+    }); 
+}); 
+
+Route::middleware('auth:api')->group(function () {
+    Route::get('/jadwal/generate', [TodoCookController::class, 'generate']);
+    Route::post('/jadwal-makan', [TodoCookController::class, 'store']);
+    Route::post('/jadwal/rebuild-queue', [TodoCookController::class, 'rebuildQueue']);
+});
+>>>>>>> Stashed changes
