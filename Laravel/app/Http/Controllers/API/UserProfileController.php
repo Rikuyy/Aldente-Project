@@ -1,5 +1,4 @@
 <?php
-// UserProfileController.php (FULL)
 
 namespace App\Http\Controllers\API;
 
@@ -118,11 +117,27 @@ class UserProfileController extends Controller
             if (array_key_exists('Alergi', $validated)) {
                 $updateData['Alergi'] = $validated['Alergi'] === null ? null : array_values(array_filter($validated['Alergi'], 'is_string'));
             }
-            if (array_key_exists('Budget_Bulanan', $validated)) {
-                $updateData['Budget_Bulanan'] = (int) $validated['Budget_Bulanan'];
-            }
             if (array_key_exists('Jumlah_Makan', $validated)) {
                 $updateData['Jumlah_Makan'] = (int) $validated['Jumlah_Makan'];
+            }
+
+            // ======================= VALIDASI BUDGET =======================
+            $isBudgetChanged = false;
+            if (array_key_exists('Budget_Bulanan', $validated)) {
+                $newBudget = (int) $validated['Budget_Bulanan'];
+                $oldBudget = (int) ($user->Budget_Bulanan ?? 0);
+                if ($newBudget !== $oldBudget) {
+                    $isBudgetChanged = true;
+                    if (!$this->canUpdateBudget($user)) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Budget hanya dapat diubah setiap 30 hari, atau dalam 1 jam pertama setelah registrasi.',
+                        ], 403);
+                    }
+                    $updateData['Budget_Bulanan'] = $newBudget;
+                    // Set last_budget_updated_at jika belum ada atau sudah lewat masa cooldown
+                    $updateData['last_budget_updated_at'] = now();
+                }
             }
 
             if (empty($updateData)) {
@@ -134,11 +149,12 @@ class UserProfileController extends Controller
             }
 
             $user->update($updateData);
+            $user->refresh();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Profil berhasil diperbarui.',
-                'data' => $this->formatUser($user->refresh())
+                'data' => $this->formatUser($user)
             ], 200);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -154,7 +170,36 @@ class UserProfileController extends Controller
     }
 
     /**
-     * MENYIMPAN ONBOARDING - DENGAN PERUBAHAN: Kategori min 2, Alergi boleh null
+     * Cek apakah user diperbolehkan mengubah budget
+     * Aturan:
+     * - Jika last_budget_updated_at null (belum pernah ubah setelah onboarding):
+     *      maka cek apakah sudah lewat 1 jam sejak registrasi.
+     *      - Jika belum 1 jam: boleh ubah (masa grace period)
+     *      - Jika sudah lewat 1 jam: tidak boleh ubah (kesempatan habis)
+     * - Jika last_budget_updated_at sudah ada:
+     *      maka harus sudah lewat 30 hari sejak terakhir ubah.
+     */
+    private function canUpdateBudget(User $user): bool
+    {
+        // Belum pernah mengubah budget setelah onboarding
+        if (is_null($user->last_budget_updated_at)) {
+            $registrationTime = $user->created_at;
+            if (!$registrationTime) {
+                return true; // safety, seharusnya ada
+            }
+            $hoursSinceRegister = $registrationTime->diffInHours(now());
+            // Beri kesempatan 1 jam pertama
+            return $hoursSinceRegister < 1;
+        }
+
+        // Sudah pernah mengubah budget, cek 30 hari
+        $daysSinceLastUpdate = $user->last_budget_updated_at->diffInDays(now());
+        return $daysSinceLastUpdate >= 30;
+    }
+
+    /**
+     * MENYIMPAN ONBOARDING - Kategori min 2, Alergi boleh null
+     * Tidak mengisi last_budget_updated_at agar user punya waktu 1 jam untuk mengubah budget.
      */
     public function saveOnboarding(Request $request): JsonResponse
     {
@@ -162,7 +207,7 @@ class UserProfileController extends Controller
             $validated = $request->validate([
                 'Kategori_Favorit' => ['required', 'array', 'min:2'],
                 'Kategori_Favorit.*' => ['string'],
-                'Alergi' => ['nullable', 'array'], // nullable, array
+                'Alergi' => ['nullable', 'array'],
                 'Alergi.*' => ['string'],
                 'Budget_Bulanan' => ['required', 'integer', 'min:1'],
                 'Jumlah_Makan' => ['required', 'integer', 'min:2', 'max:4'],
@@ -196,6 +241,7 @@ class UserProfileController extends Controller
             
             $user->Budget_Bulanan = (int) $validated['Budget_Bulanan'];
             $user->Jumlah_Makan = (int) $validated['Jumlah_Makan'];
+            // Jangan set last_budget_updated_at di sini!
             $user->updated_at = now();
             
             $saved = $user->save();
@@ -300,7 +346,6 @@ class UserProfileController extends Controller
 
     /**
      * Format data user untuk response JSON
-     * status_onboarding dihitung berdasarkan kelengkapan data wajib
      */
     private function formatUser(User $user): array
     {
@@ -309,35 +354,30 @@ class UserProfileController extends Controller
             'username' => $user->Username,
             'email' => $user->Email,
             'kategori_favorit' => $user->Kategori_Favorit ?? [],
-            'alergi' => $user->Alergi, // bisa null atau array
+            'alergi' => $user->Alergi,
             'budget_bulanan' => $user->Budget_Bulanan ?? null,
             'jumlah_makan' => $user->Jumlah_Makan ?? null,
             'status_onboarding' => $this->isOnboardingComplete($user),
+            'last_budget_updated_at' => $user->last_budget_updated_at?->toISOString(),
+            'can_edit_budget' => $this->canUpdateBudget($user),
         ];
     }
 
     /**
      * Cek apakah data onboarding user sudah lengkap
-     * Kategori minimal 2, Alergi boleh null, budget >0, jumlah makan 2-4
      */
     private function isOnboardingComplete(User $user): bool
     {
-        // Kategori_Favorit harus array minimal 2
         $kategori = $user->Kategori_Favorit ?? [];
         if (!is_array($kategori) || count($kategori) < 2) {
             return false;
         }
 
-        // Alergi boleh null, tidak perlu validasi ketat
-        // Cukup pastikan field ada (bisa null atau array)
-
-        // Budget_Bulanan harus > 0
         $budget = $user->Budget_Bulanan ?? 0;
         if ($budget <= 0) {
             return false;
         }
 
-        // Jumlah_Makan harus antara 2-4
         $jumlahMakan = $user->Jumlah_Makan ?? 0;
         if ($jumlahMakan < 2 || $jumlahMakan > 4) {
             return false;
