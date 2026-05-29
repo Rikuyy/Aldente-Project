@@ -32,6 +32,9 @@ class _ProfilePageState extends State<ProfilePage> {
   int _originalBudget = 0;
   int _originalEatFrequency = 3;
 
+  // Flag apakah budget boleh diedit
+  bool _canEditBudget = true;
+
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _budgetController = TextEditingController();
@@ -141,6 +144,9 @@ class _ProfilePageState extends State<ProfilePage> {
             _originalBudget = _budget;
             _originalSelectedCategories = List.from(_selectedCategories);
             _originalAllergies = List.from(_allergies);
+
+            // Ambil flag apakah budget boleh diedit dari backend
+            _canEditBudget = profile['can_edit_budget'] ?? true;
 
             _usernameController.text = _username;
             _emailController.text = _email;
@@ -252,7 +258,6 @@ class _ProfilePageState extends State<ProfilePage> {
     }
     bool allergyChanged = !_listEquals(_allergies, _originalAllergies);
     if (allergyChanged) {
-      // Jika alergi berubah menjadi kosong (sebelumnya tidak kosong), konfirmasi khusus
       if (_allergies.isEmpty && _originalAllergies.isNotEmpty) {
         bool confirmClear = await _showConfirmDialog(
           changes: {
@@ -276,6 +281,15 @@ class _ProfilePageState extends State<ProfilePage> {
     if (changes.containsKey('Email')) {
       bool verified = await _verifyPassword();
       if (!verified) return;
+    }
+
+    // Validasi budget: cek apakah boleh diubah (backend akan mengecek ulang)
+    // Tapi kita bisa cegah lebih awal dengan mengecek flag _canEditBudget
+    if (changes.containsKey('Budget_Bulanan') && !_canEditBudget) {
+      _showSnackBar(
+          'Budget hanya dapat diubah setiap 30 hari atau setelah 1 jam registrasi.',
+          Colors.orange);
+      return;
     }
 
     // Tampilkan konfirmasi umum
@@ -304,18 +318,38 @@ class _ProfilePageState extends State<ProfilePage> {
 
       final responseData = json.decode(response.body);
       if (response.statusCode == 200 && responseData['success'] == true) {
+        // Update state dengan data terbaru dari response
+        final updatedProfile = responseData['data'];
         setState(() {
-          _username = _usernameController.text.trim();
-          _email = _emailController.text.trim();
+          _username =
+              updatedProfile['username'] ?? _usernameController.text.trim();
+          _email = updatedProfile['email'] ?? _emailController.text.trim();
+          _budget = (updatedProfile['budget_bulanan'] ?? newBudget).toInt();
+          _eatFrequency = updatedProfile['jumlah_makan'] ?? _eatFrequency;
+          _selectedCategories = List<String>.from(
+              updatedProfile['kategori_favorit'] ?? _selectedCategories);
+          _allergies =
+              List<String>.from(updatedProfile['alergi'] ?? _allergies);
+          _canEditBudget = updatedProfile['can_edit_budget'] ?? false;
+
           _originalUsername = _username;
           _originalEmail = _email;
+          _originalBudget = _budget;
           _originalEatFrequency = _eatFrequency;
-          _originalBudget = _parseBudgetFromFormatted(_budgetController.text);
           _originalSelectedCategories = List.from(_selectedCategories);
           _originalAllergies = List.from(_allergies);
+
+          _usernameController.text = _username;
+          _emailController.text = _email;
+          _budgetController.text = _formatRpValue(_budget);
           _isEditing = false;
         });
         _showSnackBar('Profil berhasil diperbarui!', Colors.green);
+      } else if (response.statusCode == 403) {
+        // Khusus error karena budget tidak boleh diubah
+        _showSnackBar(
+            responseData['message'] ?? 'Tidak dapat mengubah budget sekarang',
+            Colors.red);
       } else {
         throw Exception(responseData['message'] ?? 'Gagal menyimpan.');
       }
@@ -334,7 +368,7 @@ class _ProfilePageState extends State<ProfilePage> {
     return true;
   }
 
-  // Dialog konfirmasi dengan desain yang lebih menarik dan jelas
+  // Dialog konfirmasi (tidak berubah)
   Future<bool> _showConfirmDialog(
       {required Map<String, dynamic> changes,
       bool isAllergyClear = false}) async {
@@ -359,7 +393,6 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
       );
     } else {
-      // Bangun daftar perubahan dengan ikon dan warna
       List<Map<String, dynamic>> changeItems = [];
 
       if (changes.containsKey('Username')) {
@@ -472,7 +505,6 @@ class _ProfilePageState extends State<ProfilePage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Header dengan ikon
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
@@ -558,7 +590,6 @@ class _ProfilePageState extends State<ProfilePage> {
     });
   }
 
-  // Perbaikan: menambahkan alergi kustom dengan TextEditingController yang benar
   Future<void> _addCustomAllergy() async {
     final controller = TextEditingController();
     String? newAllergy = await showDialog<String>(
@@ -646,7 +677,6 @@ class _ProfilePageState extends State<ProfilePage> {
                         ? context.pop()
                         : context.go('/app/home'),
                   ),
-                  // Perubahan judul: "Profile User"
                   title: Text('Profile User',
                       style: TextStyle(
                           fontSize: 20,
@@ -891,7 +921,6 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                             const SizedBox(height: 10),
                             if (!_isEditing && _allergies.isEmpty)
-                              // Perubahan teks: tanpa "Aman!"
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 12, vertical: 6),
@@ -1000,36 +1029,54 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                             const SizedBox(height: 12),
                             if (_isEditing)
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                    color: AppTheme.green50,
-                                    borderRadius: BorderRadius.circular(20),
-                                    border:
-                                        Border.all(color: AppTheme.green100)),
-                                child: Row(
-                                  children: [
-                                    const Text('Rp ',
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                        color: AppTheme.green50,
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(
+                                            color: AppTheme.green100)),
+                                    child: Row(
+                                      children: [
+                                        const Text('Rp ',
+                                            style: TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.w800)),
+                                        Expanded(
+                                          child: TextField(
+                                            controller: _budgetController,
+                                            enabled:
+                                                _canEditBudget, // <-- Disabled jika tidak boleh edit
+                                            keyboardType: TextInputType.number,
+                                            inputFormatters: [
+                                              FilteringTextInputFormatter
+                                                  .digitsOnly
+                                            ],
+                                            style: const TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.w800),
+                                            decoration: const InputDecoration(
+                                                border: InputBorder.none,
+                                                hintText: '0'),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  if (!_canEditBudget)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 8),
+                                      child: Text(
+                                        'Budget hanya dapat diubah setiap 30 hari atau setelah 1 jam registrasi.',
                                         style: TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.w800)),
-                                    Expanded(
-                                      child: TextField(
-                                        controller: _budgetController,
-                                        keyboardType: TextInputType.number,
-                                        inputFormatters: [
-                                          FilteringTextInputFormatter.digitsOnly
-                                        ],
-                                        style: const TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.w800),
-                                        decoration: const InputDecoration(
-                                            border: InputBorder.none,
-                                            hintText: '0'),
+                                            fontSize: 12,
+                                            color: Colors.orange.shade700),
                                       ),
                                     ),
-                                  ],
-                                ),
+                                ],
                               )
                             else
                               Container(
