@@ -22,6 +22,12 @@ class _FinancePageState extends State<FinancePage> {
   bool _isLoading = true;
   String _error = '';
 
+  // Pagination mutasi (infinite scroll)
+  final ScrollController _scrollController = ScrollController();
+  int _mutasiPage = 1;
+  bool _mutasiHasMore = true;
+  bool _mutasiLoading = false;
+
   static const _monthOptions = [
     'Semua',
     'Januari',
@@ -42,7 +48,23 @@ class _FinancePageState extends State<FinancePage> {
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    _scrollController
+      ..removeListener(_onScroll)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 250) {
+      _loadMutasi();
+    }
   }
 
   String _formatRp(double amount) {
@@ -69,8 +91,9 @@ class _FinancePageState extends State<FinancePage> {
       await Future.wait([
         _loadRingkasan(bulanQuery).timeout(const Duration(seconds: 10)),
         _loadGrafik(bulanQuery).timeout(const Duration(seconds: 10)),
-        _loadMutasi().timeout(const Duration(seconds: 10)),
       ]);
+      // Mutasi di-load terpisah agar tidak blocking halaman utama
+      _loadMutasi(reset: true);
       if (!mounted) return;
       setState(() => _isLoading = false);
     } catch (e) {
@@ -109,9 +132,24 @@ class _FinancePageState extends State<FinancePage> {
     }
   }
 
-  Future<void> _loadMutasi() async {
+  Future<void> _loadMutasi({bool reset = false}) async {
+    if (_mutasiLoading) return;
+    if (!reset && !_mutasiHasMore) return;
+
+    setState(() {
+      _mutasiLoading = true;
+      if (reset) {
+        _mutasiPage = 1;
+        _mutasiHasMore = true;
+        _groupedMutasi.clear();
+      }
+    });
+
     try {
-      Map<String, String> query = {};
+      final Map<String, String> query = {
+        'page': _mutasiPage.toString(),
+        'per_page': '10',
+      };
       if (_mutationMonth != 'Semua') {
         final bulanIndex = _monthOptions.indexOf(_mutationMonth);
         if (bulanIndex >= 1 && bulanIndex <= 12) {
@@ -121,29 +159,35 @@ class _FinancePageState extends State<FinancePage> {
       if (_mutationYear != 0) {
         query['tahun'] = _mutationYear.toString();
       }
-      String url = '/keuangan/mutasi';
-      if (query.isNotEmpty) {
-        url += '?${query.entries.map((e) => '${e.key}=${e.value}').join('&')}';
-      }
-      final resp = await ApiService.get(url);
+      final queryString =
+          query.entries.map((e) => '${e.key}=${e.value}').join('&');
+      final resp = await ApiService.get('/keuangan/mutasi?$queryString');
       if (!mounted) return;
-      debugPrint(
-          '✅ Mutasi resp: success=${resp['success']}, data type=${resp['data']?.runtimeType}');
+
       if (resp['success'] == true && resp['data'] != null) {
-        final dynamic rawData = resp['data'];
-        final List list = rawData is List ? rawData : [];
+        final List rawData = resp['data'] is List ? resp['data'] : [];
+        final meta = resp['meta'] as Map<String, dynamic>? ?? {};
+        final bool hasMore = meta['has_more'] == true;
+        final newGroups =
+            rawData.map((e) => GroupedMutasi.fromJson(e)).toList();
+
         setState(() {
-          _groupedMutasi = list.map((e) => GroupedMutasi.fromJson(e)).toList();
+          _groupedMutasi.addAll(newGroups);
+          _mutasiHasMore = hasMore;
+          _mutasiPage += 1;
         });
-        debugPrint('✅ Mutasi loaded: ${_groupedMutasi.length} group');
+        debugPrint(
+            '✅ Mutasi page ${_mutasiPage - 1}: ${newGroups.length} grup, hasMore=$hasMore');
       } else {
-        setState(() => _groupedMutasi = []);
+        setState(() => _mutasiHasMore = false);
         debugPrint('⚠️ Mutasi kosong atau gagal: ${resp['message']}');
       }
     } catch (e) {
       debugPrint('❌ Error load mutasi: $e');
       if (!mounted) return;
-      setState(() => _groupedMutasi = []);
+      setState(() => _mutasiHasMore = false);
+    } finally {
+      if (mounted) setState(() => _mutasiLoading = false);
     }
   }
 
@@ -152,7 +196,7 @@ class _FinancePageState extends State<FinancePage> {
       _mutationMonth = month;
       _mutationYear = year;
     });
-    _loadMutasi();
+    _loadMutasi(reset: true);
   }
 
   void _showMonthPicker() {
@@ -403,6 +447,7 @@ class _FinancePageState extends State<FinancePage> {
     return Scaffold(
       backgroundColor: context.colors.surface,
       body: CustomScrollView(
+        controller: _scrollController,
         slivers: [
           SliverAppBar(
             pinned: true,
@@ -928,7 +973,8 @@ class _FinancePageState extends State<FinancePage> {
                 ),
               ),
               const SizedBox(height: 12),
-              if (_groupedMutasi.isEmpty)
+              // ── Mutasi list (infinite scroll) ─────────
+              if (!_mutasiLoading && _groupedMutasi.isEmpty)
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 20),
                   padding: const EdgeInsets.symmetric(vertical: 40),
@@ -1007,6 +1053,23 @@ class _FinancePageState extends State<FinancePage> {
                         const SizedBox(height: 12),
                       ],
                     )),
+              // Loading more indicator / end-of-list message
+              if (_mutasiLoading)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (!_mutasiHasMore && _groupedMutasi.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  child: Center(
+                    child: Text(
+                      'Semua transaksi sudah ditampilkan',
+                      style: TextStyle(
+                          fontSize: 11, color: context.colors.textHint),
+                    ),
+                  ),
+                ),
               const SizedBox(height: 80),
             ]),
           ),
