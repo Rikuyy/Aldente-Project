@@ -14,12 +14,11 @@ return new class extends Migration
             $table->foreignId('Id_JadwalMakan')->nullable();
             $table->date('Tanggal');
             $table->time('Waktu');
-            $table->enum('Jenis_Pengeluaran', ['Beli', 'Masak']);
+            $table->enum('Kategori', ['Pemasukan', 'Pengeluaran']);
+            $table->enum('Keterangan', ['Masak', 'Beli', 'Top Up', 'Pengurangan Budget','Lainnya']); 
+            $table->json('Detail')->nullable(); 
             
-            // Kolom ini yang akan menampung banyak barang sekaligus!
-            $table->json('Detail_Beli')->nullable(); 
-            
-            $table->decimal('Total_Pengeluaran', 15, 2);
+            $table->decimal('Total_Nominal', 15, 2);
             $table->timestamps();
         });
     }

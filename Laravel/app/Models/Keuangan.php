@@ -16,13 +16,20 @@ class Keuangan extends Model
         'Id_JadwalMakan', 
         'Tanggal', 
         'Waktu', 
-        'Jenis_Pengeluaran', 
-        'Detail_Beli', // Pastikan ini masuk fillable
-        'Total Pengeluaran'
+        'Kategori', 
+        'Keterangan',
+        'Detail',
+        'Total_Nominal'
     ];
-
-    // WAJIB TAMBAHKAN INI UNTUK ARRAY MONGODB
+ 
     protected $casts = [
-        'Detail_Beli' => 'array', 
+        'Detail' => 'array',
+        'Total_Nominal' => 'float',
     ];
+    protected $appends = ['is_debit'];
+
+    public function getIsDebitAttribute(): bool
+    {
+        return $this->Kategori === 'Pengeluaran';
+    }
 }
