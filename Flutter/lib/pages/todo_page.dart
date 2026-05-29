@@ -91,7 +91,6 @@ class _TodoPageState extends State<TodoPage> {
   // Ambil token sekali saat halaman dibuka, lalu load todos
   Future<void> _initToken() async {
     _token = await AuthService().getToken();
-    print('TOKEN: $_token');
     _loadTodos();
   }
 

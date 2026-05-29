@@ -8,33 +8,28 @@ class Keuangan extends Model
 {
     protected $connection = 'mongodb';
     protected $collection = 'keuangan';
-    
-    protected $primaryKey = '_id';
-    
+    protected $table = 'keuangan';
+    //protected $primaryKey = 'Id_Keuangan';
+
     protected $fillable = [
-        'Id_User',
-        'Id_JadwalMakan',
-        'Tanggal',
-        'Waktu',
-        'Kategori',          // 'Beli', 'Masak', 'Topup', 'Penarikan', 'Lainnya'
-        'Detail_Beli',
-        'Total_Pengeluaran',
+        'Id_User', 
+        'Id_JadwalMakan', 
+        'Tanggal', 
+        'Waktu', 
+        'Kategori', 
+        'Keterangan',
+        'Detail',
+        'Total_Nominal'
     ];
-
+ 
     protected $casts = [
-        'Id_User' => 'string',
-        'Id_JadwalMakan' => 'string',
-        'Total_Pengeluaran' => 'double',
-        'Detail_Beli' => 'array',
+        'Detail' => 'array',
+        'Total_Nominal' => 'float',
     ];
+    protected $appends = ['is_debit'];
 
-    public function jadwalMakan()
+    public function getIsDebitAttribute(): bool
     {
-        return $this->belongsTo(JadwalMakan::class, 'Id_JadwalMakan');
-    }
-
-    public function user()
-    {
-        return $this->belongsTo(User::class, 'Id_User');
+        return $this->Kategori === 'Pengeluaran';
     }
 }

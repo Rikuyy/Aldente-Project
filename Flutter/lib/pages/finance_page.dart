@@ -39,6 +39,12 @@ class _FinancePageState extends State<FinancePage> {
   ];
   static const _yearOptions = [0, 2025, 2026];
 
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
   String _formatRp(double amount) {
     String str = amount.toInt().toString();
     String result = '';
@@ -56,6 +62,7 @@ class _FinancePageState extends State<FinancePage> {
   }
 
   Future<void> _loadData() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
       final bulanQuery = _getCurrentBulan();
@@ -64,9 +71,11 @@ class _FinancePageState extends State<FinancePage> {
         _loadGrafik(bulanQuery).timeout(const Duration(seconds: 10)),
         _loadMutasi().timeout(const Duration(seconds: 10)),
       ]);
+      if (!mounted) return;
       setState(() => _isLoading = false);
     } catch (e) {
       debugPrint('❌ Error _loadData: $e');
+      if (!mounted) return;
       setState(() {
         _error = 'Gagal memuat data. Periksa koneksi.';
         _isLoading = false;
@@ -76,6 +85,7 @@ class _FinancePageState extends State<FinancePage> {
 
   Future<void> _loadRingkasan(String bulan) async {
     final resp = await ApiService.get('/keuangan/ringkasan?bulan=$bulan');
+    if (!mounted) return;
     if (resp['success'] == true) {
       setState(() {
         _ringkasan = FinanceRingkasanModel.fromJson(resp['data']['data']);
@@ -87,6 +97,7 @@ class _FinancePageState extends State<FinancePage> {
 
   Future<void> _loadGrafik(String bulan) async {
     final resp = await ApiService.get('/keuangan/grafik?bulan=$bulan');
+    if (!mounted) return;
     if (resp['success'] == true) {
       final perTanggal = resp['data']['per_tanggal'] as List;
       setState(() {
@@ -115,17 +126,23 @@ class _FinancePageState extends State<FinancePage> {
         url += '?${query.entries.map((e) => '${e.key}=${e.value}').join('&')}';
       }
       final resp = await ApiService.get(url);
+      if (!mounted) return;
+      debugPrint(
+          '✅ Mutasi resp: success=${resp['success']}, data type=${resp['data']?.runtimeType}');
       if (resp['success'] == true && resp['data'] != null) {
-        final List list = resp['data'];
+        final dynamic rawData = resp['data'];
+        final List list = rawData is List ? rawData : [];
         setState(() {
           _groupedMutasi = list.map((e) => GroupedMutasi.fromJson(e)).toList();
         });
+        debugPrint('✅ Mutasi loaded: ${_groupedMutasi.length} group');
       } else {
         setState(() => _groupedMutasi = []);
-        debugPrint('⚠️ Mutasi kosong atau gagal');
+        debugPrint('⚠️ Mutasi kosong atau gagal: ${resp['message']}');
       }
     } catch (e) {
       debugPrint('❌ Error load mutasi: $e');
+      if (!mounted) return;
       setState(() => _groupedMutasi = []);
     }
   }
@@ -201,7 +218,6 @@ class _FinancePageState extends State<FinancePage> {
                 final jumlah = double.tryParse(jumlahController.text) ?? 0;
                 if (jumlah <= 0) return;
                 final keterangan = keteranganController.text.trim();
-                setState(() => _isLoading = true);
                 try {
                   final response =
                       await ApiService.post('/keuangan/pemasukan', {
@@ -209,23 +225,26 @@ class _FinancePageState extends State<FinancePage> {
                     'keterangan': keterangan,
                   });
                   if (response['success'] == true) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Pemasukan berhasil ditambahkan')),
-                    );
-                    Navigator.pop(context);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text('Pemasukan berhasil ditambahkan')),
+                      );
+                      Navigator.pop(context);
+                    }
                     await _loadData();
                   } else {
                     throw Exception(response['message'] ?? 'Gagal');
                   }
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                        content: Text('Gagal: $e'),
-                        backgroundColor: Colors.red),
-                  );
-                  setState(() => _isLoading = false);
-                  Navigator.pop(context);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content: Text('Gagal: $e'),
+                          backgroundColor: Colors.red),
+                    );
+                    Navigator.pop(context);
+                  }
                 }
               }
             },
@@ -298,7 +317,6 @@ class _FinancePageState extends State<FinancePage> {
                 final jumlah = double.tryParse(jumlahController.text) ?? 0;
                 if (jumlah <= 0) return;
                 final keterangan = keteranganController.text.trim();
-                setState(() => _isLoading = true);
                 try {
                   final response =
                       await ApiService.post('/keuangan/pengeluaran', {
@@ -307,22 +325,25 @@ class _FinancePageState extends State<FinancePage> {
                     'jenis': selectedJenis,
                   });
                   if (response['success'] == true) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Pengeluaran dicatat')),
-                    );
-                    Navigator.pop(context);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Pengeluaran dicatat')),
+                      );
+                      Navigator.pop(context);
+                    }
                     await _loadData();
                   } else {
                     throw Exception(response['message'] ?? 'Gagal');
                   }
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                        content: Text('Gagal: $e'),
-                        backgroundColor: Colors.red),
-                  );
-                  setState(() => _isLoading = false);
-                  Navigator.pop(context);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content: Text('Gagal: $e'),
+                          backgroundColor: Colors.red),
+                    );
+                    Navigator.pop(context);
+                  }
                 }
               }
             },
@@ -571,7 +592,7 @@ class _FinancePageState extends State<FinancePage> {
                   children: [
                     Expanded(
                         child: _SummaryChip(
-                            label: 'Rata-rata/Hari',
+                            label: 'Budget per Hari',
                             value: _formatRp(_ringkasan!.rataPerHari),
                             icon: Icons.bar_chart_rounded,
                             color: AppTheme.blue500,
@@ -801,11 +822,19 @@ class _FinancePageState extends State<FinancePage> {
                                   );
                                 }).toList(),
                               )),
-                              Text('${_ringkasan!.persenMasak}%',
-                                  style: TextStyle(
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 15,
-                                      color: context.colors.textPrimary)),
+                              Builder(builder: (_) {
+                                final idx = _touchedIndex;
+                                final komposisi = _ringkasan!.komposisi;
+                                final persen =
+                                    (idx >= 0 && idx < komposisi.length)
+                                        ? komposisi[idx].persen
+                                        : _ringkasan!.persenMasak;
+                                return Text('$persen%',
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 15,
+                                        color: context.colors.textPrimary));
+                              }),
                             ],
                           ),
                         ),
@@ -819,7 +848,8 @@ class _FinancePageState extends State<FinancePage> {
                                 child: _LegendItem(
                                     color: _getColorFromString(item.warna),
                                     label: item.kategori,
-                                    value: _formatRp(item.jumlah)),
+                                    value: _formatRp(item.jumlah),
+                                    persen: item.persen),
                               );
                             }).toList(),
                           ),
@@ -1086,8 +1116,12 @@ class _LegendItem extends StatelessWidget {
   final Color color;
   final String label;
   final String value;
+  final int persen;
   const _LegendItem(
-      {required this.color, required this.label, required this.value});
+      {required this.color,
+      required this.label,
+      required this.value,
+      required this.persen});
   @override
   Widget build(BuildContext context) {
     return Row(children: [
@@ -1099,11 +1133,17 @@ class _LegendItem extends StatelessWidget {
       Expanded(
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label,
-            style: TextStyle(
-                fontSize: 11,
-                color: context.colors.textSecondary,
-                fontWeight: FontWeight.w600)),
+        Row(children: [
+          Text(label,
+              style: TextStyle(
+                  fontSize: 11,
+                  color: context.colors.textSecondary,
+                  fontWeight: FontWeight.w600)),
+          const SizedBox(width: 6),
+          Text('$persen%',
+              style: TextStyle(
+                  fontSize: 11, color: color, fontWeight: FontWeight.w800)),
+        ]),
         Text(value,
             style: TextStyle(
                 fontSize: 13,
@@ -1295,25 +1335,15 @@ class _MutationRow extends StatelessWidget {
     Color categoryColor;
     Color categoryBg;
     switch (transaction.jenisPengeluaran) {
-      case 'food':
-        categoryIcon = Icons.restaurant_rounded;
-        categoryColor = AppTheme.orange500;
-        categoryBg = AppTheme.orange50;
+      case 'pengeluaran':
+        categoryIcon = Icons.remove_circle_outline_rounded;
+        categoryColor = AppTheme.red500;
+        categoryBg = AppTheme.red50;
         break;
-      case 'cook':
-        categoryIcon = Icons.outdoor_grill_rounded;
+      case 'pemasukan':
+        categoryIcon = Icons.add_circle_rounded;
         categoryColor = AppTheme.green600;
         categoryBg = AppTheme.green50;
-        break;
-      case 'topup':
-        categoryIcon = Icons.add_circle_rounded;
-        categoryColor = Colors.purple;
-        categoryBg = Colors.purple.shade50;
-        break;
-      case 'withdrawal':
-        categoryIcon = Icons.remove_circle_rounded;
-        categoryColor = AppTheme.red600;
-        categoryBg = AppTheme.red50;
         break;
       default:
         categoryIcon = Icons.receipt_rounded;
@@ -1321,12 +1351,14 @@ class _MutationRow extends StatelessWidget {
         categoryBg = AppTheme.slate50;
     }
     String prefix = '';
-    if (transaction.jenisPengeluaran == 'cook')
-      prefix = '[Masak] ';
-    else if (transaction.jenisPengeluaran == 'food')
-      prefix = '[Beli] ';
-    else if (transaction.jenisPengeluaran == 'withdrawal')
-      prefix = '[Penarikan] ';
+    final ket = transaction.keterangan.toLowerCase();
+    if (transaction.jenisPengeluaran == 'pengeluaran') {
+      if (ket == 'beli')
+        prefix = '[Beli] ';
+      else if (ket == 'masak')
+        prefix = '[Masak] ';
+      else if (ket == 'penarikan') prefix = '[Penarikan] ';
+    }
     String judulUtama = prefix +
         (transaction.namaResep.isNotEmpty
             ? transaction.namaResep
