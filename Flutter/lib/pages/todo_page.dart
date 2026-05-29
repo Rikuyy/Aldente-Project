@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
 import '../services/auth_services.dart';
+import 'consultation_page.dart';
 
 // ==================== MODEL ====================
 
@@ -35,11 +36,11 @@ class Resep {
 
 class _TodoItem {
   final String id;
-  final String title;
+  String title; // mutable — bisa diganti dari ConsultationPage
   final int sesi;
   final String sesiLabel; // "Sarapan", "Makan Siang", dst
-  final String resepId;
-  final String category;
+  String resepId; // mutable — bisa diganti dari ConsultationPage
+  String category; // mutable — bisa diganti dari ConsultationPage
   bool isDone;
 
   _TodoItem({
@@ -204,6 +205,72 @@ class _TodoPageState extends State<TodoPage> {
   }
 
   // ---------------------------------------------------------------------------
+  // KONSULTASI: Buka halaman konsultasi dan tangkap hasil ganti jadwal
+  // ---------------------------------------------------------------------------
+  Future<void> _bukaKonsultasi() async {
+    // Tunggu hasil dari ConsultationPage.
+    // Jika user mengganti resep di sana, result berisi data pengganti.
+    final result = await Navigator.of(context).push<Map<String, dynamic>>(
+      MaterialPageRoute(builder: (_) => const ConsultationPage()),
+    );
+
+    if (result != null && mounted) {
+      _applyGantiJadwal(result);
+    }
+  }
+
+  // Terapkan hasil penggantian resep dari ConsultationPage ke local state.
+  // Tidak ada API call — perubahan hanya di memori.
+  // Saat user centang, resep baru inilah yang dikirim ke server.
+  void _applyGantiJadwal(Map<String, dynamic> result) {
+    final int sesiKe = result['sesi_ke'] as int;
+    final Map resepBaru = result['resep'] as Map;
+
+    final idx = _todos.indexWhere((t) => t.sesi == sesiKe);
+    if (idx == -1) return; // sesi tidak ditemukan, abaikan
+
+    final resepObj = Resep(
+      id: resepBaru['id'].toString(),
+      title: resepBaru['title'] ?? '-',
+      ingredients: resepBaru['ingredients'] ?? '',
+      steps: resepBaru['steps'] ?? '',
+      category: resepBaru['category'] ?? '',
+    );
+
+    setState(() {
+      // Update todo item
+      _todos[idx].title = resepObj.title;
+      _todos[idx].resepId = resepObj.id;
+      _todos[idx].category = resepObj.category;
+
+      // Update resep map agar detail dialog juga ikut berubah
+      _resepMap[resepObj.id] = resepObj;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_rounded,
+                color: Colors.white, size: 18),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Menu ${result['sesi_label']} diganti ke "${resepObj.title}"!',
+                style: const TextStyle(fontSize: 13),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: AppTheme.green500,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
   // DIALOG: Detail resep
   // ---------------------------------------------------------------------------
   void _showDetailResep(Resep resep) {
@@ -281,6 +348,39 @@ class _TodoPageState extends State<TodoPage> {
                     fontWeight: FontWeight.w900,
                     color: context.colors.textPrimary,
                     letterSpacing: -0.5)),
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: GestureDetector(
+                  onTap: _bukaKonsultasi,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFFBFDBFE)),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.chat_rounded,
+                            size: 14, color: Color(0xFF1D4ED8)),
+                        SizedBox(width: 5),
+                        Text(
+                          'Konsultasi',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF1D4ED8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
             bottom: PreferredSize(
                 preferredSize: const Size.fromHeight(1),
                 child: Container(color: context.colors.border, height: 1)),

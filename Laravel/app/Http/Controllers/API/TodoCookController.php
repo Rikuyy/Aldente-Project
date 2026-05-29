@@ -19,6 +19,8 @@ class TodoCookController extends Controller
         $user    = Auth::user();
         $tanggal = $request->input('tanggal', now()->toDateString());
 
+        // Jika jadwal hari ini sudah ada di DB (sudah dicentang sebagian/semua)
+        // → kembalikan yang sudah tersimpan
         $sudahAda = JadwalMakan::where('Id_User', $user->id)
             ->where('Tanggal', $tanggal)
             ->exists();
@@ -42,7 +44,10 @@ class TodoCookController extends Controller
         }
 
         $jumlahSesi = $user->Jumlah_Makan ?? 3;
-        $resepIds   = $this->queueService->ambilBerikutnya($user, $jumlahSesi);
+
+        // Gunakan previewBerikutnya() — index TIDAK digeser di sini.
+        // Index baru maju saat user benar-benar store (centang).
+        $resepIds = $this->queueService->previewBerikutnya($user, $jumlahSesi);
 
         if (empty($resepIds)) {
             return response()->json([
@@ -112,7 +117,6 @@ class TodoCookController extends Controller
         ]);
         $jadwal->save();
 
-        // Ambil _id MongoDB yang baru dibuat
         $jadwalId = (string) $jadwal->_id;
 
         // 2. Hitung total pengeluaran
@@ -135,6 +139,12 @@ class TodoCookController extends Controller
             'Detail_Beli'       => $detailBeli,
             'Total Pengeluaran' => $total,
         ]);
+
+        // 4. Geser queue_index maju 1 — dilakukan SETELAH store berhasil.
+        //    Ini memastikan index hanya maju kalau user benar-benar sudah makan,
+        //    bukan hanya karena halaman di-refresh/relog.
+        $user->refresh();
+        $this->queueService->advanceIndex($user);
 
         return response()->json([
             'status' => 'success',

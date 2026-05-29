@@ -357,4 +357,16 @@ class UserProfileController extends Controller
             'error' => $e->getMessage(),
         ], 500);
     }
+    public function me()
+    {
+        $user = Auth::user();
+ 
+        return response()->json([
+            'success'        => true,
+            'Username'       => $user->Username,
+            'Email'          => $user->Email,
+            'Budget_Bulanan' => $user->Budget_Bulanan ?? 0,
+            'Jumlah_Makan'   => $user->Jumlah_Makan  ?? 3,
+        ]);
+    }
 }
