@@ -77,9 +77,6 @@ Route::middleware('auth:api')->group(function () {
     Route::put('/profile/onboarding', [UserProfileController::class, 'saveOnboarding']);  
  
     Route::prefix('keuangan')->group(function () {
-        Route::get('/ringkasan', [KeuanganController::class, 'ringkasan']);
-        Route::get('/grafik',    [KeuanganController::class, 'grafik']);
-        Route::get('/mutasi',    [KeuanganController::class, 'mutasi']);
         // Ringkasan bulan: total, rata2, prediksi, komposisi
         Route::get('/ringkasan', [KeuanganController::class, 'ringkasan']);
         // Data grafik tren harian
@@ -88,6 +85,8 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/mutasi',    [KeuanganController::class, 'mutasi']);
         // Detail 1 transaksi 
         Route::get('/{id}',      [KeuanganController::class, 'detail']); 
+        Route::post('/pemasukan', [KeuanganController::class, 'tambahPemasukan']);
+        Route::post('/pengeluaran', [KeuanganController::class, 'tambahPengeluaran']);
     }); 
 }); 
 
