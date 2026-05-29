@@ -62,13 +62,21 @@ class KomposisiKategori {
   final String kategori;
   final double jumlah;
   final String warna;
-  KomposisiKategori(
-      {required this.kategori, required this.jumlah, required this.warna});
+  final int persen;
+
+  KomposisiKategori({
+    required this.kategori,
+    required this.jumlah,
+    required this.warna,
+    required this.persen,
+  });
+
   factory KomposisiKategori.fromJson(Map<String, dynamic> json) {
     return KomposisiKategori(
       kategori: json['kategori'] ?? '',
       jumlah: (json['jumlah'] ?? 0).toDouble(),
       warna: json['warna'] ?? 'orange',
+      persen: (json['persen'] ?? 0).toInt(),
     );
   }
 }
@@ -124,7 +132,7 @@ class FinanceMutasiModel {
       tanggal: json['tanggal'] ?? '',
       jumlah: (json['jumlah'] ?? 0).toDouble(),
       isDebit: json['is_debit'] ?? true,
-      jenisPengeluaran: json['jenis_pengeluaran'] ?? 'food',
+      jenisPengeluaran: json['jenis_pengeluaran'] ?? 'pengeluaran',
       sesiMakan: json['sesi_makan'] ?? '',
       namaResep: json['nama_resep'] ?? '',
       resepId: json['resep_id'] ?? '',
