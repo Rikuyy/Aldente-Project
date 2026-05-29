@@ -22,6 +22,7 @@ class User extends Authenticatable implements JWTSubject
         'Jumlah_Makan',
         'Budget_Bulanan',
         'Alergi',
+        'last_budget_updated_at', 
     ];
 
     protected $hidden = [
@@ -33,6 +34,7 @@ class User extends Authenticatable implements JWTSubject
         'Email_verified_at' => 'datetime',
         'Jumlah_Makan' => 'integer',
         'Budget_Bulanan' => 'float',
+        'last_budget_updated_at' => 'datetime',
     ];
 
     // Wajib untuk JWT
