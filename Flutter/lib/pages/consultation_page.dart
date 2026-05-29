@@ -19,31 +19,54 @@ class _ConsultationPageState extends State<ConsultationPage> {
   final List<Map<String, String>> _chatHistory = [];
   final List<ChatMessage> _messages = [];
   bool _isLoading = false;
+  bool _isLoadingUser = true;
 
-  final Map<String, dynamic> _userContext = {
-    'nama': 'Budi',
-    'stokBahan': ['telur', 'mie', 'bawang merah', 'cabai'],
-    'sisaBudget': 45000,
-    'totalBudget': 150000,
-  };
+  // Data user — diisi dari API
+  String _nama = 'Cookmate';
+  String _inisial = 'C';
+  num _sisaBudget = 0;
+  num _totalBudget = 0;
+  num _overBudget = 0;
+  bool _isOverBudget = false;
 
   @override
   void initState() {
     super.initState();
+    _userContext(); // nama method tetap sesuai milikmu
+  }
+
+  // Fetch data user login dari API
+  Future<void> _userContext() async {
+    try {
+      final userData = await ApiService.get('/me');
+      final budgetData = await ApiService.get('/budget/balance');
+      if (!mounted) return;
+      setState(() {
+        _nama = userData['Username'] ?? userData['name'] ?? 'Cookmate';
+        _totalBudget =
+            budgetData['total_budget'] ?? userData['Budget_Bulanan'] ?? 0;
+        _sisaBudget = budgetData['sisa_budget'] ?? 0;
+        _overBudget = budgetData['over_budget'] ?? 0;
+        _isOverBudget = budgetData['is_over_budget'] ?? false;
+        _inisial = _nama.isNotEmpty ? _nama[0].toUpperCase() : 'C';
+        _isLoadingUser = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoadingUser = false);
+    }
     _addWelcomeMessage();
   }
 
   void _addWelcomeMessage() {
-    final stok = (_userContext['stokBahan'] as List).join(', ');
-    final persen =
-        ((_userContext['sisaBudget'] / _userContext['totalBudget']) * 100)
-            .toStringAsFixed(0);
+    final budgetInfo = _isOverBudget
+        ? '⚠️ Budget bulan ini sudah terlampaui Rp $_overBudget dari Rp $_totalBudget.'
+        : 'Sisa budget bulan ini: Rp $_sisaBudget dari Rp $_totalBudget.';
     setState(() {
       _messages.add(ChatMessage(
-        text: 'Halo ${_userContext['nama']}! 👋\n\n'
-            'Stok kamu sekarang: $stok.\n'
-            'Budget tersisa: Rp ${_userContext['sisaBudget']} ($persen%).\n\n'
-            'Mau masak apa hari ini, atau perlu saran jajan?',
+        text: 'Halo $_nama! 👋\n\n'
+            '$budgetInfo\n\n'
+            'Mau masak apa hari ini, atau perlu saran hemat?',
         isUser: false,
       ));
     });
@@ -64,16 +87,21 @@ class _ConsultationPageState extends State<ConsultationPage> {
     _scrollToBottom();
 
     try {
+      final token = await ApiService.getToken();
       final response = await http.post(
         Uri.parse('${ApiService.baseUrl}/consultation'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
         },
         body: jsonEncode({
           'message': trimmed,
           'history': historyToSend,
-          'context': _userContext,
+          'context': {
+            'sisaBudget': _sisaBudget,
+            'totalBudget': _totalBudget,
+          },
         }),
       );
 
@@ -134,6 +162,17 @@ class _ConsultationPageState extends State<ConsultationPage> {
         );
       }
     });
+  }
+
+  // Dipanggil saat user konfirmasi ganti jadwal dari _GantiJadwalSheet.
+  // Data pengganti diteruskan ke TodoPage lewat Navigator.pop result.
+  void _handleGantiJadwal(Map<String, dynamic> result) {
+    // Pop ConsultationPage sambil membawa data pengganti ke TodoPage.
+    // Karena TodoPage membuka halaman ini via Navigator.push (bukan go_router),
+    // Navigator.of(context).pop(result) sudah cukup untuk mengembalikan data.
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop(result);
+    }
   }
 
   @override
@@ -207,15 +246,24 @@ class _ConsultationPageState extends State<ConsultationPage> {
                       shape: BoxShape.circle,
                       border: Border.all(color: AppTheme.orange200, width: 2),
                     ),
-                    child: const Center(
-                      child: Text(
-                        'B',
-                        style: TextStyle(
-                          color: AppTheme.orange600,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 18,
-                        ),
-                      ),
+                    child: Center(
+                      child: _isLoadingUser
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppTheme.orange500,
+                              ),
+                            )
+                          : Text(
+                              _inisial,
+                              style: const TextStyle(
+                                color: AppTheme.orange600,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 18,
+                              ),
+                            ),
                     ),
                   ),
                 ),
@@ -291,7 +339,10 @@ class _ConsultationPageState extends State<ConsultationPage> {
     }
 
     if (msg.status == MessageStatus.recipes && msg.recipes != null) {
-      return _RecipeCards(recipes: msg.recipes!);
+      return _RecipeCards(
+        recipes: msg.recipes!,
+        onGantiJadwal: _handleGantiJadwal,
+      );
     }
 
     return Text(
@@ -420,12 +471,13 @@ class _ConsultationPageState extends State<ConsultationPage> {
 }
 
 // ─────────────────────────────────────────
-// Kartu Resep — ringkas + tombol detail
+// Kartu Resep — ringkas + tombol detail + ganti jadwal
 // ─────────────────────────────────────────
 
 class _RecipeCards extends StatelessWidget {
   final List recipes;
-  const _RecipeCards({required this.recipes});
+  final void Function(Map<String, dynamic> result)? onGantiJadwal;
+  const _RecipeCards({required this.recipes, this.onGantiJadwal});
 
   @override
   Widget build(BuildContext context) {
@@ -506,7 +558,7 @@ class _RecipeCards extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              // Kanan: badge % cocok + tombol detail
+              // Kanan: badge % cocok + tombol detail + ganti jadwal
               Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -543,6 +595,24 @@ class _RecipeCards extends StatelessWidget {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 8),
+                  // ── Tombol Ganti Jadwal ──
+                  GestureDetector(
+                    onTap: () => _showGantiJadwalSheet(context, recipe),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF6FF),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: const Color(0xFFBFDBFE)),
+                      ),
+                      child: const Icon(
+                        Icons.swap_horiz_rounded,
+                        size: 18,
+                        color: Color(0xFF1D4ED8),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -559,6 +629,18 @@ class _RecipeCards extends StatelessWidget {
       backgroundColor: Colors.transparent,
       builder: (_) => _RecipeDetailSheet(recipe: recipe),
     );
+  }
+
+  void _showGantiJadwalSheet(BuildContext context, Map recipe) async {
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _GantiJadwalSheet(recipe: recipe),
+    );
+    if (result != null && context.mounted) {
+      onGantiJadwal?.call(result);
+    }
   }
 }
 
@@ -1032,6 +1114,624 @@ class _QuickChip extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────
+// Bottom Sheet — Ganti Jadwal Makan
+// ─────────────────────────────────────────
+
+class _GantiJadwalSheet extends StatefulWidget {
+  final Map recipe; // resep dari hasil rekomendasi chatbot
+
+  const _GantiJadwalSheet({required this.recipe});
+
+  @override
+  State<_GantiJadwalSheet> createState() => _GantiJadwalSheetState();
+}
+
+class _GantiJadwalSheetState extends State<_GantiJadwalSheet> {
+  bool _isLoading = true;
+  String? _errorMsg;
+
+  /// Daftar sesi hari ini dari API generate
+  List<Map<String, dynamic>> _sesiList = [];
+
+  /// Indeks sesi yang dipilih user
+  int? _selectedIndex;
+
+  /// Sedang proses konfirmasi
+  bool _isConfirming = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchJadwal();
+  }
+
+  Future<void> _fetchJadwal() async {
+    setState(() {
+      _isLoading = true;
+      _errorMsg = null;
+    });
+
+    try {
+      final tanggal = DateTime.now().toIso8601String().substring(0, 10);
+      final data = await ApiService.get('/jadwal/generate?tanggal=$tanggal');
+      final List items = data['data'] ?? [];
+
+      setState(() {
+        _sesiList = items.map<Map<String, dynamic>>((item) {
+          final resep = item['resep'] as Map? ?? {};
+          return {
+            'sesi': item['sesi'] ?? '',
+            'sesi_ke': item['sesi_ke'] ?? 0,
+            'id_jadwal': item['id_jadwal'],
+            'is_done': item['is_done'] ?? false,
+            'resep_title': resep['title'] ?? '-',
+            'resep_category': resep['category'] ?? '',
+            'resep_id': resep['id'] ?? '',
+          };
+        }).toList();
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMsg = 'Gagal memuat jadwal. Coba lagi.';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _konfirmasiGanti() async {
+    if (_selectedIndex == null) return;
+    final sesi = _sesiList[_selectedIndex!];
+
+    // Tampilkan dialog konfirmasi sebelum benar-benar mengganti.
+    // useRootNavigator: false wajib agar pop dari dialog tidak
+    // "menular" ke showModalBottomSheet yang menunggu di atasnya.
+    final ok = await showDialog<bool>(
+      context: context,
+      useRootNavigator: false,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Konfirmasi Penggantian',
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            fontSize: 16,
+            color: AppTheme.slate700,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Menu pada sesi ini akan diganti:',
+              style: TextStyle(fontSize: 13, color: AppTheme.slate700),
+            ),
+            const SizedBox(height: 12),
+            // Dari
+            _ConfirmRow(
+              label: 'Sesi',
+              value: sesi['sesi'] as String,
+              icon: Icons.access_time_rounded,
+              color: AppTheme.orange500,
+            ),
+            const SizedBox(height: 6),
+            _ConfirmRow(
+              label: 'Menu lama',
+              value: sesi['resep_title'] as String,
+              icon: Icons.restaurant_rounded,
+              color: AppTheme.slate400,
+              strikethrough: true,
+            ),
+            const SizedBox(height: 6),
+            _ConfirmRow(
+              label: 'Menu baru',
+              value: widget.recipe['title'] ?? '-',
+              icon: Icons.auto_awesome_rounded,
+              color: AppTheme.green500,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child:
+                const Text('Batal', style: TextStyle(color: AppTheme.slate400)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.orange500,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              elevation: 0,
+            ),
+            child: const Text('Ganti Sekarang',
+                style: TextStyle(fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+
+    if (ok != true || !mounted) return;
+
+    setState(() => _isConfirming = true);
+
+    // Tutup bottom sheet sambil membawa data pengganti ke TodoPage.
+    // TodoPage cukup update local state-nya — tidak perlu API tambahan.
+    if (!mounted) return;
+    Navigator.of(context).pop({
+      'sesi_ke': sesi['sesi_ke'] as int,
+      'sesi_label': sesi['sesi'] as String,
+      'resep': {
+        'id': widget.recipe['id'] ?? '',
+        'title': widget.recipe['title'] ?? '-',
+        'ingredients': widget.recipe['ingredients'] ?? '',
+        'steps': widget.recipe['steps'] ?? '',
+        'category': widget.recipe['category'] ?? '',
+      },
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final recipeTitle = widget.recipe['title'] ?? '-';
+    final recipeCategory = widget.recipe['category'] ?? '';
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.55,
+      minChildSize: 0.4,
+      maxChildSize: 0.85,
+      builder: (_, scrollController) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            children: [
+              // Handle bar
+              const SizedBox(height: 12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppTheme.slate200,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Header
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEFF6FF),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.swap_horiz_rounded,
+                            color: Color(0xFF1D4ED8),
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Ganti Menu Jadwal',
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w900,
+                                  color: AppTheme.slate700,
+                                  letterSpacing: -0.3,
+                                ),
+                              ),
+                              Text(
+                                'Pilih sesi yang ingin diganti',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppTheme.slate400,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Kartu resep yang akan dipasang
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppTheme.orange50,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: AppTheme.orange200),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.auto_awesome_rounded,
+                              color: AppTheme.orange500, size: 16),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Menu pengganti dari rekomendasi:',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: AppTheme.orange600,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  recipeTitle,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppTheme.slate700,
+                                  ),
+                                ),
+                                if (recipeCategory.isNotEmpty)
+                                  Text(
+                                    recipeCategory,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: AppTheme.slate400,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Jadwal makan hari ini:',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.slate700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // Daftar sesi
+              Expanded(
+                child: _isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                            color: AppTheme.orange500))
+                    : _errorMsg != null
+                        ? Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.error_outline,
+                                    color: AppTheme.slate400, size: 36),
+                                const SizedBox(height: 8),
+                                Text(_errorMsg!,
+                                    style: const TextStyle(
+                                        color: AppTheme.slate400,
+                                        fontSize: 13)),
+                                const SizedBox(height: 12),
+                                TextButton(
+                                  onPressed: _fetchJadwal,
+                                  child: const Text('Coba Lagi',
+                                      style:
+                                          TextStyle(color: AppTheme.orange500)),
+                                ),
+                              ],
+                            ),
+                          )
+                        : _sesiList.isEmpty
+                            ? const Center(
+                                child: Text(
+                                  'Belum ada jadwal untuk hari ini.',
+                                  style: TextStyle(
+                                      color: AppTheme.slate400, fontSize: 13),
+                                ),
+                              )
+                            : ListView.builder(
+                                controller: scrollController,
+                                padding:
+                                    const EdgeInsets.fromLTRB(24, 0, 24, 16),
+                                itemCount: _sesiList.length,
+                                itemBuilder: (_, idx) {
+                                  final sesi = _sesiList[idx];
+                                  final isDone =
+                                      sesi['is_done'] as bool? ?? false;
+                                  final isSelected = _selectedIndex == idx;
+
+                                  return GestureDetector(
+                                    onTap: isDone
+                                        ? null
+                                        : () => setState(
+                                            () => _selectedIndex = idx),
+                                    child: AnimatedContainer(
+                                      duration:
+                                          const Duration(milliseconds: 200),
+                                      margin: const EdgeInsets.only(bottom: 8),
+                                      padding: const EdgeInsets.all(14),
+                                      decoration: BoxDecoration(
+                                        color: isDone
+                                            ? AppTheme.slate100
+                                            : isSelected
+                                                ? const Color(0xFFEFF6FF)
+                                                : Colors.white,
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                                          color: isDone
+                                              ? AppTheme.slate200
+                                              : isSelected
+                                                  ? const Color(0xFF93C5FD)
+                                                  : AppTheme.slate200,
+                                          width: isSelected ? 2 : 1,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          // Radio indicator
+                                          AnimatedContainer(
+                                            duration: const Duration(
+                                                milliseconds: 200),
+                                            width: 22,
+                                            height: 22,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: isDone
+                                                  ? AppTheme.slate200
+                                                  : isSelected
+                                                      ? const Color(0xFF1D4ED8)
+                                                      : Colors.white,
+                                              border: Border.all(
+                                                color: isDone
+                                                    ? AppTheme.slate300
+                                                    : isSelected
+                                                        ? const Color(
+                                                            0xFF1D4ED8)
+                                                        : AppTheme.slate300,
+                                                width: 2,
+                                              ),
+                                            ),
+                                            child: isSelected
+                                                ? const Icon(Icons.check,
+                                                    size: 13,
+                                                    color: Colors.white)
+                                                : null,
+                                          ),
+                                          const SizedBox(width: 12),
+
+                                          // Info sesi
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    Container(
+                                                      padding: const EdgeInsets
+                                                          .symmetric(
+                                                          horizontal: 8,
+                                                          vertical: 2),
+                                                      decoration: BoxDecoration(
+                                                        color: isDone
+                                                            ? AppTheme.slate200
+                                                            : AppTheme.orange50,
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(8),
+                                                        border: Border.all(
+                                                            color: isDone
+                                                                ? AppTheme
+                                                                    .slate300
+                                                                : AppTheme
+                                                                    .orange200),
+                                                      ),
+                                                      child: Text(
+                                                        sesi['sesi'] as String,
+                                                        style: TextStyle(
+                                                          fontSize: 10,
+                                                          fontWeight:
+                                                              FontWeight.w700,
+                                                          color: isDone
+                                                              ? AppTheme
+                                                                  .slate400
+                                                              : AppTheme
+                                                                  .orange600,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    if (isDone) ...[
+                                                      const SizedBox(width: 6),
+                                                      const Icon(
+                                                          Icons
+                                                              .check_circle_rounded,
+                                                          size: 13,
+                                                          color: AppTheme
+                                                              .green500),
+                                                      const SizedBox(width: 3),
+                                                      const Text(
+                                                        'Sudah selesai',
+                                                        style: TextStyle(
+                                                            fontSize: 10,
+                                                            color: AppTheme
+                                                                .green500,
+                                                            fontWeight:
+                                                                FontWeight
+                                                                    .w600),
+                                                      ),
+                                                    ],
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  sesi['resep_title'] as String,
+                                                  style: TextStyle(
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: isDone
+                                                        ? AppTheme.slate400
+                                                        : AppTheme.slate700,
+                                                    decoration: isDone
+                                                        ? TextDecoration
+                                                            .lineThrough
+                                                        : null,
+                                                  ),
+                                                ),
+                                                if ((sesi['resep_category']
+                                                        as String)
+                                                    .isNotEmpty)
+                                                  Text(
+                                                    sesi['resep_category']
+                                                        as String,
+                                                    style: const TextStyle(
+                                                        fontSize: 11,
+                                                        color:
+                                                            AppTheme.slate400),
+                                                  ),
+                                              ],
+                                            ),
+                                          ),
+
+                                          if (!isDone)
+                                            Icon(
+                                              Icons.swap_horiz_rounded,
+                                              size: 18,
+                                              color: isSelected
+                                                  ? const Color(0xFF1D4ED8)
+                                                  : AppTheme.slate300,
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+              ),
+
+              // Tombol konfirmasi
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                    24, 8, 24, MediaQuery.of(context).padding.bottom + 16),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: (_selectedIndex == null || _isConfirming)
+                        ? null
+                        : _konfirmasiGanti,
+                    icon: _isConfirming
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Icon(Icons.swap_horiz_rounded, size: 18),
+                    label: Text(
+                      _isConfirming ? 'Mengganti...' : 'Ganti Menu Ini',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w700, fontSize: 15),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _selectedIndex == null
+                          ? AppTheme.slate200
+                          : const Color(0xFF1D4ED8),
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: AppTheme.slate200,
+                      disabledForegroundColor: AppTheme.slate400,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                      elevation: 0,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ─────────────────────────────────────────
+// Row kecil di dialog konfirmasi
+// ─────────────────────────────────────────
+
+class _ConfirmRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+  final bool strikethrough;
+
+  const _ConfirmRow({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+    this.strikethrough = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 15, color: color),
+        const SizedBox(width: 8),
+        Expanded(
+          child: RichText(
+            text: TextSpan(
+              style: const TextStyle(fontSize: 13, color: AppTheme.slate700),
+              children: [
+                TextSpan(
+                  text: '$label: ',
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.slate400,
+                      fontSize: 12),
+                ),
+                TextSpan(
+                  text: value,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: color,
+                    decoration: strikethrough
+                        ? TextDecoration.lineThrough
+                        : TextDecoration.none,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

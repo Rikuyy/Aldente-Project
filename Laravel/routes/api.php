@@ -9,6 +9,7 @@ use App\Http\Controllers\API\ConsultationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\API\KeuanganController;
 use App\Http\Controllers\API\UserProfileController;
+use App\Http\Controllers\API\BudgetController;
 use App\Http\Controllers\ResepController;
 use App\Http\Controllers\ChatbotController; 
 use App\Http\Controllers\API\TodoCookController;
@@ -29,14 +30,18 @@ Route::prefix('auth')->group(function () {
 });
  
 Route::post('/consultation', [ConsultationController::class, 'send']);  // guest dan konsultasi belum login tetap bisa akses (menggunakan JWT opsional, untuk dapat konteks lebih kaya jika login)
-// Konsultasi, gunakan salah satu dari dua route berikut://
-//Route::middleware('auth:sanctum')->group(function () {
-    //Route::post('/consultation/send', [ConsultationController::class, 'send'])
-        //->name('consultation.send');
-
-//});
+ 
+// Consultation Page
+Route::middleware('auth:api')->group(function () {
+Route::get('/me', [UserProfileController::class, 'me'])
+        ->name('user.me');
 Route::post('/consultation/send', [ConsultationController::class, 'send'])
-    ->name('consultation.send'); 
+->name('consultation.send');
+Route::get('/budget/balance', [BudgetController::class, 'balance'])
+        ->name('budget.balance');
+});
+//Route::post('/consultation/send', [ConsultationController::class, 'send'])
+  //  ->name('consultation.send'); 
 
 // ── PROTECTED ROUTES (Wajib Login & Menggunakan JWT) ─────────────
 // PROTECTED ROUTES (Wajib Login & Full Menggunakan JWT)
