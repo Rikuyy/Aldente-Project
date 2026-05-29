@@ -1,5 +1,4 @@
 <?php
-// app/Models/Keuangan.php
 
 namespace App\Models;
 
@@ -17,10 +16,9 @@ class Keuangan extends Model
         'Id_JadwalMakan',
         'Tanggal',
         'Waktu',
-        'Jenis_Pengeluaran', // 'Beli', 'Masak', 'Topup'
+        'Kategori',          // 'Beli', 'Masak', 'Topup', 'Penarikan', 'Lainnya'
         'Detail_Beli',
-        'Total_Pengeluaran', // nominal positif
-        'is_debit',          // true = pengeluaran, false = pemasukan
+        'Total_Pengeluaran',
     ];
 
     protected $casts = [
@@ -28,16 +26,13 @@ class Keuangan extends Model
         'Id_JadwalMakan' => 'string',
         'Total_Pengeluaran' => 'double',
         'Detail_Beli' => 'array',
-        'is_debit' => 'boolean',
     ];
 
-    // Relasi ke JadwalMakan
     public function jadwalMakan()
     {
         return $this->belongsTo(JadwalMakan::class, 'Id_JadwalMakan');
     }
 
-    // Relasi ke User
     public function user()
     {
         return $this->belongsTo(User::class, 'Id_User');

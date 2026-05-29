@@ -1,5 +1,4 @@
 <?php
-// app/Http/Controllers/Api/KeuanganController.php
 
 namespace App\Http\Controllers\API;
 
@@ -13,22 +12,20 @@ use MongoDB\BSON\ObjectId;
 
 class KeuanganController extends Controller
 {
-    // Helper dapatkan budget user
     private function getBudget(Request $request): float
     {
         $user = $request->user();
         return (float) ($user->Budget_Bulanan ?? 3000000);
     }
 
-    // Helper update budget user (setelah topup)
-    private function updateBudget(Request $request, float $newBudget): void
+    private function updateBudget(Request $request, float $change): void
     {
         $user = $request->user();
-        $user->Budget_Bulanan = $newBudget;
+        $current = (float) ($user->Budget_Bulanan ?? 3000000);
+        $user->Budget_Bulanan = max(0, $current + $change);
         $user->save();
     }
 
-    // ==================== 1. RINGKASAN (hanya pengeluaran, pemasukan tidak dihitung) ====================
     public function ringkasan(Request $request): JsonResponse
     {
         try {
@@ -38,58 +35,75 @@ class KeuanganController extends Controller
             $startDate = $parsed->copy()->startOfMonth()->toDateString();
             $endDate = $parsed->copy()->endOfMonth()->toDateString();
 
-            // Hanya transaksi pengeluaran (is_debit = true)
             $transaksis = Keuangan::where('Id_User', $userId)
-                ->where('is_debit', true)
                 ->whereBetween('Tanggal', [$startDate, $endDate])
                 ->get();
 
-            $totalPengeluaran = $transaksis->sum('Total_Pengeluaran');
-            $budget = $this->getBudget($request);
-            $totalPemasukan = $budget; // budget saat ini dianggap pemasukan bulanan
-            $saldo = $budget - $totalPengeluaran;
+            $pemasukanBudget = $this->getBudget($request);
+            $pemasukanTopup = $transaksis->where('Kategori', 'Topup')->sum('Total_Pengeluaran');
+            $totalPemasukan = $pemasukanBudget + $pemasukanTopup;
 
-            $hariDenganTransaksi = $transaksis->groupBy('Tanggal')->count();
-            $rataPerHari = $hariDenganTransaksi > 0 ? round($totalPengeluaran / $hariDenganTransaksi) : 0;
+            $pengeluaran = $transaksis->filter(fn($t) => in_array($t->Kategori, ['Beli', 'Masak', 'Penarikan', 'Lainnya']))->sum('Total_Pengeluaran');
+            $saldo = $totalPemasukan - $pengeluaran;
 
             $hariIni = min(Carbon::now()->day, $parsed->daysInMonth);
-            $prediksiAkhir = $hariIni > 0 ? round(($totalPengeluaran / $hariIni) * $parsed->daysInMonth) : 0;
+            if ($hariIni <= 0) $hariIni = 1;
+            $rataPerHari = round($pengeluaran / $hariIni);
+            $prediksiAkhir = round(($pengeluaran / $hariIni) * $parsed->daysInMonth);
 
-            $totalMasak = $transaksis->where('Jenis_Pengeluaran', 'Masak')->sum('Total_Pengeluaran');
-            $totalBeliLuar = $transaksis->where('Jenis_Pengeluaran', 'Beli')->sum('Total_Pengeluaran');
-            $persenMasak = $totalPengeluaran > 0 ? round(($totalMasak / $totalPengeluaran) * 100) : 0;
+            $totalMasak = $transaksis->where('Kategori', 'Masak')->sum('Total_Pengeluaran');
+            $totalBeliLuar = $transaksis->where('Kategori', 'Beli')->sum('Total_Pengeluaran');
+            $persenMasak = $pengeluaran > 0 ? round(($totalMasak / $pengeluaran) * 100) : 0;
 
-            $isDefisit = $prediksiAkhir > $budget;
+            $isDefisit = $prediksiAkhir > $totalPemasukan;
             $pesanPrediksi = $isDefisit
-                ? "Diprediksi total pengeluaran mencapai Rp " . number_format($prediksiAkhir, 0, ',', '.') . " (Melebihi budget Anda)."
-                : "Pengeluaran Anda bulan ini diprediksi masih aman sesuai budget.";
+                ? "Diprediksi total pengeluaran mencapai Rp " . number_format($prediksiAkhir, 0, ',', '.') . " (Melebihi total pemasukan)."
+                : "Pengeluaran Anda bulan ini diprediksi masih aman.";
+
+            $budgetPerHari = $totalPemasukan / max(1, $parsed->daysInMonth);
+            $pengeluaranHariIni = $transaksis->filter(fn($t) => $t->Tanggal === Carbon::now()->toDateString() && in_array($t->Kategori, ['Beli','Masak','Penarikan','Lainnya']))->sum('Total_Pengeluaran');
+            $isOverbudgetHariIni = $pengeluaranHariIni > $budgetPerHari;
+            $overbudgetAmount = $pengeluaranHariIni - $budgetPerHari;
+
+            $sisaHari = max(0, $parsed->daysInMonth - $hariIni);
+            $sisaBudget = $totalPemasukan - $pengeluaran;
+            $sisaBudgetPerHari = $sisaHari > 0 ? $sisaBudget / $sisaHari : 0;
+            $isSisaTipis = $sisaBudgetPerHari < 10000 && $sisaBudgetPerHari > 0;
 
             return response()->json([
                 'success' => true,
                 'message' => 'Ringkasan keuangan berhasil diambil.',
                 'data' => [
                     'data' => [
-                        'saldo'                => (double) $saldo,
-                        'total_pemasukan'      => (double) $totalPemasukan,
-                        'total_pengeluaran'    => (double) $totalPengeluaran,
-                        'rata_per_hari'        => (double) $rataPerHari,
+                        'saldo' => (double) $saldo,
+                        'total_pemasukan' => (double) $totalPemasukan,
+                        'total_pengeluaran' => (double) $pengeluaran,
+                        'rata_per_hari' => (double) $rataPerHari,
                         'prediksi_akhir_bulan' => (double) $prediksiAkhir,
-                        'prediksi_defisit'     => $isDefisit,
-                        'pesan_prediksi'       => $pesanPrediksi,
-                        'persen_masak'         => (int) $persenMasak,
-                        'komposisi'            => [
+                        'prediksi_defisit' => $isDefisit,
+                        'pesan_prediksi' => $pesanPrediksi,
+                        'persen_masak' => (int) $persenMasak,
+                        'komposisi' => [
                             ['kategori' => 'Masak Sendiri', 'jumlah' => (double) $totalMasak, 'warna' => 'orange'],
                             ['kategori' => 'Beli di Luar',  'jumlah' => (double) $totalBeliLuar, 'warna' => 'blue'],
                         ],
+                        'budget_per_hari' => round($budgetPerHari, 2),
+                        'pengeluaran_hari_ini' => (double) $pengeluaranHariIni,
+                        'is_overbudget_hari_ini' => $isOverbudgetHariIni,
+                        'overbudget_amount' => round($overbudgetAmount, 2),
+                        'sisa_budget_per_hari' => round($sisaBudgetPerHari, 2),
+                        'is_sisa_tipis' => $isSisaTipis,
                     ]
                 ],
             ], 200);
         } catch (\Exception $e) {
-            return $this->serverError($e);
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
+            ], 500);
         }
     }
 
-    // ==================== 2. GRAFIK (pengeluaran per hari) ====================
     public function grafik(Request $request): JsonResponse
     {
         try {
@@ -100,7 +114,7 @@ class KeuanganController extends Controller
             $endDate = $parsed->copy()->endOfMonth()->toDateString();
 
             $transaksis = Keuangan::where('Id_User', $userId)
-                ->where('is_debit', true)
+                ->whereIn('Kategori', ['Beli', 'Masak', 'Penarikan', 'Lainnya'])
                 ->whereBetween('Tanggal', [$startDate, $endDate])
                 ->get();
 
@@ -125,37 +139,42 @@ class KeuanganController extends Controller
                 ],
             ], 200);
         } catch (\Exception $e) {
-            return $this->serverError($e);
+            return response()->json([
+                'success' => false,
+                'message' => 'Grafik error: ' . $e->getMessage(),
+            ], 500);
         }
     }
 
-    // ==================== 3. MUTASI (dengan lookup jadwal makan) ====================
     public function mutasi(Request $request): JsonResponse
     {
         try {
             $userId = $request->user()->_id;
-            
-            // Ambil semua transaksi, urutkan descending tanggal & waktu
-            $transaksis = Keuangan::where('Id_User', $userId)
-                ->orderBy('Tanggal', 'desc')
-                ->orderBy('Waktu', 'desc')
-                ->get();
+            $query = Keuangan::where('Id_User', $userId);
 
-            // Format setiap transaksi dan tambahkan data jadwal jika ada
+            if ($request->has('tahun') && !empty($request->tahun) && $request->tahun != 0) {
+                $tahun = (int) $request->tahun;
+                $query->where('Tanggal', 'regex', "/^{$tahun}-/");
+            }
+            if ($request->has('bulan') && !empty($request->bulan)) {
+                $bulan = (int) $request->bulan;
+                $bulanStr = str_pad($bulan, 2, '0', STR_PAD_LEFT);
+                $query->where('Tanggal', 'regex', "/-{$bulanStr}-/");
+            }
+
+            $transaksis = $query->orderBy('Tanggal', 'desc')
+                                ->orderBy('Waktu', 'desc')
+                                ->get();
+
             $formatted = [];
             foreach ($transaksis as $trans) {
                 $item = $this->formatKeuangan($trans);
-                // Jika ada Id_JadwalMakan, ambil data jadwal
                 if (!empty($trans->Id_JadwalMakan)) {
                     $jadwal = JadwalMakan::with('resep')->where('_id', new ObjectId($trans->Id_JadwalMakan))->first();
                     if ($jadwal) {
                         $item['sesi_makan'] = $jadwal->{'Sesi Makan'} ?? '';
                         $item['nama_resep'] = $jadwal->resep->title ?? '';
                         $item['resep_id'] = (string) $jadwal->Id_Resep;
-                    } else {
-                        $item['sesi_makan'] = '';
-                        $item['nama_resep'] = '';
-                        $item['resep_id'] = '';
                     }
                 } else {
                     $item['sesi_makan'] = '';
@@ -165,7 +184,6 @@ class KeuanganController extends Controller
                 $formatted[] = $item;
             }
 
-            // Grouping berdasarkan label tanggal
             $grouped = collect($formatted)->groupBy(fn($item) => $this->labelTanggal($item['tanggal']))
                 ->map(fn($items, $label) => [
                     'tanggal_label' => $label,
@@ -180,12 +198,13 @@ class KeuanganController extends Controller
                 'data'    => $grouped,
             ], 200);
         } catch (\Exception $e) {
-            \Log::error('Mutasi error: ' . $e->getMessage());
-            return $this->serverError($e);
+            return response()->json([
+                'success' => false,
+                'message' => 'Mutasi error: ' . $e->getMessage(),
+            ], 500);
         }
     }
 
-    // ==================== 4. TAMBAH PEMASUKAN (Top-up) ====================
     public function tambahPemasukan(Request $request): JsonResponse
     {
         try {
@@ -199,21 +218,16 @@ class KeuanganController extends Controller
             $jumlah = (float) $request->jumlah;
             $keterangan = $request->keterangan ?? 'Top-up saldo';
 
-            // Update budget user
-            $budgetLama = $this->getBudget($request);
-            $budgetBaru = $budgetLama + $jumlah;
-            $this->updateBudget($request, $budgetBaru);
+            $this->updateBudget($request, $jumlah);
 
-            // Catat ke tabel keuangan
             $keuangan = Keuangan::create([
                 'Id_User'           => (string) $userId,
                 'Id_JadwalMakan'    => null,
                 'Tanggal'           => Carbon::now()->toDateString(),
                 'Waktu'             => Carbon::now()->format('H:i:s'),
-                'Jenis_Pengeluaran' => 'Topup',
+                'Kategori'          => 'Topup',
                 'Detail_Beli'       => [['nama' => $keterangan, 'nominal' => $jumlah]],
                 'Total_Pengeluaran' => $jumlah,
-                'is_debit'          => false, // pemasukan
             ]);
 
             return response()->json([
@@ -222,11 +236,58 @@ class KeuanganController extends Controller
                 'data'    => $this->formatKeuangan($keuangan),
             ], 201);
         } catch (\Exception $e) {
-            return $this->serverError($e);
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menambah pemasukan: ' . $e->getMessage(),
+            ], 500);
         }
     }
 
-    // ==================== 5. DETAIL SATU TRANSAKSI ====================
+    public function tambahPengeluaran(Request $request): JsonResponse
+    {
+        try {
+            $request->validate([
+                'jumlah' => 'required|numeric|min:1',
+                'keterangan' => 'required|string|max:255',
+                'jenis' => 'required|in:penarikan,lainnya',
+            ]);
+
+            $user = $request->user();
+            $userId = $user->_id;
+            $jumlah = (float) $request->jumlah;
+            $keterangan = $request->keterangan;
+            $jenis = $request->jenis;
+
+            if ($jenis === 'penarikan') {
+                $this->updateBudget($request, -$jumlah);
+                $kategori = 'Penarikan';
+            } else {
+                $kategori = 'Lainnya';
+            }
+
+            $keuangan = Keuangan::create([
+                'Id_User'           => (string) $userId,
+                'Id_JadwalMakan'    => null,
+                'Tanggal'           => Carbon::now()->toDateString(),
+                'Waktu'             => Carbon::now()->format('H:i:s'),
+                'Kategori'          => $kategori,
+                'Detail_Beli'       => [['nama' => $keterangan, 'nominal' => $jumlah]],
+                'Total_Pengeluaran' => $jumlah,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pengeluaran berhasil dicatat.',
+                'data'    => $this->formatKeuangan($keuangan),
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menambah pengeluaran: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function detail(Request $request, string $id): JsonResponse
     {
         try {
@@ -257,11 +318,13 @@ class KeuanganController extends Controller
                 'data'    => $data,
             ], 200);
         } catch (\Exception $e) {
-            return $this->serverError($e);
+            return response()->json([
+                'success' => false,
+                'message' => 'Detail error: ' . $e->getMessage(),
+            ], 500);
         }
     }
 
-    // ==================== HELPER METHODS ====================
     private function labelTanggal(string $tanggal): string
     {
         try {
@@ -279,24 +342,25 @@ class KeuanganController extends Controller
 
     private function formatKeuangan(Keuangan $keuangan): array
     {
-        $jenisMapping = ['Masak' => 'cook', 'Beli' => 'food', 'Topup' => 'topup'];
-        $jenis = $jenisMapping[$keuangan->Jenis_Pengeluaran] ?? 'other';
+        $jenisMapping = [
+            'Beli' => 'food',
+            'Masak' => 'cook',
+            'Topup' => 'topup',
+            'Penarikan' => 'withdrawal',
+            'Lainnya' => 'other',
+        ];
+        $jenis = $jenisMapping[$keuangan->Kategori] ?? 'other';
+        $isDebit = in_array($keuangan->Kategori, ['Beli','Masak','Penarikan','Lainnya']);
 
         $detail = $keuangan->Detail_Beli;
         $judul = '';
         $keterangan = '';
 
         if ($detail && is_array($detail) && count($detail) > 0) {
-            if ($keuangan->Jenis_Pengeluaran == 'Topup') {
-                $judul = 'Topup Saldo';
-                $keterangan = $detail[0]['nama'] ?? '';
-            } else {
-                $judul = $detail[0]['nama'] ?? 'Transaksi';
-                $keterangan = count($detail) . ' item';
-            }
+            $judul = $detail[0]['nama'] ?? 'Transaksi';
+            $keterangan = count($detail) > 1 ? count($detail) . ' item' : '';
         } else {
-            $judul = $keuangan->Jenis_Pengeluaran == 'Masak' ? 'Masak sendiri' : 'Beli di luar';
-            $keterangan = '';
+            $judul = $keuangan->Kategori;
         }
 
         $tanggalParsed = Carbon::parse($keuangan->Tanggal);
@@ -308,19 +372,10 @@ class KeuanganController extends Controller
             'waktu'             => $keuangan->Waktu,
             'tanggal'           => $keuangan->Tanggal,
             'jumlah'            => (double) $keuangan->Total_Pengeluaran,
-            'is_debit'          => $keuangan->is_debit ?? true,
+            'is_debit'          => $isDebit,
             'jenis_pengeluaran' => $jenis,
             'bulan'             => (int) $tanggalParsed->month,
             'tahun'             => (int) $tanggalParsed->year,
         ];
-    }
-
-    private function serverError(\Exception $e): JsonResponse
-    {
-        return response()->json([
-            'success' => false,
-            'message' => 'Terjadi kesalahan server.',
-            'error'   => $e->getMessage(),
-        ], 500);
     }
 }

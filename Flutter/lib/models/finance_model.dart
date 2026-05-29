@@ -8,6 +8,12 @@ class FinanceRingkasanModel {
   final String pesanPrediksi;
   final int persenMasak;
   final List<KomposisiKategori> komposisi;
+  final double budgetPerHari;
+  final double pengeluaranHariIni;
+  final bool isOverbudgetHariIni;
+  final double overbudgetAmount;
+  final double sisaBudgetPerHari;
+  final bool isSisaTipis;
 
   FinanceRingkasanModel({
     required this.saldo,
@@ -19,6 +25,12 @@ class FinanceRingkasanModel {
     required this.pesanPrediksi,
     required this.persenMasak,
     required this.komposisi,
+    required this.budgetPerHari,
+    required this.pengeluaranHariIni,
+    required this.isOverbudgetHariIni,
+    required this.overbudgetAmount,
+    required this.sisaBudgetPerHari,
+    required this.isSisaTipis,
   });
 
   factory FinanceRingkasanModel.fromJson(Map<String, dynamic> json) {
@@ -36,6 +48,12 @@ class FinanceRingkasanModel {
       pesanPrediksi: json['pesan_prediksi'] ?? '',
       persenMasak: json['persen_masak'] ?? 0,
       komposisi: kompoList,
+      budgetPerHari: (json['budget_per_hari'] ?? 0).toDouble(),
+      pengeluaranHariIni: (json['pengeluaran_hari_ini'] ?? 0).toDouble(),
+      isOverbudgetHariIni: json['is_overbudget_hari_ini'] ?? false,
+      overbudgetAmount: (json['overbudget_amount'] ?? 0).toDouble(),
+      sisaBudgetPerHari: (json['sisa_budget_per_hari'] ?? 0).toDouble(),
+      isSisaTipis: json['is_sisa_tipis'] ?? false,
     );
   }
 }
@@ -44,10 +62,8 @@ class KomposisiKategori {
   final String kategori;
   final double jumlah;
   final String warna;
-
   KomposisiKategori(
       {required this.kategori, required this.jumlah, required this.warna});
-
   factory KomposisiKategori.fromJson(Map<String, dynamic> json) {
     return KomposisiKategori(
       kategori: json['kategori'] ?? '',
@@ -61,10 +77,8 @@ class FinanceGrafikModel {
   final String tanggal;
   final int hari;
   final double jumlah;
-
   FinanceGrafikModel(
       {required this.tanggal, required this.hari, required this.jumlah});
-
   factory FinanceGrafikModel.fromJson(Map<String, dynamic> json) {
     return FinanceGrafikModel(
       tanggal: json['tanggal'] ?? '',
@@ -83,7 +97,6 @@ class FinanceMutasiModel {
   final double jumlah;
   final bool isDebit;
   final String jenisPengeluaran;
-  // tambahan dari jadwal makan
   final String sesiMakan;
   final String namaResep;
   final String resepId;
