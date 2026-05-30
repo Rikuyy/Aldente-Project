@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
@@ -188,18 +189,26 @@ class _FinancePageState extends State<FinancePage> {
               TextFormField(
                 controller: jumlahController,
                 keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  _CurrencyFormatter(),
+                ],
                 decoration: const InputDecoration(
                   labelText: 'Nominal (Rp)',
                   border: OutlineInputBorder(),
                   prefixText: 'Rp ',
                 ),
-                validator: (v) => v == null || v.isEmpty ? 'Isi nominal' : null,
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Isi nominal';
+                  if (v.replaceAll('.', '').isEmpty) return 'Isi nominal';
+                  return null;
+                },
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: keteranganController,
                 decoration: const InputDecoration(
-                  labelText: 'Keterangan (opsional)',
+                  labelText: 'Detail Tambahan (opsional)',
                   border: OutlineInputBorder(),
                 ),
               ),
@@ -215,14 +224,20 @@ class _FinancePageState extends State<FinancePage> {
           ElevatedButton(
             onPressed: () async {
               if (formKey.currentState!.validate()) {
-                final jumlah = double.tryParse(jumlahController.text) ?? 0;
+                final jumlahText = jumlahController.text.replaceAll('.', '');
+                final jumlah = double.tryParse(jumlahText) ?? 0;
                 if (jumlah <= 0) return;
-                final keterangan = keteranganController.text.trim();
+                final detailTambahan = keteranganController.text.trim();
                 try {
+                  // Disesuaikan dengan struktur log keuangan di database backend Anda
                   final response =
                       await ApiService.post('/keuangan/pemasukan', {
-                    'jumlah': jumlah,
-                    'keterangan': keterangan,
+                    'kategori': 'Pemasukan',
+                    'keterangan': 'Top Up',
+                    'total_nominal': jumlah,
+                    'detail': detailTambahan.isNotEmpty
+                        ? {'info': detailTambahan}
+                        : null,
                   });
                   if (response['success'] == true) {
                     if (context.mounted) {
@@ -263,7 +278,7 @@ class _FinancePageState extends State<FinancePage> {
   Future<void> _showManualExpenseDialog() async {
     final jumlahController = TextEditingController();
     final keteranganController = TextEditingController();
-    String? selectedJenis;
+    String? selectedJenis; // Menyimpan tipe pilihan keterangan dari database
     final formKey = GlobalKey<FormState>();
     return showDialog(
       context: context,
@@ -277,32 +292,41 @@ class _FinancePageState extends State<FinancePage> {
             children: [
               DropdownButtonFormField<String>(
                 decoration:
-                    const InputDecoration(labelText: 'Jenis Pengeluaran'),
+                    const InputDecoration(labelText: 'Jenis Keterangan'),
                 items: const [
                   DropdownMenuItem(
-                      value: 'penarikan',
+                      value: 'Pengurangan Budget',
                       child: Text('Penarikan Budget (kurangi saldo)')),
                   DropdownMenuItem(
-                      value: 'lainnya',
+                      value: 'Lainnya',
                       child: Text('Pengeluaran Lain (jajan, dll)')),
                 ],
                 onChanged: (v) => selectedJenis = v,
-                validator: (v) => v == null ? 'Pilih jenis' : null,
+                validator: (v) => v == null ? 'Pilih jenis keterangan' : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: jumlahController,
                 keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  _CurrencyFormatter(),
+                ],
                 decoration: const InputDecoration(
                     labelText: 'Nominal (Rp)', prefixText: 'Rp '),
-                validator: (v) => v == null || v.isEmpty ? 'Isi nominal' : null,
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Isi nominal';
+                  if (v.replaceAll('.', '').isEmpty) return 'Isi nominal';
+                  return null;
+                },
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: keteranganController,
-                decoration: const InputDecoration(labelText: 'Keterangan'),
+                decoration:
+                    const InputDecoration(labelText: 'Detail Pengeluaran'),
                 validator: (v) =>
-                    v == null || v.isEmpty ? 'Isi keterangan' : null,
+                    v == null || v.isEmpty ? 'Isi detail pengeluaran' : null,
               ),
             ],
           ),
@@ -314,15 +338,19 @@ class _FinancePageState extends State<FinancePage> {
           ElevatedButton(
             onPressed: () async {
               if (formKey.currentState!.validate()) {
-                final jumlah = double.tryParse(jumlahController.text) ?? 0;
+                final jumlahText = jumlahController.text.replaceAll('.', '');
+                final jumlah = double.tryParse(jumlahText) ?? 0;
                 if (jumlah <= 0) return;
-                final keterangan = keteranganController.text.trim();
+                final detailText = keteranganController.text.trim();
                 try {
+                  // Mengirim parameter yang sesuai dengan enum log keuangan database Anda
                   final response =
                       await ApiService.post('/keuangan/pengeluaran', {
-                    'jumlah': jumlah,
-                    'keterangan': keterangan,
-                    'jenis': selectedJenis,
+                    'kategori': 'Pengeluaran',
+                    'keterangan':
+                        selectedJenis, // 'Pengurangan Budget' atau 'Lainnya'
+                    'total_nominal': jumlah,
+                    'detail': {'catatan': detailText},
                   });
                   if (response['success'] == true) {
                     if (context.mounted) {
@@ -588,69 +616,12 @@ class _FinancePageState extends State<FinancePage> {
               const SizedBox(height: 20),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  children: [
-                    Expanded(
-                        child: _SummaryChip(
-                            label: 'Budget per Hari',
-                            value: _formatRp(_ringkasan!.rataPerHari),
-                            icon: Icons.bar_chart_rounded,
-                            color: AppTheme.blue500,
-                            bg: AppTheme.blue50)),
-                    const SizedBox(width: 12),
-                    Expanded(
-                        child: _SummaryChip(
-                            label: 'Prediksi Akhir',
-                            value: _formatRp(_ringkasan!.prediksiAkhirBulan),
-                            icon: Icons.warning_rounded,
-                            color: AppTheme.red500,
-                            bg: AppTheme.red50,
-                            isWarning: true)),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 20),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppTheme.orange50,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppTheme.orange200),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(Icons.error_outline_rounded,
-                        color: AppTheme.orange600, size: 22),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _ringkasan!.prediksiDefisit
-                                ? 'Prediksi Akhir Bulan: Defisit'
-                                : 'Prediksi Akhir Bulan: Aman',
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF431407),
-                                fontSize: 13),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _ringkasan!.pesanPrediksi,
-                            style: const TextStyle(
-                                fontSize: 12,
-                                color: Color(0xFF9A3412),
-                                fontWeight: FontWeight.w500,
-                                height: 1.5),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                child: _SummaryChip(
+                    label: 'Budget per Hari',
+                    value: _formatRp(_ringkasan!.rataPerHari),
+                    icon: Icons.bar_chart_rounded,
+                    color: AppTheme.blue500,
+                    bg: AppTheme.blue50),
               ),
               const SizedBox(height: 16),
               Container(
@@ -1334,13 +1305,15 @@ class _MutationRow extends StatelessWidget {
     IconData categoryIcon;
     Color categoryColor;
     Color categoryBg;
+
+    // Logika Icon menyesuaikan dengan isi field 'Kategori' database Anda
     switch (transaction.jenisPengeluaran) {
-      case 'pengeluaran':
+      case 'Pengeluaran':
         categoryIcon = Icons.remove_circle_outline_rounded;
         categoryColor = AppTheme.red500;
         categoryBg = AppTheme.red50;
         break;
-      case 'pemasukan':
+      case 'Pemasukan':
         categoryIcon = Icons.add_circle_rounded;
         categoryColor = AppTheme.green600;
         categoryBg = AppTheme.green50;
@@ -1350,22 +1323,24 @@ class _MutationRow extends StatelessWidget {
         categoryColor = AppTheme.slate500;
         categoryBg = AppTheme.slate50;
     }
+
     String prefix = '';
-    final ket = transaction.keterangan.toLowerCase();
-    if (transaction.jenisPengeluaran == 'pengeluaran') {
-      if (ket == 'beli')
-        prefix = '[Beli] ';
-      else if (ket == 'masak')
-        prefix = '[Masak] ';
-      else if (ket == 'penarikan') prefix = '[Penarikan] ';
+    final ket = transaction
+        .keterangan; // Berisi Masak, Beli, Top Up, Pengurangan Budget, Lainnya
+    if (ket.isNotEmpty) {
+      prefix = '[$ket] ';
     }
+
     String judulUtama = prefix +
         (transaction.namaResep.isNotEmpty
             ? transaction.namaResep
             : transaction.judul);
+
     String subJudul = transaction.keterangan;
-    if (transaction.sesiMakan.isNotEmpty)
+    if (transaction.sesiMakan.isNotEmpty) {
       subJudul = '${transaction.sesiMakan} • $subJudul';
+    }
+
     return Column(children: [
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -1416,5 +1391,41 @@ class _MutationRow extends StatelessWidget {
       ),
       if (!isLast) Divider(height: 1, color: context.colors.border, indent: 68),
     ]);
+  }
+}
+
+// Formatter khusus untuk format angka ribuan (titik otomatis)
+class _CurrencyFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    if (newValue.text.isEmpty) {
+      return newValue.copyWith(text: '');
+    }
+
+    // Buang titik yang ada saat user mengetik untuk mendapatkan nilai asli
+    String cleanedText = newValue.text.replaceAll('.', '');
+    double? value = double.tryParse(cleanedText);
+
+    if (value == null) {
+      return oldValue;
+    }
+
+    String formatted = '';
+    String str = value.toInt().toString();
+    int length = str.length;
+
+    // Pasang titik per 3 digit
+    for (int i = 0; i < length; i++) {
+      formatted += str[i];
+      if ((length - i - 1) % 3 == 0 && i != length - 1) {
+        formatted += '.';
+      }
+    }
+
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
   }
 }

@@ -828,7 +828,10 @@ class _StepBudget extends StatelessWidget {
                   child: TextField(
                     controller: controller,
                     keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    // Menerapkan custom formatter agar mengetik otomatis ada titiknya
+                    inputFormatters: [
+                      _CurrencyInputFormatter(),
+                    ],
                     style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.w900,
@@ -864,7 +867,8 @@ class _StepBudget extends StatelessWidget {
           runSpacing: 10,
           children: ['300.000', '500.000', '750.000', '1.000.000'].map((v) {
             return GestureDetector(
-              onTap: () => controller.text = v.replaceAll('.', ''),
+              // Diubah: Memasukkan titik (format default) dari array langsung ke textfield
+              onTap: () => controller.text = v,
               child: Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -1020,6 +1024,41 @@ class _StepMealFreq extends StatelessWidget {
           }).toList(),
         ),
       ],
+    );
+  }
+}
+
+// FORMATTER CUSTOM UNTUK RUPIAH/RIBUAN OTOMATIS
+class _CurrencyInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    if (newValue.text.isEmpty) {
+      return newValue.copyWith(text: '');
+    }
+
+    // Bersihkan semua selain angka
+    String numericOnly = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+    if (numericOnly.isEmpty) {
+      return newValue.copyWith(text: '');
+    }
+
+    // Format string dengan pembatas titik (ribuan)
+    String formatted = '';
+    int count = 0;
+    for (int i = numericOnly.length - 1; i >= 0; i--) {
+      if (count == 3) {
+        formatted = '.$formatted';
+        count = 0;
+      }
+      formatted = numericOnly[i] + formatted;
+      count++;
+    }
+
+    // Kembalikan value lengkap dengan posisis kursor di akhir
+    return newValue.copyWith(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
 }

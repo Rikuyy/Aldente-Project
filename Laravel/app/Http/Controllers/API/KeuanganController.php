@@ -237,22 +237,20 @@ class KeuanganController extends Controller
         }
     }
 
-    public function tambahPemasukan(Request $request): JsonResponse
+public function tambahPemasukan(Request $request): JsonResponse
     {
         try {
+            // Disesuaikan dengan payload dari aplikasi Flutter
             $request->validate([
-                'jumlah'     => 'required|numeric|min:1',
-                'keterangan' => 'nullable|string|max:255',
+                'total_nominal' => 'required|numeric|min:1',
+                'detail'        => 'nullable|array', // Menerima JSON/array untuk keterangan tambahan
             ]);
 
-            $user        = $request->user();
-            $userId      = $user->_id;
-            $jumlah      = (float) $request->jumlah;
-            $keterangan  = $request->keterangan ?? 'Top-up saldo';
+            $userId = $request->user()->_id;
+            $jumlah = (float) $request->total_nominal;
 
-            // Update Budget_Bulanan user (saldo awal)
-            $user->Budget_Bulanan = (float) ($user->Budget_Bulanan ?? 0) + $jumlah;
-            $user->save();
+            // Catatan: Kita tidak lagi menambahkan/mengubah $user->Budget_Bulanan di sini 
+            // karena saldo sudah dihitung dinamis (Budget + Pemasukan - Pengeluaran) di ringkasan()
 
             $keuangan = Keuangan::create([
                 'Id_User'       => (string) $userId,
@@ -260,8 +258,8 @@ class KeuanganController extends Controller
                 'Tanggal'       => Carbon::now()->toDateString(),
                 'Waktu'         => Carbon::now()->format('H:i:s'),
                 'Kategori'      => 'Pemasukan',
-                'Keterangan'    => $keterangan,
-                'Detail'        => [],
+                'Keterangan'    => 'Top Up', // Pastikan sesuai persis dengan Enum database
+                'Detail'        => $request->detail ?? [], // Keterangan tambahan (opsional) masuk ke Detail
                 'Total_Nominal' => $jumlah,
             ]);
 
@@ -281,23 +279,19 @@ class KeuanganController extends Controller
     public function tambahPengeluaran(Request $request): JsonResponse
     {
         try {
+            // Disesuaikan dengan payload dari aplikasi Flutter
             $request->validate([
-                'jumlah'     => 'required|numeric|min:1',
-                'keterangan' => 'required|string|max:255',
-                'jenis'      => 'required|in:penarikan,lainnya',
+                'total_nominal' => 'required|numeric|min:1',
+                'keterangan'    => 'required|in:Pengurangan Budget,Lainnya', // Validasi sesuai Enum pilihan form
+                'detail'        => 'nullable|array', // Menerima JSON untuk catatan
             ]);
 
-            $user       = $request->user();
-            $userId     = $user->_id;
-            $jumlah     = (float) $request->jumlah;
+            $userId     = $request->user()->_id;
+            $jumlah     = (float) $request->total_nominal;
             $keterangan = $request->keterangan;
-            $jenis      = $request->jenis;
 
-            // Penarikan mengurangi Budget_Bulanan (saldo awal)
-            if ($jenis === 'penarikan') {
-                $user->Budget_Bulanan = max(0, (float) ($user->Budget_Bulanan ?? 0) - $jumlah);
-                $user->save();
-            }
+            // Catatan: Kita tidak mengurangi $user->Budget_Bulanan meskipun "Pengurangan Budget"
+            // Karena ini masuk sebagai 'Pengeluaran', otomatis akan mengurangi Saldo secara dinamis di ringkasan()
 
             $keuangan = Keuangan::create([
                 'Id_User'       => (string) $userId,
@@ -305,8 +299,8 @@ class KeuanganController extends Controller
                 'Tanggal'       => Carbon::now()->toDateString(),
                 'Waktu'         => Carbon::now()->format('H:i:s'),
                 'Kategori'      => 'Pengeluaran',
-                'Keterangan'    => $keterangan,
-                'Detail'        => [],
+                'Keterangan'    => $keterangan, // 'Pengurangan Budget' atau 'Lainnya'
+                'Detail'        => $request->detail ?? [], // Keterangan bebas/catatan masuk ke Detail
                 'Total_Nominal' => $jumlah,
             ]);
 
@@ -375,14 +369,21 @@ class KeuanganController extends Controller
         }
     }
 
-    private function formatKeuangan(Keuangan $keuangan): array
+private function formatKeuangan(Keuangan $keuangan): array
     {
         $tanggalParsed = Carbon::parse($keuangan->Tanggal);
+        
+        // Cek apakah ada catatan bebas di dalam field Detail (JSON)
+        $catatanBebas = '';
+        if (is_array($keuangan->Detail)) {
+            $catatanBebas = $keuangan->Detail['info'] ?? $keuangan->Detail['catatan'] ?? '';
+        }
 
         return [
             '_id'               => (string) $keuangan->_id,
             'judul'             => $keuangan->Keterangan ?? $keuangan->Kategori,
-            'keterangan'        => $keuangan->Keterangan ?? '',
+            // Jika ada catatan bebas, kirim catatan tersebut. Jika tidak, pakai Keterangan Enum-nya.
+            'keterangan'        => !empty($catatanBebas) ? $catatanBebas : ($keuangan->Keterangan ?? ''),
             'waktu'             => $keuangan->Waktu,
             'tanggal'           => $keuangan->Tanggal,
             'jumlah'            => (double) $keuangan->Total_Nominal,
