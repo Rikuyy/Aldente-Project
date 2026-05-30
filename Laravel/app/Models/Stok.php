@@ -8,11 +8,16 @@ class Stok extends Model
 {
     protected $connection = 'mongodb';
     protected $collection = 'stok';
-    protected $table = 'stok'; // ← tambah ini
-    
+
     protected $fillable = [
-        'Id_User', 'Nama_Bahan', 'Kategori_Bahan', 'Jumlah_Bahan', 
-        'Satuan_Bahan', 'Tanggal_Beli', 'Tanggal_Kadaluarsa'
+        'Id_User', 
+        'Nama_Bahan', 
+        'Kategori_Bahan', 
+        'Jumlah_Bahan', 
+        'Satuan_Bahan',
+        'Tipe_Bahan',        // baru
+        'Tanggal_Beli', 
+        'Tanggal_Kadaluarsa'
     ];
 
     protected $casts = [

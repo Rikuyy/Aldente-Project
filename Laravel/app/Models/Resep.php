@@ -2,18 +2,16 @@
 
 namespace App\Models;
 
-// Pastikan ini yang di-import!
 use MongoDB\Laravel\Eloquent\Model as Eloquent;
 
 class Resep extends Eloquent
 {
-    // Paksa pakai koneksi mongodb
     protected $connection = 'mongodb';
     
-    // Paksa nama koleksinya 'resep' (tanpa s)
+    // INI KUNCI UTAMANYA: Mencegah Laravel nambahin huruf 's'
     protected $table = 'resep'; 
     protected $collection = 'resep';
-protected $primaryKey = '_id'; 
+    protected $primaryKey = '_id'; 
 
     protected $guarded = [];
     protected $fillable = [

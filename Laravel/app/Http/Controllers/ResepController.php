@@ -114,41 +114,40 @@ class ResepController extends Controller
     }
 
     // 5. Ambil Semua Kategori Resep Unik
-    public function getCategories(): JsonResponse
-        {
-            try {
-                $rawCategories = Resep::raw(function($collection) {
-            return $collection->distinct('Category');
-        });
-        $categories = collect($rawCategories);
-                $cleaned = $categories
-                    ->filter(fn($v) => !empty(trim((string) $v)))
-                    ->map(fn($v) => trim((string) $v))
-                    ->unique()
-                    ->sort()
-                    ->values()
-                    ->toArray();
-    
-                if (empty($cleaned)) {
-                    return response()->json([
-                        'success'    => false,
-                        'message'    => 'Belum ada kategori resep di database.',
-                        'categories' => [],
-                    ], 404);
-                }
-    
+public function getCategories(): JsonResponse
+    {
+        try {
+            // Karena model sudah fix, kita bisa langsung tarik kategorinya
+            $resepList = \App\Models\Resep::select('Category')->get();
+            $categories = $resepList->pluck('Category');
+            
+            $cleaned = $categories
+                ->filter(fn($v) => !empty(trim((string) $v)))
+                ->map(fn($v) => trim((string) $v))
+                ->unique()
+                ->sort()
+                ->values()
+                ->toArray();
+
+            if (empty($cleaned)) {
                 return response()->json([
-                    'success'    => true,
-                    'message'    => 'Kategori berhasil diambil.',
-                    'categories' => $cleaned,
-                ], 200);
-    
-            } catch (\Exception $e) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Terjadi kesalahan server.',
-                    'error'   => $e->getMessage(),
-                ], 500);
+                    'success'    => false,
+                    'message'    => 'Belum ada kategori resep di database.',
+                    'categories' => [], 
+                ], 404);
             }
+
+            return response()->json([
+                'success'    => true,
+                'message'    => 'Kategori berhasil diambil.',
+                'categories' => $cleaned, 
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan server.',
+                'error'   => $e->getMessage(),
+            ], 500);
         }
-}
+    }}

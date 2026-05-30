@@ -50,14 +50,40 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       context.go('/sign_in');
     } else {
-      String errMsg = "Registrasi Gagal";
-      if (response['errors'] != null && response['errors']['email'] != null) {
-        errMsg = "Email ini sudah terdaftar di sistem";
+      // ---- LOGIKA TERBARU: PARSING DETAIL ERROR VALIDASI (422) ----
+      String errorMessage = "Gagal mendaftar, coba lagi";
+
+      if (response['errors'] != null) {
+        final errors = response['errors'] as Map<String, dynamic>;
+
+        // Mengambil pesan spesifik pertama yang dikirim dari Laravel Validator
+        if (errors['email'] != null) {
+          errorMessage = errors['email'][0];
+        } else if (errors['username'] != null) {
+          errorMessage = errors['username'][0];
+        } else if (errors['password'] != null) {
+          errorMessage = errors['password'][0];
+        }
+      } else if (response['message'] != null) {
+        errorMessage = response['message'];
       }
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(errMsg), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text(errorMessage),
+          backgroundColor: Colors.red,
+        ),
       );
     }
+  }
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
   }
 
   @override
@@ -65,26 +91,33 @@ class _SignUpScreenState extends State<SignUpScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-          backgroundColor: Colors.white, title: const Text("Daftar Akun")),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => context.pop(),
+        ),
+      ),
       body: SafeArea(
         child: SizedBox(
           width: double.infinity,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 10),
                   const Text(
-                    "Daftar Akun Baru",
+                    "Daftar Akun",
                     style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold),
+                      color: Colors.black,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    "Lengkapi data diri Anda secara benar di bawah ini",
+                    "Lengkapi data Anda untuk mendaftar akun CookMate baru",
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Color(0xFF757575)),
                   ),
@@ -93,91 +126,131 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     key: _formKey,
                     child: Column(
                       children: [
+                        // Form Username
                         TextFormField(
                           controller: _usernameController,
-                          validator: (val) => (val == null || val.isEmpty)
-                              ? "Nama pengguna tidak boleh kosong"
-                              : null,
+                          keyboardType: TextInputType.text,
                           decoration: const InputDecoration(
-                            labelText: "Nama Pengguna",
-                            hintText: "Masukkan nama pengguna",
+                            labelText: "Username",
+                            hintText: "Masukkan username Anda",
                             floatingLabelBehavior: FloatingLabelBehavior.always,
+                            suffixIcon: Icon(Icons.person_outline,
+                                color: Color(0xFF757575)),
                             border: authOutlineInputBorder,
+                            enabledBorder: authOutlineInputBorder,
+                            focusedBorder: authOutlineInputBorder,
                           ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Username tidak boleh kosong';
+                            }
+                            if (value.length < 3) {
+                              return 'Username minimal 3 karakter';
+                            }
+                            return null;
+                          },
                         ),
                         const SizedBox(height: 20),
+
+                        // Form Email
                         TextFormField(
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
+                          decoration: const InputDecoration(
+                            labelText: "Email",
+                            hintText: "Masukkan email Anda",
+                            floatingLabelBehavior: FloatingLabelBehavior.always,
+                            suffixIcon: Icon(Icons.mail_outline,
+                                color: Color(0xFF757575)),
+                            border: authOutlineInputBorder,
+                            enabledBorder: authOutlineInputBorder,
+                            focusedBorder: authOutlineInputBorder,
+                          ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return "Email tidak boleh kosong";
+                              return 'Email tidak boleh kosong';
                             }
-                            final emailRegex =
-                                RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                            final emailRegex = RegExp(
+                                r'^[a-zA-Z0-9.]+@[a-zA-Z0-9]+\.[a-zA-Z]+');
                             if (!emailRegex.hasMatch(value)) {
-                              return "Format email tidak valid";
+                              return 'Format email tidak valid';
                             }
                             return null;
                           },
-                          decoration: const InputDecoration(
-                            labelText: "Email",
-                            hintText: "Masukkan alamat email",
-                            floatingLabelBehavior: FloatingLabelBehavior.always,
-                            border: authOutlineInputBorder,
-                          ),
                         ),
                         const SizedBox(height: 20),
+
+                        // Form Password
                         TextFormField(
                           controller: _passwordController,
                           obscureText: _obscureText1,
-                          validator: (val) => (val == null || val.length < 6)
-                              ? "Kata sandi minimal 6 karakter"
-                              : null,
                           decoration: InputDecoration(
                             labelText: "Kata Sandi",
-                            hintText: "Masukkan kata sandi",
+                            hintText: "Masukkan kata sandi Anda",
                             floatingLabelBehavior: FloatingLabelBehavior.always,
                             suffixIcon: IconButton(
                               icon: Icon(
-                                  _obscureText1
-                                      ? Icons.visibility_off
-                                      : Icons.visibility,
-                                  color: const Color(0xFFFF7643)),
-                              onPressed: () => setState(
-                                  () => _obscureText1 = !_obscureText1),
+                                _obscureText1
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                                color: const Color(0xFF757575),
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscureText1 = !_obscureText1;
+                                });
+                              },
                             ),
                             border: authOutlineInputBorder,
+                            enabledBorder: authOutlineInputBorder,
+                            focusedBorder: authOutlineInputBorder,
                           ),
-                        ),
-                        const SizedBox(height: 20),
-                        TextFormField(
-                          controller: _confirmPasswordController,
-                          obscureText: _obscureText2,
-                          validator: (val) {
-                            if (val == null || val.isEmpty) {
-                              return "Konfirmasi kata sandi wajib diisi";
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Kata sandi tidak boleh kosong';
                             }
-                            if (val != _passwordController.text) {
-                              return "Kata sandi tidak cocok";
+                            if (value.length < 6) {
+                              return 'Kata sandi minimal 6 karakter';
                             }
                             return null;
                           },
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Form Konfirmasi Password
+                        TextFormField(
+                          controller: _confirmPasswordController,
+                          obscureText: _obscureText2,
                           decoration: InputDecoration(
-                            labelText: "Konfirmasi Kata Sandi",
-                            hintText: "Ulangi masukkan kata sandi",
+                            labelText: "Ulangi Kata Sandi",
+                            hintText: "Masukkan kembali kata sandi Anda",
                             floatingLabelBehavior: FloatingLabelBehavior.always,
                             suffixIcon: IconButton(
                               icon: Icon(
-                                  _obscureText2
-                                      ? Icons.visibility_off
-                                      : Icons.visibility,
-                                  color: const Color(0xFFFF7643)),
-                              onPressed: () => setState(
-                                  () => _obscureText2 = !_obscureText2),
+                                _obscureText2
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                                color: const Color(0xFF757575),
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscureText2 = !_obscureText2;
+                                });
+                              },
                             ),
                             border: authOutlineInputBorder,
+                            enabledBorder: authOutlineInputBorder,
+                            focusedBorder: authOutlineInputBorder,
                           ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Konfirmasi kata sandi tidak boleh kosong';
+                            }
+                            if (value != _passwordController.text) {
+                              return 'Kata sandi tidak cocok';
+                            }
+                            return null;
+                          },
                         ),
                         const SizedBox(height: 40),
 

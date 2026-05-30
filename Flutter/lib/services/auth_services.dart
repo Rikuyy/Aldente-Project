@@ -11,7 +11,11 @@ class AuthService {
     try {
       final response = await http.post(
         Uri.parse('${ApiService.baseUrl}/auth/register'),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept':
+              'application/json', // Ditambahkan agar menerima format JSON Validasi Laravel
+        },
         body: jsonEncode({
           'username': username,
           'email': email,
@@ -32,12 +36,15 @@ class AuthService {
     }
   }
 
-  // LOGIN - ganti email menjadi username
+  // LOGIN - menggunakan username
   Future<Map<String, dynamic>> login(String username, String password) async {
     try {
       final response = await http.post(
         Uri.parse('${ApiService.baseUrl}/auth/login'),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
         body: jsonEncode({
           'username': username,
           'password': password,
@@ -56,12 +63,15 @@ class AuthService {
     }
   }
 
-  // Forgot Password (tetap email)
+  // Forgot Password
   Future<Map<String, dynamic>> forgotPassword(String email) async {
     try {
       final response = await http.post(
         Uri.parse('${ApiService.baseUrl}/auth/forgot-password'),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
         body: jsonEncode({'email': email}),
       );
 
@@ -71,12 +81,15 @@ class AuthService {
     }
   }
 
-  // Verify OTP (tetap email)
+  // Verify OTP
   Future<Map<String, dynamic>> verifyOtp(String email, String otpCode) async {
     try {
       final response = await http.post(
         Uri.parse('${ApiService.baseUrl}/auth/verify-otp'),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
         body: jsonEncode({
           'email': email,
           'otp': otpCode,
@@ -89,13 +102,16 @@ class AuthService {
     }
   }
 
-  // Reset Password (tetap email)
+  // Reset Password
   Future<Map<String, dynamic>> resetPassword(
       String email, String password, String passwordConfirmation) async {
     try {
       final response = await http.post(
         Uri.parse('${ApiService.baseUrl}/auth/reset-password'),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
         body: jsonEncode({
           'email': email,
           'password': password,
@@ -117,6 +133,7 @@ class AuthService {
         Uri.parse('${ApiService.baseUrl}/auth/me'),
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
           'Authorization': 'Bearer $token',
         },
       );
@@ -143,6 +160,7 @@ class AuthService {
         Uri.parse('${ApiService.baseUrl}/auth/logout'),
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
           'Authorization': 'Bearer $token',
         },
       );

@@ -34,17 +34,21 @@ class AuthController extends Controller
         }
 
         try {
+            // Membuat data ke MongoDB dengan ID khas Mongo NoSQL
             $user = User::create([
+                'Id_User'          => (string) new \MongoDB\BSON\ObjectId(), 
                 'Username'         => $request->username,
                 'Email'            => strtolower($request->email),
                 'Password'         => Hash::make($request->password),
                 'Kategori_Favorit' => $request->kategori_favorit ?? null,
                 'Jumlah_Makan'     => (int) ($request->jumlah_makan ?? 0),
                 'Budget_Bulanan'   => (float) ($request->budget_bulanan ?? 0),
+                'Saldo_Budget'     => (float) ($request->budget_bulanan ?? 0), // Default otomatis menyamai Budget_Bulanan
                 'Alergi'           => $request->alergi ?? null,
             ]);
 
-            $token = JWTAuth::fromUser($user);
+            // Gunakan metode login() yang adaptif terhadap MongoDB ObjectId string
+            $token = auth('api')->login($user);
 
             return response()->json([
                 'success'      => true,
@@ -98,7 +102,7 @@ class AuthController extends Controller
         }
 
         try {
-            $token = JWTAuth::fromUser($user);
+            $token = auth('api')->login($user);
             $needsOnboarding = $this->checkNeedsOnboarding($user);
 
             return response()->json([
@@ -118,10 +122,7 @@ class AuthController extends Controller
     }
 
     /**
-     * Cek apakah user perlu onboarding (data wajib lengkap)
-     * - Kategori_Favorit minimal 2
-     * - Budget_Bulanan > 0
-     * - Jumlah_Makan antara 2-4
+     * Cek apakah user perlu onboarding
      */
     private function checkNeedsOnboarding($user): bool
     {
@@ -251,7 +252,7 @@ class AuthController extends Controller
     }
 
     /**
-     * RESET PASSWORD + AUTOMATIC LOGIN
+     * RESET PASSWORD
      */
     public function resetPassword(Request $request)
     {
@@ -282,7 +283,7 @@ class AuthController extends Controller
         ]);
 
         try {
-            if (!$token = auth('api')->fromUser($user)) {
+            if (!$token = auth('api')->login($user)) {
                 return response()->json([
                     'success' => true,
                     'message' => 'Password berhasil diubah, silakan login manual.'

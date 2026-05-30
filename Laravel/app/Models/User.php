@@ -14,14 +14,24 @@ class User extends Authenticatable implements JWTSubject
     protected $connection = 'mongodb';
     protected $collection = 'users';
 
+    // 1. Beritahu Laravel kalau primary key kustom kita namanya Id_User
+    protected $primaryKey = 'Id_User';
+
+    // 2. WAJIB UNTUK MONGODB: Matikan auto-increment bawaan SQL agar mau menerima string ObjectId kustom
+    public $incrementing = false;
+    protected $keyType = 'string';
+
+    // 3. Daftarkan semua field agar diizinkan masuk ke MongoDB (Termasuk Id_User dan Saldo_Budget!)
     protected $fillable = [
+        'Id_User',         // <-- Wajib dimasukkan agar tidak diblokir Laravel
         'Username',
         'Email',
         'Password',
         'Kategori_Favorit',
         'Jumlah_Makan',
         'Budget_Bulanan',
-        'Alergi'
+        'Saldo_Budget',    // <-- Kolom baru kamu
+        'Alergi',
     ];
 
     protected $hidden = [
@@ -33,6 +43,7 @@ class User extends Authenticatable implements JWTSubject
         'Email_verified_at' => 'datetime',
         'Jumlah_Makan' => 'integer',
         'Budget_Bulanan' => 'float',
+        'Saldo_Budget' => 'float', 
     ];
 
     // Wajib untuk JWT
