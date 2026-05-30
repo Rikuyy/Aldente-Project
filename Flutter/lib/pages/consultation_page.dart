@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import 'dart:convert';
+import '../services/todo_notifier.dart';
 
 class ConsultationPage extends StatefulWidget {
   const ConsultationPage({super.key});
@@ -164,14 +165,12 @@ class _ConsultationPageState extends State<ConsultationPage> {
     });
   }
 
-  // Dipanggil saat user konfirmasi ganti jadwal dari _GantiJadwalSheet.
-  // Data pengganti diteruskan ke TodoPage lewat Navigator.pop result.
   void _handleGantiJadwal(Map<String, dynamic> result) {
-    // Pop ConsultationPage sambil membawa data pengganti ke TodoPage.
-    // Karena TodoPage membuka halaman ini via Navigator.push (bukan go_router),
-    // Navigator.of(context).pop(result) sudah cukup untuk mengembalikan data.
+    print('🔔 _handleGantiJadwal dipanggil: $result');
+    TodoNotifier.instance.gantiJadwal(result);
+    print('🔔 TodoNotifier.gantiJadwal selesai');
     if (Navigator.of(context).canPop()) {
-      Navigator.of(context).pop(result);
+      Navigator.of(context).pop();
     }
   }
 
@@ -1187,7 +1186,8 @@ class _GantiJadwalSheetState extends State<_GantiJadwalSheet> {
   Future<void> _konfirmasiGanti() async {
     if (_selectedIndex == null) return;
     final sesi = _sesiList[_selectedIndex!];
-
+    print('🔵 widget.recipe keys: ${widget.recipe.keys.toList()}');
+    print('🔵 widget.recipe: ${widget.recipe}');
     // Tampilkan dialog konfirmasi sebelum benar-benar mengganti.
     // useRootNavigator: false wajib agar pop dari dialog tidak
     // "menular" ke showModalBottomSheet yang menunggu di atasnya.
@@ -1264,17 +1264,23 @@ class _GantiJadwalSheetState extends State<_GantiJadwalSheet> {
     setState(() => _isConfirming = true);
 
     // Tutup bottom sheet sambil membawa data pengganti ke TodoPage.
-    // TodoPage cukup update local state-nya — tidak perlu API tambahan.
+    // Gunakan fallback key untuk kompatibilitas format API konsultasi
+    // (yang bisa mengembalikan 'Ingredients Cleaned' / 'Steps' alih-alih
+    // 'ingredients' / 'steps').
     if (!mounted) return;
     Navigator.of(context).pop({
       'sesi_ke': sesi['sesi_ke'] as int,
       'sesi_label': sesi['sesi'] as String,
       'resep': {
-        'id': widget.recipe['id'] ?? '',
-        'title': widget.recipe['title'] ?? '-',
-        'ingredients': widget.recipe['ingredients'] ?? '',
-        'steps': widget.recipe['steps'] ?? '',
-        'category': widget.recipe['category'] ?? '',
+        'id': widget.recipe['id']?.toString() ?? '',
+        'title':
+            widget.recipe['title'] ?? widget.recipe['Title Cleaned'] ?? '-',
+        'ingredients': widget.recipe['ingredients'] ??
+            widget.recipe['Ingredients Cleaned'] ??
+            '',
+        'steps': widget.recipe['steps'] ?? widget.recipe['Steps'] ?? '',
+        'category':
+            widget.recipe['category'] ?? widget.recipe['Category'] ?? '',
       },
     });
   }

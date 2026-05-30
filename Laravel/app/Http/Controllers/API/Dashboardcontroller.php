@@ -69,12 +69,12 @@ class DashboardController extends Controller
             $rekomendasiResep = $query->orderBy('Loves', 'desc')
                 ->take(10)
                 ->get([
-                    '_id',
-                    'Title Cleaned',
-                    'Category',
-                    'Loves',
-                    'Total Ingredients',
-                    'Total Steps',
+                    '_id', 
+                    'Title Cleaned', 
+                    'Category', 
+                    'Loves', 
+                    'Ingredients Cleaned',
+                    'Steps'
                 ]);
 
             $nama    = $pengguna->Username ?? 'Pengguna';
