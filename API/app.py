@@ -24,6 +24,7 @@ try:
     with open("model_cookcash.pkl", "rb") as f:
         tfidf, tfidf_matrix, df_recipes = pickle.load(f)
     logger.info(f"Model berhasil dimuat. Total resep: {len(df_recipes)}")
+    logger.info(f"Kolom df_recipes: {df_recipes.columns.tolist()}")
 except FileNotFoundError:
     logger.warning("File model_cookcash.pkl tidak ditemukan.")
 except Exception as e:

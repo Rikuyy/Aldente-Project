@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
 import '../services/auth_services.dart';
-import 'consultation_page.dart';
+import '../services/todo_notifier.dart';
 
 // ==================== MODEL ====================
 
@@ -39,8 +39,8 @@ class _TodoItem {
   String title; // mutable — bisa diganti dari ConsultationPage
   final int sesi;
   final String sesiLabel; // "Sarapan", "Makan Siang", dst
-  String resepId; // mutable — bisa diganti dari ConsultationPage
-  String category; // mutable — bisa diganti dari ConsultationPage
+  String resepId;
+  String category;
   bool isDone;
 
   _TodoItem({
@@ -69,7 +69,9 @@ class _TodoPageState extends State<TodoPage> {
   String _filter = 'Semua';
   bool _isLoading = true;
   String? _errorMessage;
-  String? _token; // cache token agar tidak async tiap request
+  String? _token;
+  Map<String, dynamic>?
+      _pendingGantiJadwal; // data swap yg datang sebelum _todos siap
 
   Set<String> _openBeli = {};
   Set<String> _openMasak = {};
@@ -86,11 +88,35 @@ class _TodoPageState extends State<TodoPage> {
   void initState() {
     super.initState();
     _initToken();
+    TodoNotifier.instance.addListener(_onGantiJadwalFromConsultation);
+    print('✅ TodoPage listener registered');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _onGantiJadwalFromConsultation();
+    });
+  }
+
+  @override
+  void dispose() {
+    print('❌ TodoPage listener removed');
+    TodoNotifier.instance.removeListener(_onGantiJadwalFromConsultation);
+    super.dispose();
+  }
+
+  /// Dipanggil otomatis saat ConsultationPage memanggil
+  /// TodoNotifier.instance.gantiJadwal(data).
+  void _onGantiJadwalFromConsultation() {
+    print('🟢 _onGantiJadwalFromConsultation dipanggil');
+    final data = TodoNotifier.instance.consumePendingGantiJadwal();
+    print('🟢 data: $data');
+    if (data != null && mounted) {
+      _applyGantiJadwal(data);
+    }
   }
 
   // Ambil token sekali saat halaman dibuka, lalu load todos
   Future<void> _initToken() async {
     _token = await AuthService().getToken();
+    print('TOKEN: $_token');
     _loadTodos();
   }
 
@@ -124,7 +150,8 @@ class _TodoPageState extends State<TodoPage> {
         for (final item in items) {
           final resepJson = item['resep'];
           if (resepJson == null) continue;
-
+          print(
+              '🟡 resep dari generate: id=${resepJson['id']}, title=${resepJson['title']}');
           final resep = Resep.fromJson(resepJson);
           _resepMap[resep.id] = resep;
 
@@ -140,6 +167,16 @@ class _TodoPageState extends State<TodoPage> {
         }
 
         setState(() => _todos = todos);
+
+        // Consume pending swap yang datang sebelum _todos siap
+        // (kasus: user swap dari HomePage saat TodoPage belum load)
+        if (_pendingGantiJadwal != null) {
+          final pending = _pendingGantiJadwal!;
+          _pendingGantiJadwal = null;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _applyGantiJadwal(pending);
+          });
+        }
       } else if (response.statusCode == 422) {
         final body = jsonDecode(response.body);
         setState(() => _errorMessage = body['message']);
@@ -157,8 +194,8 @@ class _TodoPageState extends State<TodoPage> {
   // POST: Simpan ke jadwal_makan saat user selesai (centang)
   // ---------------------------------------------------------------------------
   Future<void> _simpanJadwal(String resepId, String sesiLabel, String jenis,
-      List<Map<String, dynamic>> detailBeli,
-      {double? totalPengeluaran}) async {
+      List<Map<String, dynamic>> detail,
+      {double? nominal}) async {
     final tanggal = DateTime.now().toIso8601String().substring(0, 10);
 
     try {
@@ -173,10 +210,10 @@ class _TodoPageState extends State<TodoPage> {
           'Id_Resep': resepId,
           'Sesi Makan': sesiLabel,
           'Tanggal': tanggal,
-          'Jenis_Pengeluaran': jenis,
-          'Detail_Beli': detailBeli,
-          if (jenis == 'Masak' && totalPengeluaran != null)
-            'Total_Pengeluaran': totalPengeluaran,
+          'Keterangan': jenis,
+          'Kategori': 'Pengeluaran',
+          'Detail': detail,
+          if (jenis == 'Masak' && nominal != null) 'Total_Nominal': nominal,
         }),
       );
 
@@ -203,21 +240,6 @@ class _TodoPageState extends State<TodoPage> {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // KONSULTASI: Buka halaman konsultasi dan tangkap hasil ganti jadwal
-  // ---------------------------------------------------------------------------
-  Future<void> _bukaKonsultasi() async {
-    // Tunggu hasil dari ConsultationPage.
-    // Jika user mengganti resep di sana, result berisi data pengganti.
-    final result = await Navigator.of(context).push<Map<String, dynamic>>(
-      MaterialPageRoute(builder: (_) => const ConsultationPage()),
-    );
-
-    if (result != null && mounted) {
-      _applyGantiJadwal(result);
-    }
-  }
-
   // Terapkan hasil penggantian resep dari ConsultationPage ke local state.
   // Tidak ada API call — perubahan hanya di memori.
   // Saat user centang, resep baru inilah yang dikirim ke server.
@@ -225,8 +247,16 @@ class _TodoPageState extends State<TodoPage> {
     final int sesiKe = result['sesi_ke'] as int;
     final Map resepBaru = result['resep'] as Map;
 
+    print(
+        '🔵 sesi_ke: $sesiKe, id: "${resepBaru['id']}", title: "${resepBaru['title']}"');
     final idx = _todos.indexWhere((t) => t.sesi == sesiKe);
-    if (idx == -1) return; // sesi tidak ditemukan, abaikan
+    print(
+        '🔵 idx: $idx, todos sesi list: ${_todos.map((t) => t.sesi).toList()}');
+    if (idx == -1) {
+      print('🔵 pending disimpan');
+      _pendingGantiJadwal = result;
+      return;
+    } // sesi tidak ditemukan, abaikan
 
     final resepObj = Resep(
       id: resepBaru['id'].toString(),
@@ -347,39 +377,7 @@ class _TodoPageState extends State<TodoPage> {
                     fontWeight: FontWeight.w900,
                     color: context.colors.textPrimary,
                     letterSpacing: -0.5)),
-            actions: [
-              Padding(
-                padding: const EdgeInsets.only(right: 12),
-                child: GestureDetector(
-                  onTap: _bukaKonsultasi,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEFF6FF),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFFBFDBFE)),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.chat_rounded,
-                            size: 14, color: Color(0xFF1D4ED8)),
-                        SizedBox(width: 5),
-                        Text(
-                          'Konsultasi',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF1D4ED8),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            actions: const [],
             bottom: PreferredSize(
                 preferredSize: const Size.fromHeight(1),
                 child: Container(color: context.colors.border, height: 1)),
@@ -736,7 +734,7 @@ class _TodoPageState extends State<TodoPage> {
               ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Data masak tersimpan')));
               _simpanJadwal(todo.resepId, todo.sesiLabel, 'Masak', detail,
-                  totalPengeluaran: total);
+                  nominal: total);
             },
           ),
 

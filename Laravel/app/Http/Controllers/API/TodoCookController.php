@@ -86,11 +86,12 @@ class TodoCookController extends Controller
             'Id_Resep'              => 'required',
             'Sesi Makan'            => 'required|string',
             'Tanggal'               => 'required|date',
-            'Jenis_Pengeluaran'     => 'required|in:Beli,Masak',
-            'Detail_Beli'           => 'required|array|min:1',
-            'Detail_Beli.*.nama'    => 'required|string',
-            'Detail_Beli.*.nominal' => 'required|numeric|min:0',
-            'Total_Pengeluaran'     => 'required_if:Jenis_Pengeluaran,Masak|numeric|min:0',
+            'Keterangan'            => 'required|in:Beli,Masak',
+            'Kategori'              => 'required|in:Pemasukan,Pengeluaran',
+            'Detail'                => 'required|array|min:1',
+            'Detail.*.nama'         => 'required|string',
+            'Detail.*.nominal'      => 'required|numeric|min:0',
+            'Total_Nominal'               => 'required_if:Keterangan,Masak|numeric|min:0',
         ]);
 
         $user = Auth::user();
@@ -120,24 +121,25 @@ class TodoCookController extends Controller
         $jadwalId = (string) $jadwal->_id;
 
         // 2. Hitung total pengeluaran
-        $detailBeli = $request->input('Detail_Beli');
-        $jenis      = $request->input('Jenis_Pengeluaran');
+        $detail = $request->input('Detail');
+        $jenis  = $request->input('Keterangan');
 
         if ($jenis === 'Beli') {
-            $total = collect($detailBeli)->sum(fn($item) => (float) $item['nominal']);
+            $total = collect($detail)->sum(fn($item) => (float) $item['nominal']);
         } else {
-            $total = (float) $request->input('Total_Pengeluaran', 0);
+            $total = (float) $request->input('Total_Nominal', 0);
         }
 
         // 3. Simpan ke keuangan
         Keuangan::create([
-            'Id_User'           => (string) $user->id,
-            'Id_JadwalMakan'    => $jadwalId,
-            'Tanggal'           => $request->input('Tanggal'),
-            'Waktu'             => now()->format('H:i'),
-            'Jenis_Pengeluaran' => $jenis,
-            'Detail_Beli'       => $detailBeli,
-            'Total Pengeluaran' => $total,
+            'Id_User'        => (string) $user->id,
+            'Id_JadwalMakan' => $jadwalId,
+            'Tanggal'        => $request->input('Tanggal'),
+            'Waktu'          => now()->format('H:i'),
+            'Keterangan'     => $jenis,
+            'Kategori'       => $request->input('Kategori', 'Pengeluaran'),
+            'Detail'         => $detail,
+            'Total_Nominal'  => $total,
         ]);
 
         // 4. Geser queue_index maju 1 — dilakukan SETELAH store berhasil.
