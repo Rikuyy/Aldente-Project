@@ -16,31 +16,32 @@ class DashboardService {
         'Authorization': 'Bearer $token',
       };
 
-  Future<Map<String, dynamic>> getDashboard() async {
+  Future<Map<String, dynamic>> getDashboard({bool forceRefresh = false}) async {
     final token = await _getToken();
     if (token == null) {
       return {'success': false, 'message': 'Token tidak ditemukan'};
     }
 
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/dashboard'),
-        headers: _headers(token),
-      );
+      String targetUrl = '$baseUrl/dashboard';
+      if (forceRefresh) {
+        targetUrl += '?force_refresh=1';
+      }
+
+      final response =
+          await http.get(Uri.parse(targetUrl), headers: _headers(token));
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return {'success': true, 'data': data};
+        return {'success': true, 'data': jsonDecode(response.body)};
       } else if (response.statusCode == 401) {
         return {
           'success': false,
           'message': 'Sesi habis, silakan login kembali'
         };
-      } else {
-        return {'success': false, 'message': 'Gagal memuat dashboard'};
       }
+      return {'success': false, 'message': 'Gagal memuat dashboard'};
     } catch (e) {
-      return {'success': false, 'message': 'Gagal terhubung ke server: $e'};
+      return {'success': false, 'message': 'Error: $e'};
     }
   }
 
@@ -54,42 +55,81 @@ class DashboardService {
     try {
       final Map<String, dynamic> body = {'total_budget': totalBudget};
       if (bulan != null) body['bulan'] = bulan;
-
       final response = await http.post(
         Uri.parse('$baseUrl/dashboard/budget'),
         headers: _headers(token),
         body: jsonEncode(body),
       );
-
-      if (response.statusCode == 200) {
-        return {'success': true, 'message': 'Budget berhasil disimpan'};
-      } else {
-        return {'success': false, 'message': 'Gagal menyimpan budget'};
-      }
+      return {'success': response.statusCode == 200};
     } catch (e) {
-      return {'success': false, 'message': 'Gagal terhubung ke server: $e'};
+      return {'success': false};
     }
   }
 
-  // Tambahan untuk mengambil stok dari inventory
   Future<Map<String, dynamic>> getInventory() async {
     final token = await _getToken();
     if (token == null) {
       return {'success': false, 'message': 'Token tidak ditemukan'};
     }
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/inventory'),
-        headers: _headers(token),
-      );
+      final response = await http.get(Uri.parse('$baseUrl/inventory'),
+          headers: _headers(token));
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return {'success': true, 'data': data['data']};
-      } else {
-        return {'success': false, 'message': 'Gagal memuat stok'};
+        return {'success': true, 'data': jsonDecode(response.body)['data']};
       }
+      return {'success': false, 'message': 'Gagal memuat stok'};
     } catch (e) {
-      return {'success': false, 'message': 'Gagal terhubung ke server: $e'};
+      return {'success': false, 'message': 'Error: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> tambahPemasukan(int nominal) async {
+    final token = await _getToken();
+    if (token == null) {
+      return {'success': false, 'message': 'Token tidak ditemukan'};
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/keuangan/pemasukan'),
+        headers: _headers(token),
+        body: jsonEncode({
+          'kategori': 'Pemasukan',
+          'keterangan': 'Top Up',
+          'total_nominal': nominal,
+          'detail': {'info': 'Set Uang Makan Bulanan'}
+        }),
+      );
+      return {
+        'success': response.statusCode == 200 || response.statusCode == 201
+      };
+    } catch (e) {
+      return {'success': false};
+    }
+  }
+
+  Future<Map<String, dynamic>> tukarResepTodo(
+      String resepId, int sesiKe, String sesiLabel) async {
+    final token = await _getToken();
+    if (token == null) {
+      return {'success': false, 'message': 'Token tidak ditemukan'};
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/jadwal-makan'),
+        headers: _headers(token),
+        body: jsonEncode({
+          'Id_Resep': resepId,
+          'Sesi Makan': sesiLabel,
+          'Tanggal': DateTime.now().toIso8601String().split('T')[0]
+        }),
+      );
+      return {
+        'success': response.statusCode == 200 || response.statusCode == 201
+      };
+    } catch (e) {
+      return {'success': false};
     }
   }
 }
