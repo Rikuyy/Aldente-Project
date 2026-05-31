@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Resep;
 use App\Models\User;
+use App\Models\UserResep;
 
 class ResepQueueService
 { 
@@ -18,21 +19,24 @@ class ResepQueueService
             ->pluck('id')
             ->toArray();
  
-        $user->resep_queue    = $reseps;
-        $user->queue_index    = 0;
-        $user->queue_built_at = now()->toDateString();
-        $user->save();
+        $userResep = $this->getUserResep($user);
+        $userResep->Id_User        = (string) $user->id;
+        $userResep->resep_queue    = $reseps;
+        $userResep->queue_index    = 0;
+        $userResep->queue_built_at = now()->toDateString();
+        $userResep->save();
     }
 
     public function previewBerikutnya(User $user, int $jumlah): array
     {
-        // Rebuild jika queue belum pernah dibuat
-        if (empty($user->resep_queue)) {
+        $userResep = $this->getUserResep($user);
+         if (empty($userResep->resep_queue)) {
             $this->buildQueue($user);
+            $userResep = $this->getUserResep($user);
         }
 
-        $queue = $user->resep_queue;
-        $index = $user->queue_index ?? 0;
+        $queue = $userResep->resep_queue;
+        $index = $userResep->queue_index ?? 0;
         $total = count($queue);
  
         if ($total === 0) {
@@ -63,36 +67,34 @@ class ResepQueueService
 
     public function advanceIndex(User $user): void
     {
-        if (empty($user->resep_queue)) {
+         $userResep = $this->getUserResep($user);
+ 
+        if (empty($userResep->resep_queue)) {
             $this->buildQueue($user);
             return;
         }
-
-        $queue    = $user->resep_queue;
-        $total    = count($queue);
-        $newIndex = ($user->queue_index ?? 0) + 1;
-
+ 
+        $total    = count($userResep->resep_queue);
+        $newIndex = ($userResep->queue_index ?? 0) + 1;
+ 
         if ($newIndex >= $total) {
             $this->buildQueue($user);
             return;
         }
-
-        $user->queue_index = $newIndex;
-        $user->save();
+ 
+        $userResep->queue_index = $newIndex;
+        $userResep->save();
     }
 
-    /**
-     * @deprecated Gunakan previewBerikutnya() + advanceIndex() sebagai gantinya.
-     */
+    
     public function ambilBerikutnya(User $user, int $jumlah): array
     {
         $hasil = $this->previewBerikutnya($user, $jumlah);
-
+ 
         foreach ($hasil as $ignored) {
-            $this->advanceIndex($user);
-            $user->refresh();
+            $this->advanceIndex($user); 
         }
-
+ 
         return $hasil;
     }
 }
