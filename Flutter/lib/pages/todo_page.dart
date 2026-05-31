@@ -70,8 +70,6 @@ class _TodoPageState extends State<TodoPage> {
   bool _isLoading = true;
   String? _errorMessage;
   String? _token;
-  Map<String, dynamic>?
-      _pendingGantiJadwal; // data swap yg datang sebelum _todos siap
 
   Set<String> _openBeli = {};
   Set<String> _openMasak = {};
@@ -89,15 +87,18 @@ class _TodoPageState extends State<TodoPage> {
     super.initState();
     _initToken();
     TodoNotifier.instance.addListener(_onGantiJadwalFromConsultation);
-    print('✅ TodoPage listener registered');
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _onGantiJadwalFromConsultation();
+      final applied = TodoNotifier.instance.getAppliedSwaps();
+      if (applied.isNotEmpty && mounted) {
+        for (final data in applied) {
+          _applyGantiJadwal(data);
+        }
+      }
     });
   }
 
   @override
   void dispose() {
-    print('❌ TodoPage listener removed');
     TodoNotifier.instance.removeListener(_onGantiJadwalFromConsultation);
     super.dispose();
   }
@@ -105,18 +106,15 @@ class _TodoPageState extends State<TodoPage> {
   /// Dipanggil otomatis saat ConsultationPage memanggil
   /// TodoNotifier.instance.gantiJadwal(data).
   void _onGantiJadwalFromConsultation() {
-    print('🟢 _onGantiJadwalFromConsultation dipanggil');
-    final data = TodoNotifier.instance.consumePendingGantiJadwal();
-    print('🟢 data: $data');
-    if (data != null && mounted) {
-      _applyGantiJadwal(data);
+    final allPending = TodoNotifier.instance.consumeAllPending();
+    for (final data in allPending) {
+      if (mounted) _applyGantiJadwal(data);
     }
   }
 
   // Ambil token sekali saat halaman dibuka, lalu load todos
   Future<void> _initToken() async {
     _token = await AuthService().getToken();
-    print('TOKEN: $_token');
     _loadTodos();
   }
 
@@ -124,6 +122,16 @@ class _TodoPageState extends State<TodoPage> {
   // FETCH: Generate jadwal hari ini dari API
   // ---------------------------------------------------------------------------
   Future<void> _loadTodos() async {
+    if (TodoNotifier.instance.todosLoaded && _todos.isNotEmpty) {
+      // _todos sudah ada — langsung re-apply applied swaps
+      final applied = TodoNotifier.instance.getAppliedSwaps();
+      if (applied.isNotEmpty) {
+        for (final data in applied) {
+          _applyGantiJadwal(data);
+        }
+      }
+      return;
+    }
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -150,8 +158,6 @@ class _TodoPageState extends State<TodoPage> {
         for (final item in items) {
           final resepJson = item['resep'];
           if (resepJson == null) continue;
-          print(
-              '🟡 resep dari generate: id=${resepJson['id']}, title=${resepJson['title']}');
           final resep = Resep.fromJson(resepJson);
           _resepMap[resep.id] = resep;
 
@@ -166,15 +172,23 @@ class _TodoPageState extends State<TodoPage> {
           ));
         }
 
-        setState(() => _todos = todos);
+        setState(() {
+          _todos = todos;
+          TodoNotifier.instance.markTodosLoaded();
+        });
 
-        // Consume pending swap yang datang sebelum _todos siap
-        // (kasus: user swap dari HomePage saat TodoPage belum load)
-        if (_pendingGantiJadwal != null) {
-          final pending = _pendingGantiJadwal!;
-          _pendingGantiJadwal = null;
+        // Re-apply swap yang sudah pernah di-apply (agar tidak hilang setelah rebuild)
+        // + consume pending baru yang masuk sebelum load selesai
+        final applied = TodoNotifier.instance.getAppliedSwaps();
+        final pending = TodoNotifier.instance.consumeAllPending();
+        final allToApply = [...applied, ...pending];
+        if (allToApply.isNotEmpty) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) _applyGantiJadwal(pending);
+            if (mounted) {
+              for (final data in allToApply) {
+                _applyGantiJadwal(data);
+              }
+            }
           });
         }
       } else if (response.statusCode == 422) {
@@ -193,8 +207,8 @@ class _TodoPageState extends State<TodoPage> {
   // ---------------------------------------------------------------------------
   // POST: Simpan ke jadwal_makan saat user selesai (centang)
   // ---------------------------------------------------------------------------
-  Future<void> _simpanJadwal(String resepId, String sesiLabel, String jenis,
-      List<Map<String, dynamic>> detail,
+  Future<void> _simpanJadwal(int sesiKe, String resepId, String sesiLabel,
+      String jenis, List<Map<String, dynamic>> detail,
       {double? nominal}) async {
     final tanggal = DateTime.now().toIso8601String().substring(0, 10);
 
@@ -227,6 +241,10 @@ class _TodoPageState extends State<TodoPage> {
             ),
           );
         }
+      } else {
+        // Berhasil disimpan — hapus applied swap untuk sesi ini
+        // karena resep sudah dikonfirmasi ke server
+        TodoNotifier.instance.clearAppliedSwap(sesiKe);
       }
     } catch (_) {
       if (mounted) {
@@ -247,22 +265,16 @@ class _TodoPageState extends State<TodoPage> {
     final int sesiKe = result['sesi_ke'] as int;
     final Map resepBaru = result['resep'] as Map;
 
-    print(
-        '🔵 sesi_ke: $sesiKe, id: "${resepBaru['id']}", title: "${resepBaru['title']}"');
     final idx = _todos.indexWhere((t) => t.sesi == sesiKe);
-    print(
-        '🔵 idx: $idx, todos sesi list: ${_todos.map((t) => t.sesi).toList()}');
-    if (idx == -1) {
-      print('🔵 pending disimpan');
-      _pendingGantiJadwal = result;
-      return;
-    } // sesi tidak ditemukan, abaikan
+    if (idx == -1) return;
 
     final resepObj = Resep(
       id: resepBaru['id'].toString(),
       title: resepBaru['title'] ?? '-',
       ingredients: resepBaru['ingredients'] ?? '',
-      steps: resepBaru['steps'] ?? '',
+      steps: resepBaru['steps'] is List
+          ? (resepBaru['steps'] as List).join('\n')
+          : resepBaru['steps']?.toString() ?? '',
       category: resepBaru['category'] ?? '',
     );
 
@@ -443,25 +455,45 @@ class _TodoPageState extends State<TodoPage> {
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
-                        children: ['Semua', 'Aktif', 'Selesai'].map((f) {
-                      final isSel = _filter == f;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: FilterChip(
-                          label: Text(f),
-                          selected: isSel,
-                          onSelected: (_) => setState(() => _filter = f),
-                          selectedColor: AppTheme.orange500,
-                          backgroundColor: AppTheme.white,
-                          checkmarkColor: AppTheme.white,
-                          labelStyle: TextStyle(
-                              color: isSel
-                                  ? AppTheme.white
-                                  : context.colors.textSecondary),
-                          side: BorderSide(color: context.colors.border),
+                      children: [
+                        ...['Semua', 'Aktif', 'Selesai'].map((f) {
+                          final isSel = _filter == f;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: FilterChip(
+                              label: Text(f),
+                              selected: isSel,
+                              onSelected: (_) => setState(() => _filter = f),
+                              selectedColor: AppTheme.orange500,
+                              backgroundColor: AppTheme.white,
+                              checkmarkColor: AppTheme.white,
+                              labelStyle: TextStyle(
+                                  color: isSel
+                                      ? AppTheme.white
+                                      : context.colors.textSecondary),
+                              side: BorderSide(color: context.colors.border),
+                            ),
+                          );
+                        }).toList(),
+                        GestureDetector(
+                          onTap: () {
+                            TodoNotifier.instance.resetTodosLoaded();
+                            _loadTodos();
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: AppTheme.white,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: context.colors.border),
+                            ),
+                            child: const Icon(Icons.refresh_rounded,
+                                size: 16, color: AppTheme.orange600),
+                          ),
                         ),
-                      );
-                    }).toList()),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 16),
 
@@ -717,7 +749,8 @@ class _TodoPageState extends State<TodoPage> {
               });
               ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Data beli tersimpan')));
-              _simpanJadwal(todo.resepId, todo.sesiLabel, 'Beli', detail);
+              _simpanJadwal(
+                  todo.sesi, todo.resepId, todo.sesiLabel, 'Beli', detail);
             },
           ),
 
@@ -733,7 +766,8 @@ class _TodoPageState extends State<TodoPage> {
               });
               ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Data masak tersimpan')));
-              _simpanJadwal(todo.resepId, todo.sesiLabel, 'Masak', detail,
+              _simpanJadwal(
+                  todo.sesi, todo.resepId, todo.sesiLabel, 'Masak', detail,
                   nominal: total);
             },
           ),

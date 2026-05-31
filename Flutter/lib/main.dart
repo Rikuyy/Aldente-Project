@@ -48,10 +48,10 @@ final _router = GoRouter(
     GoRoute(
         path: '/notifications',
         builder: (ctx, state) => const NotificationsPage()),
-    GoRoute(
-      path: '/app/todo',
-      builder: (ctx, state) => const TodoPage(),
-    ),
+    //GoRoute(
+    // path: '/app/todo',
+    //  builder: (ctx, state) => const TodoPage(),
+    // ),
     ShellRoute(
       builder: (ctx, state, child) => MainLayout(child: child),
       routes: [

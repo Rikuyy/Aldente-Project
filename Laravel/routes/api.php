@@ -98,6 +98,7 @@ Route::middleware('auth:api')->group(function () {
 Route::middleware('auth:api')->group(function () {
     Route::get('/jadwal/generate', [TodoCookController::class, 'generate']);
     Route::post('/jadwal-makan', [TodoCookController::class, 'store']);
+    Route::patch('/jadwal/ganti-resep', [TodoCookController::class, 'gantiResep']);
     Route::post('/jadwal/rebuild-queue', [TodoCookController::class, 'rebuildQueue']);
 });
 
