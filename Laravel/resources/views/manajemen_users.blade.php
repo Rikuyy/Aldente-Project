@@ -32,7 +32,7 @@
                     <thead>
                         <tr class="bg-neutral-800/50">
                             <th class="py-4 px-6 text-neutral-300 font-semibold border-b border-neutral-700">Nama</th>
-                            <th class="py-4 px-6 text-neutral-300 font-semibold border-b border-neutral-700">Email (Privasi)</th>
+                            <th class="py-4 px-6 text-neutral-300 font-semibold border-b border-neutral-700">Email</th>
                             <th class="py-4 px-6 text-neutral-300 font-semibold border-b border-neutral-700">Tanggal Gabung</th>
                             <th class="py-4 px-6 text-neutral-300 font-semibold border-b border-neutral-700 text-center">Aksi</th>
                         </tr>
@@ -40,21 +40,22 @@
                     <tbody class="text-neutral-400">
                         @forelse($users as $user)
                         <tr class="border-b border-neutral-800/50 hover:bg-neutral-800/30 transition-colors">
-                            <td class="py-4 px-6 font-bold text-white">{{ $user->name }}</td>
+                            <!-- Menampilkan nama menggunakan kolom Username sesuai di Model -->
+                            <td class="py-4 px-6 font-bold text-white">{{ $user->Username ?? '-' }}</td>
+                            
+                            <!-- Menampilkan Email secara penuh (tanpa sensor) -->
                             <td class="py-4 px-6">
-                                @php
-                                    $emailParts = explode('@', $user->email);
-                                    $censoredEmail = substr($emailParts[0], 0, 3) . '***@' . ($emailParts[1] ?? 'domain.com');
-                                @endphp
-                                <span class="bg-neutral-800 text-xs px-3 py-1 rounded-full border border-neutral-700">
-                                    {{ $censoredEmail }}
+                                <span class="bg-neutral-800 text-sm px-3 py-1 rounded-md border border-neutral-700 text-neutral-300">
+                                    {{ $user->Email ?? '-' }}
                                 </span>
                             </td>
+                            
                             <td class="py-4 px-6 text-sm">
                                 {{ $user->created_at ? $user->created_at->format('d M Y') : '-' }}
                             </td>
                             <td class="py-4 px-6 text-center">
-                                <form action="{{ route('users.destroy', $user->id) }}" method="POST" onsubmit="return confirm('Hapus user ini secara permanen?')">
+                                <!-- Menggunakan Id_User untuk proses hapus (sesuai primaryKey di Model) -->
+                                <form action="{{ route('users.destroy', $user->Id_User) }}" method="POST" onsubmit="return confirm('Hapus user ini secara permanen?')">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white px-4 py-2 rounded-xl border border-red-500/20 transition-all duration-200 text-sm font-bold">

@@ -7,32 +7,26 @@ import '../theme/app_theme.dart';
 import '../services/dashboard_service.dart';
 import '../services/todo_notifier.dart';
 
-// --- FUNGSI FILTER & FORMAT NAMA RESEP ---
 String _formatRecipeTitle(String rawTitle) {
   if (rawTitle.isEmpty) return 'Resep';
-  String text = rawTitle.toLowerCase();
 
+  String text = rawTitle.toLowerCase();
   if (text.contains(' by ')) text = text.split(' by ')[0];
   if (text.contains(' ala ')) text = text.split(' ala ')[0];
 
   List<String> words = text.split(' ').where((w) => w.isNotEmpty).toList();
-  final stopWords = const [
-    'uenak',
-    'enak',
-    'spesial',
-    'mantap',
-    'lezat',
-    'super'
-  ];
+  const stopWords = ['uenak', 'enak', 'spesial', 'mantap', 'lezat', 'super'];
   words = words.where((word) => !stopWords.contains(word)).toList();
 
-  return words
-      .map((w) => w.isEmpty ? '' : w[0].toUpperCase() + w.substring(1))
-      .join(' ');
+  return words.map((w) {
+    if (w.isEmpty) return '';
+    return w[0].toUpperCase() + w.substring(1);
+  }).join(' ');
 }
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
   @override
   State<HomePage> createState() => _HomePageState();
 }
@@ -124,7 +118,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
       final isBudgetDue = _dashboardData?['budget']?['is_budget_due'] == true;
 
-      // LOGIKA TANYA BESOK: Cek apakah hari ini sudah pernah dipencet "Belum"
       final prefs = await SharedPreferences.getInstance();
       final lastPromptDate = prefs.getString('last_budget_prompt_date');
       final todayStr = DateTime.now().toIso8601String().split('T')[0];
@@ -148,7 +141,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         final List<dynamic> data = response['data'];
         List<dynamic> allStocks = [];
         for (var group in data) {
-          allStocks.addAll(group['bahan'] as List);
+          final bahanList = group['bahan'] as List;
+          allStocks.addAll(bahanList);
         }
         setState(() {
           _allStok = allStocks;
@@ -195,17 +189,19 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Row(
-            children: const [
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Row(
+            children: [
               Icon(Icons.account_balance_wallet_rounded,
                   color: AppTheme.orange600),
               SizedBox(width: 10),
               Expanded(
-                child: Text('Uang Makan Bulanan',
-                    style:
-                        TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                child: Text(
+                  'Uang Makan Bulanan',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                ),
               ),
             ],
           ),
@@ -216,12 +212,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           actions: [
             TextButton(
               onPressed: () async {
-                // CATAT TANGGAL "BELUM" AGAR MUNCUL LAGI BESOK
                 final prefs = await SharedPreferences.getInstance();
                 await prefs.setString('last_budget_prompt_date',
                     DateTime.now().toIso8601String().split('T')[0]);
 
-                if (mounted) Navigator.of(context).pop();
+                if (!context.mounted) return;
+                Navigator.of(context).pop();
               },
               child: const Text('Belum',
                   style: TextStyle(
@@ -256,98 +252,101 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (BuildContext sheetContext) {
-        return StatefulBuilder(builder: (context, setStateSheet) {
-          return Container(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom,
-            ),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(24)),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: const BoxDecoration(
-                            color: AppTheme.orange100, shape: BoxShape.circle),
-                        child: const Icon(Icons.account_balance_wallet_rounded,
-                            color: AppTheme.orange600),
-                      ),
-                      const SizedBox(width: 16),
-                      const Expanded(
-                        child: Text('Input Uang Masuk',
-                            style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold)),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  const Text('Nominal Bulan Ini (Rp)',
-                      style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey)),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: nominalController,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      _CurrencyFormatter(),
-                    ],
-                    style: const TextStyle(
-                        fontSize: 24, fontWeight: FontWeight.bold),
-                    decoration: InputDecoration(
-                      prefixText: 'Rp ',
-                      prefixStyle: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black),
-                      filled: true,
-                      fillColor: Colors.grey.shade100,
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide.none),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 16),
+        return StatefulBuilder(
+          builder: (context, setStateSheet) {
+            return Container(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: const BoxDecoration(
+                              color: AppTheme.orange100,
+                              shape: BoxShape.circle),
+                          child: const Icon(
+                              Icons.account_balance_wallet_rounded,
+                              color: AppTheme.orange600),
+                        ),
+                        const SizedBox(width: 16),
+                        const Expanded(
+                          child: Text('Input Uang Masuk',
+                              style: TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.bold)),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 32),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton(
-                      onPressed: isSubmitting
-                          ? null
-                          : () async {
-                              if (nominalController.text.isEmpty) return;
+                    const SizedBox(height: 24),
+                    const Text('Nominal Bulan Ini (Rp)',
+                        style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey)),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: nominalController,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        _CurrencyFormatter(),
+                      ],
+                      style: const TextStyle(
+                          fontSize: 24, fontWeight: FontWeight.bold),
+                      decoration: InputDecoration(
+                        prefixText: 'Rp ',
+                        prefixStyle: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black),
+                        filled: true,
+                        fillColor: Colors.grey.shade100,
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide.none),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20, vertical: 16),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: ElevatedButton(
+                        onPressed: isSubmitting
+                            ? null
+                            : () async {
+                                if (nominalController.text.isEmpty) return;
 
-                              setStateSheet(() => isSubmitting = true);
+                                setStateSheet(() => isSubmitting = true);
 
-                              final nominal = int.tryParse(nominalController
-                                      .text
-                                      .replaceAll('.', '')) ??
-                                  0;
-                              final service = DashboardService();
+                                final nominal = int.tryParse(nominalController
+                                        .text
+                                        .replaceAll('.', '')) ??
+                                    0;
+                                final service = DashboardService();
 
-                              final respMutasi =
-                                  await service.tambahPemasukan(nominal);
-                              final respSiklus =
-                                  await service.setBudget(nominal.toDouble());
+                                final respMutasi =
+                                    await service.tambahPemasukan(nominal);
+                                final respSiklus =
+                                    await service.setBudget(nominal.toDouble());
 
-                              setStateSheet(() => isSubmitting = false);
+                                setStateSheet(() => isSubmitting = false);
 
-                              if (respMutasi['success'] == true &&
-                                  respSiklus['success'] == true) {
-                                if (mounted) {
+                                if (respMutasi['success'] == true &&
+                                    respSiklus['success'] == true) {
+                                  if (!context.mounted) return;
                                   Navigator.of(sheetContext).pop();
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
@@ -355,41 +354,40 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                             'Pemasukan & Siklus baru berhasil dicatat!'),
                                         backgroundColor: Colors.green),
                                   );
-                                  _fetchDashboardAndStok();
-                                }
-                              } else {
-                                if (mounted) {
+                                  _refreshData();
+                                } else {
+                                  if (!context.mounted) return;
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                         content: Text('Gagal menyimpan data'),
                                         backgroundColor: Colors.red),
                                   );
                                 }
-                              }
-                            },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.orange600,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14)),
-                        elevation: 0,
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.orange600,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14)),
+                          elevation: 0,
+                        ),
+                        child: isSubmitting
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                    color: Colors.white, strokeWidth: 3))
+                            : const Text('Mulai Siklus Baru',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 16)),
                       ),
-                      child: isSubmitting
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                  color: Colors.white, strokeWidth: 3))
-                          : const Text('Mulai Siklus Baru',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 16)),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          );
-        });
+            );
+          },
+        );
       },
     );
   }
@@ -415,7 +413,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     await _fetchDashboardAndStok();
   }
 
-  void _swapResepKeTodo(BuildContext context, dynamic resep) {
+  // =========================================================================
+  // FIX: SWAP RESEP YANG SANGAT AMAN UNTUK NAVIGASI (ANTI MACET)
+  // =========================================================================
+  void _swapResepKeTodo(BuildContext context, dynamic resep) async {
     final int jmlMakan = _jumlahSesiMakan;
 
     List<String> sesiLabels = [];
@@ -434,10 +435,23 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       sesiLabels = List.generate(jmlMakan, (i) => 'Sesi ${i + 1}');
     }
 
-    showModalBottomSheet(
+    Map<String, String> jadwalHariIni = {};
+    if (_dashboardData != null && _dashboardData!['jadwal_hari_ini'] != null) {
+      try {
+        final jhi = _dashboardData!['jadwal_hari_ini'];
+        if (jhi is Map) {
+          jhi.forEach((k, v) => jadwalHariIni[k.toString()] = v.toString());
+        }
+      } catch (e) {
+        debugPrint('Error parse jadwal: $e');
+      }
+    }
+
+    // 1. TUNGGU HASIL PILIHAN USER DARI BOTTOM SHEET
+    final selectedSesi = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (_) => Container(
+      builder: (bottomSheetContext) => Container(
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -475,13 +489,23 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             ),
             const SizedBox(height: 20),
             ...List.generate(sesiLabels.length, (i) {
+              String dbSesiLabel = sesiLabels[i];
+              String indexSesi = (i + 1).toString();
+              String menuSaatIni = jadwalHariIni[indexSesi] ?? '';
+
+              if (menuSaatIni.isEmpty) {
+                menuSaatIni = 'Kosong';
+              } else {
+                menuSaatIni = _formatRecipeTitle(menuSaatIni);
+              }
+
               return ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: Container(
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: AppTheme.orange600.withOpacity(0.1),
+                    color: AppTheme.orange600.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Center(
@@ -491,23 +515,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                             fontWeight: FontWeight.w800)),
                   ),
                 ),
-                title: Text(sesiLabels[i],
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                title: Text('Sesi ${i + 1}. $menuSaatIni',
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w700, fontSize: 14)),
                 trailing: const Icon(Icons.chevron_right_rounded,
                     color: AppTheme.slate400),
-                onTap: () async {
-                  // Tutup bottom sheet
-                  Navigator.of(context).pop();
-
-                  // MENYIMPAN PERUBAHAN KE DATABASE LARAVEL
-                  final service = DashboardService();
-                  await service.tukarResepTodo(
-                      (resep['_id'] ?? resep['id'] ?? '').toString(),
-                      i + 1,
-                      sesiLabels[i]);
-
-                  // Update Notifier (Lokal) & Navigasi ke Halaman Todo
-                  _kirimKeNotifier(resep, i + 1, sesiLabels[i]);
+                onTap: () {
+                  // TUTUP BOTTOM SHEET DAN KEMBALIKAN PILIHAN
+                  Navigator.of(bottomSheetContext).pop({
+                    'sesiKe': i + 1,
+                    'sesiLabel': dbSesiLabel,
+                  });
                 },
               );
             }),
@@ -515,21 +533,39 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         ),
       ),
     );
-  }
 
-  void _kirimKeNotifier(dynamic resep, int sesiKe, String sesiLabel) {
+    // Jika user klik di luar (batal), hentikan proses.
+    if (selectedSesi == null) return;
+
+    // TANGKAP NAVIGATOR DAN ROUTER SEBELUM PROSES ASYNC DIMULAI
+    final router = GoRouter.of(context);
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    // 2. TAMPILKAN LOADING OVERLAY DI HALAMAN UTAMA
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (c) => const Center(
+        child: CircularProgressIndicator(color: AppTheme.orange600),
+      ),
+    );
+
+    final int sesiKe = selectedSesi['sesiKe'];
+    final String dbSesiLabel = selectedSesi['sesiLabel'];
+
     final dynamic rawSteps = resep['Steps'] ?? resep['steps'] ?? '';
-    String stepsStr;
-    if (rawSteps is List) {
-      stepsStr = rawSteps.join('\n');
-    } else {
-      stepsStr = rawSteps.toString();
-    }
+    String stepsStr =
+        (rawSteps is List) ? rawSteps.join('\n') : rawSteps.toString();
 
-    // Update di State Management agar UI To-Do List yang terbuka langsung ter-refresh
-    TodoNotifier.instance.gantiJadwal({
+    // 3. SIMPAN KE LARAVEL
+    final service = DashboardService();
+    await service.tukarResepTodo(
+        (resep['_id'] ?? resep['id'] ?? '').toString(), sesiKe, dbSesiLabel);
+
+    // 4. SIMPAN KE TODO NOTIFIER LOKAL
+    await TodoNotifier.instance.gantiJadwal({
       'sesi_ke': sesiKe,
-      'sesi_label': sesiLabel,
+      'sesi_label': dbSesiLabel,
       'resep': {
         'id': (resep['_id'] ?? resep['id'] ?? '').toString(),
         'title': resep['Title Cleaned'] ?? resep['title'] ?? '-',
@@ -540,30 +576,40 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       },
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle_rounded,
-                color: Colors.white, size: 18),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                '$sesiLabel di Todo diperbarui!',
-                style: const TextStyle(fontSize: 13),
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: AppTheme.orange600,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: const Duration(seconds: 3),
-      ),
-    );
+    if (!context.mounted) return;
 
-    // OTOMATIS PINDAH KE HALAMAN TO-DO LIST
-    context.go('/app/todo');
+    // 5. TUTUP LOADING OVERLAY DENGAN AMAN
+    Navigator.of(context, rootNavigator: true).pop();
+
+    // 6. BERI JEDA ANIMASI AGAR TIDAK MACET SAAT ROUTING
+    Future.delayed(const Duration(milliseconds: 150), () {
+      // 7. PINDAH KE TODO LIST
+      router.go('/app/todo');
+
+      // 8. TAMPILKAN SNACKBAR SETELAH PINDAH
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle_rounded,
+                  color: Colors.white, size: 18),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Sesi $sesiKe berhasil diperbarui!',
+                  style: const TextStyle(fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: AppTheme.orange600,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    });
   }
 
   Color _getCategoryColor(String category) {
@@ -691,11 +737,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
 
     final sisaBulan = _budget['sisa_bulan'] ?? 0;
+    final totalKeluar = _budget['total_keluar'] ?? 0;
+    final totalBudget = _budget['total_budget'] ?? 0;
+    final budgetPerHariSisa = (_budget['budget_per_hari'] ?? 0).toDouble();
     final hariKe = _budget['hari_ke'] ?? 1;
     final aktivitasTerakhir = _budget['aktivitas_terakhir'];
-    final totalBudget = _budget['total_budget'] ?? 0;
-    final totalKeluar = _budget['total_keluar'] ?? 0;
-    final budgetPerHari = _budget['budget_per_hari'] ?? 0;
 
     return Scaffold(
       backgroundColor: context.colors.surface,
@@ -774,7 +820,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     Expanded(
                       flex: 6,
                       child: _buildBudgetCard(
-                          sisaBulan, hariKe, aktivitasTerakhir, budgetPerHari),
+                        sisaBulan,
+                        hariKe,
+                        budgetPerHariSisa,
+                        aktivitasTerakhir,
+                      ),
                     ),
                     const SizedBox(width: 24),
                     Expanded(
@@ -786,7 +836,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 )
               else ...[
                 _buildBudgetCard(
-                    sisaBulan, hariKe, aktivitasTerakhir, budgetPerHari),
+                  sisaBulan,
+                  hariKe,
+                  budgetPerHariSisa,
+                  aktivitasTerakhir,
+                ),
                 const SizedBox(height: 24),
                 _buildSummaryCard(context, totalBudget, totalKeluar, sisaBulan),
               ],
@@ -843,7 +897,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
               const SizedBox(height: 36),
 
-              // REKOMENDASI RESEP SECTION DENGAN TOMBOL REFRESH
+              // REKOMENDASI RESEP SECTION
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -933,9 +987,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     );
   }
 
-  // --- REVISI CARD BUDGET GELAP (INFO BUDGET PER HARI) ---
+  // --- CARD BUDGET GELAP ---
   Widget _buildBudgetCard(
-      int sisaSaldo, int hariKe, dynamic aktivitasTerakhir, int budgetPerHari) {
+    int sisaSaldo,
+    int hariKe,
+    double budgetPerHariSisa,
+    dynamic aktivitasTerakhir,
+  ) {
     String nominalAktivitas = '-';
     String ketAktivitas = 'Belum ada mutasi';
     Color warnaAktivitas = Colors.blueGrey.shade400;
@@ -948,6 +1006,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           : const Color(0xFFEF4444);
     }
 
+    final int targetPengeluaranHarian = budgetPerHariSisa.toInt();
+
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -958,7 +1018,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0F172A).withOpacity(0.3),
+            color: const Color(0xFF0F172A).withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           )
@@ -972,10 +1032,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'SISA SALDO',
+                'BUDGET HARI INI',
                 style: TextStyle(
                     color: Colors.blueGrey.shade300,
-                    fontSize: 11,
+                    fontSize: 10,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.5),
               ),
@@ -983,7 +1043,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
+                    color: Colors.white.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8)),
                 child: Text('HARI KE-$hariKe',
                     style: const TextStyle(
@@ -996,7 +1056,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           ),
           const SizedBox(height: 12),
           Text(
-            _formatCurrency(sisaSaldo),
+            _formatCurrency(targetPengeluaranHarian),
             style: const TextStyle(
                 color: Colors.white,
                 fontSize: 38,
@@ -1004,7 +1064,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 letterSpacing: -1.0),
           ),
           const SizedBox(height: 24),
-          Divider(color: Colors.white.withOpacity(0.1), height: 1),
+          Divider(color: Colors.white.withValues(alpha: 0.1), height: 1),
           const SizedBox(height: 20),
           Row(
             children: [
@@ -1014,35 +1074,29 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.history_rounded,
+                        Icon(Icons.account_balance_wallet_rounded,
                             size: 14, color: Colors.blueGrey.shade400),
                         const SizedBox(width: 6),
-                        Text('Aktivitas Terakhir',
+                        Text('Total Saldo',
                             style: TextStyle(
                                 color: Colors.blueGrey.shade400, fontSize: 11)),
                       ],
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      nominalAktivitas,
-                      style: TextStyle(
-                          color: warnaAktivitas,
-                          fontSize: 14,
+                      _formatCurrency(sisaSaldo),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
                           fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      ketAktivitas,
-                      style: TextStyle(
-                          color: Colors.blueGrey.shade500,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500),
                     ),
                   ],
                 ),
               ),
               Container(
-                  width: 1, height: 36, color: Colors.white.withOpacity(0.1)),
+                  width: 1,
+                  height: 36,
+                  color: Colors.white.withValues(alpha: 0.1)),
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.only(left: 20),
@@ -1051,10 +1105,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.pie_chart_rounded,
+                          Icon(Icons.history_rounded,
                               size: 14, color: Colors.blueGrey.shade400),
                           const SizedBox(width: 6),
-                          Text('Budget Per Hari',
+                          Text('Aktivitas Terakhir',
                               style: TextStyle(
                                   color: Colors.blueGrey.shade400,
                                   fontSize: 11)),
@@ -1062,9 +1116,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        _formatCurrency(budgetPerHari),
-                        style: const TextStyle(
-                            color: Colors.white,
+                        nominalAktivitas,
+                        style: TextStyle(
+                            color: warnaAktivitas,
                             fontSize: 14,
                             fontWeight: FontWeight.bold),
                       ),
@@ -1092,7 +1146,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'IKHTISAR SIKLUS INI',
+            'DETAIL KEUANGAN',
             style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
@@ -1101,19 +1155,19 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           ),
           const SizedBox(height: 20),
           _SummaryTile(
-              label: 'Total Pemasukan',
+              label: 'Pemasukan Bulan Ini',
               value: _formatCurrency(totalBudget),
               icon: Icons.arrow_downward_rounded,
               color: const Color(0xFF10B981)),
           const Divider(height: 24),
           _SummaryTile(
-              label: 'Total Pengeluaran',
+              label: 'Pengeluaran Bulan Ini',
               value: _formatCurrency(totalKeluar),
               icon: Icons.arrow_upward_rounded,
               color: const Color(0xFFEF4444)),
           const Divider(height: 24),
           _SummaryTile(
-              label: 'Saldo Kumulatif',
+              label: 'Total Saldo ',
               value: _formatCurrency(sisaBulan),
               icon: Icons.account_balance_wallet_rounded,
               color: const Color(0xFF3B82F6)),
@@ -1121,7 +1175,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              // NAVIGASI KE FINANCE (DENGAN context.go)
               onPressed: () => context.go('/app/finance'),
               icon: const Icon(Icons.receipt_long_rounded, size: 18),
               label: const Text('Kelola Keuangan / Mutasi'),
@@ -1160,8 +1213,9 @@ class _SummaryTile extends StatelessWidget {
         Icon(icon, size: 20, color: color),
         const SizedBox(width: 12),
         Expanded(
-            child: Text(label,
-                style: const TextStyle(fontSize: 13, color: Colors.grey))),
+          child: Text(label,
+              style: const TextStyle(fontSize: 13, color: Colors.grey)),
+        ),
         Text(value,
             style: TextStyle(
                 fontSize: 14, fontWeight: FontWeight.bold, color: color)),
@@ -1242,7 +1296,6 @@ class _FeaturedRecipeCard extends StatelessWidget {
     final rawTitle = resep['Title Cleaned'] ?? 'Resep';
     final title = _formatRecipeTitle(rawTitle);
     final category = resep['Category'] ?? 'Umum';
-    final loves = resep['Loves'] ?? 0;
     final Color categoryColor = colorResolver(category);
 
     return Container(
@@ -1250,10 +1303,11 @@ class _FeaturedRecipeCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.colors.cardBackground,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: categoryColor.withOpacity(0.35), width: 1.5),
+        border: Border.all(
+            color: categoryColor.withValues(alpha: 0.35), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: categoryColor.withOpacity(0.12),
+            color: categoryColor.withValues(alpha: 0.12),
             blurRadius: 12,
             offset: const Offset(0, 4),
           )
@@ -1269,7 +1323,7 @@ class _FeaturedRecipeCard extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: categoryColor.withOpacity(0.1),
+                  color: categoryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
@@ -1287,18 +1341,6 @@ class _FeaturedRecipeCard extends StatelessWidget {
                     ),
                   ],
                 ),
-              ),
-              Row(
-                children: [
-                  const Icon(Icons.favorite_rounded,
-                      size: 16, color: Color(0xFFEF4444)),
-                  const SizedBox(width: 4),
-                  Text('$loves',
-                      style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFFEF4444))),
-                ],
               ),
             ],
           ),
@@ -1388,8 +1430,8 @@ class _GridRecipeCard extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                border:
-                    Border.all(color: categoryColor.withOpacity(0.5), width: 1),
+                border: Border.all(
+                    color: categoryColor.withValues(alpha: 0.5), width: 1),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
@@ -1470,11 +1512,11 @@ class _RecipeDetailSheet extends StatelessWidget {
     final rawTitle = resep['Title Cleaned'] ?? resep['title'] ?? 'Resep';
     final title = _formatRecipeTitle(rawTitle);
     final category = resep['Category'] ?? resep['category'] ?? '';
-    final loves = resep['Loves'] ?? resep['loves'] ?? 0;
+
     final ingredients =
         resep['Ingredients Cleaned'] ?? resep['ingredients'] ?? '';
-    final dynamic rawSteps = resep['Steps'] ?? resep['steps'];
 
+    final dynamic rawSteps = resep['Steps'] ?? resep['steps'];
     List<String> stepsList = [];
     if (rawSteps is List) {
       stepsList = rawSteps.map((s) => s.toString()).toList();
@@ -1537,13 +1579,9 @@ class _RecipeDetailSheet extends StatelessWidget {
                                     _InfoChip(
                                         icon: Icons.label_outline,
                                         label: category.toUpperCase(),
-                                        color: categoryColor.withOpacity(0.1),
+                                        color: categoryColor.withValues(
+                                            alpha: 0.1),
                                         textColor: categoryColor),
-                                  const _InfoChip(
-                                      icon: Icons.favorite_rounded,
-                                      label: 'Disukai Banyak Orang',
-                                      color: Color(0xFFFFE4E6),
-                                      textColor: Color(0xFFE11D48)),
                                 ],
                               ),
                             ],
@@ -1754,7 +1792,7 @@ class _StepTile extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppTheme.slate100.withOpacity(0.6),
+                color: AppTheme.slate100.withValues(alpha: 0.6),
                 borderRadius: const BorderRadius.only(
                   topRight: Radius.circular(14),
                   bottomLeft: Radius.circular(14),

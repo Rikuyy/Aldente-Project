@@ -15,7 +15,6 @@ class RegisteredUserController extends Controller
 {
     public function create(): View|RedirectResponse
     {
-        // KUNCI: Kalau admin sudah ada di MongoDB, jangan boleh buka halaman daftar
         if (Admin::count() > 0) {
             return redirect()->route('login');
         }
@@ -29,7 +28,18 @@ class RegisteredUserController extends Controller
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:admins,Email'],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'password' => ['required', 'confirmed', Rules\Password::min(8)->mixedCase()->numbers()->symbols()],
+        ], [
+            'name.required' => 'Nama tidak boleh kosong.',
+            'email.required' => 'Email tidak boleh kosong.',
+            'email.unique' => 'Email ini sudah terdaftar.',
+            'password.required' => 'Kata sandi tidak boleh kosong.',
+            'password.confirmed' => 'Konfirmasi kata sandi tidak cocok.',
+            // Pesan simpel:
+            'password.min' => 'Sandi min. 8 karakter, huruf besar, kecil, angka dan simbol.',
+            'password.mixed' => 'Sandi min. 8 karakter, huruf besar, kecil, angka dan simbol.',
+            'password.numbers' => 'Sandi min. 8 karakter, huruf besar, kecil, angka dan simbol.',
+            'password.symbols' => 'Sandi min. 8 karakter, huruf besar, kecil, angka dan simbol.',
         ]);
 
         $admin = Admin::create([

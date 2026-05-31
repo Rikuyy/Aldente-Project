@@ -93,7 +93,7 @@ class _FinancePageState extends State<FinancePage> {
         _loadRingkasan(bulanQuery).timeout(const Duration(seconds: 10)),
         _loadGrafik(bulanQuery).timeout(const Duration(seconds: 10)),
       ]);
-      // Mutasi di-load terpisah agar tidak blocking halaman utama
+
       _loadMutasi(reset: true);
       if (!mounted) return;
       setState(() => _isLoading = false);
@@ -177,14 +177,10 @@ class _FinancePageState extends State<FinancePage> {
           _mutasiHasMore = hasMore;
           _mutasiPage += 1;
         });
-        debugPrint(
-            '✅ Mutasi page ${_mutasiPage - 1}: ${newGroups.length} grup, hasMore=$hasMore');
       } else {
         setState(() => _mutasiHasMore = false);
-        debugPrint('⚠️ Mutasi kosong atau gagal: ${resp['message']}');
       }
     } catch (e) {
-      debugPrint('❌ Error load mutasi: $e');
       if (!mounted) return;
       setState(() => _mutasiHasMore = false);
     } finally {
@@ -197,6 +193,14 @@ class _FinancePageState extends State<FinancePage> {
       _mutationMonth = month;
       _mutationYear = year;
     });
+
+    // Refresh grafik dengan bulan yang dipilih user
+    if (month != 'Semua' && year != 0) {
+      final bulanIndex = _monthOptions.indexOf(month);
+      final bulanQuery = '$year-${bulanIndex.toString().padLeft(2, '0')}';
+      _loadGrafik(bulanQuery);
+    }
+
     _loadMutasi(reset: true);
   }
 
@@ -216,113 +220,150 @@ class _FinancePageState extends State<FinancePage> {
     );
   }
 
+  // ==========================================
+  // REVISI KODE MULAI DARI SINI: _showTopUpDialog
+  // ==========================================
   Future<void> _showTopUpDialog() async {
     final jumlahController = TextEditingController();
     final keteranganController = TextEditingController();
     final formKey = GlobalKey<FormState>();
+    String jenisTopUp = 'Top up budget bulanan';
+
     return showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Tambah Pemasukan (Topup)'),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: jumlahController,
-                keyboardType: TextInputType.number,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  _CurrencyFormatter(),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Text('Tambah Pemasukan (Topup)'),
+            content: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButtonFormField<String>(
+                    value: jenisTopUp,
+                    decoration: const InputDecoration(
+                      labelText: 'Jenis Top Up',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                          value: 'Top up budget bulanan',
+                          child: Text('Top up budget bulanan')),
+                      DropdownMenuItem(
+                          value: 'Top up biasa', child: Text('Top up biasa')),
+                    ],
+                    onChanged: (val) => setDialogState(() => jenisTopUp = val!),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: jumlahController,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      _CurrencyFormatter(),
+                    ],
+                    decoration: const InputDecoration(
+                      labelText: 'Nominal (Rp)',
+                      border: OutlineInputBorder(),
+                      prefixText: 'Rp ',
+                    ),
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return 'Isi nominal';
+                      if (v.replaceAll('.', '').isEmpty) return 'Isi nominal';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: keteranganController,
+                    decoration: const InputDecoration(
+                      labelText: 'Deskripsi Top Up (Wajib)',
+                      hintText: 'Contoh: Uang Makan Mei',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (v) => (v == null || v.trim().isEmpty)
+                        ? 'Isi deskripsi top up'
+                        : null,
+                  ),
                 ],
-                decoration: const InputDecoration(
-                  labelText: 'Nominal (Rp)',
-                  border: OutlineInputBorder(),
-                  prefixText: 'Rp ',
-                ),
-                validator: (v) {
-                  if (v == null || v.isEmpty) return 'Isi nominal';
-                  if (v.replaceAll('.', '').isEmpty) return 'Isi nominal';
-                  return null;
-                },
               ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: keteranganController,
-                decoration: const InputDecoration(
-                  labelText: 'Detail Tambahan (opsional)',
-                  border: OutlineInputBorder(),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Batal',
+                    style: TextStyle(color: context.colors.textSecondary)),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if (formKey.currentState!.validate()) {
+                    final jumlahText =
+                        jumlahController.text.replaceAll('.', '');
+                    final jumlah = double.tryParse(jumlahText) ?? 0;
+                    if (jumlah <= 0) return;
+                    final deskripsi = keteranganController.text.trim();
+
+                    // Pembeda API berdasarkan pilihan
+                    final ketApi = (jenisTopUp == 'Top up budget bulanan')
+                        ? 'Top Up'
+                        : 'Top Up Biasa';
+
+                    try {
+                      final response =
+                          await ApiService.post('/keuangan/pemasukan', {
+                        'kategori': 'Pemasukan',
+                        'keterangan': ketApi,
+                        'total_nominal': jumlah,
+                        'detail': {'info': deskripsi},
+                      });
+
+                      if (response['success'] == true) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content:
+                                      Text('Pemasukan berhasil ditambahkan')));
+                          Navigator.pop(context);
+                        }
+                        await _loadData();
+                      } else {
+                        throw Exception(response['message'] ?? 'Gagal');
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                              content: Text('Gagal: $e'),
+                              backgroundColor: Colors.red),
+                        );
+                      }
+                    }
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.orange600,
+                  foregroundColor: Colors.white,
+                  textStyle: const TextStyle(fontWeight: FontWeight.bold),
                 ),
+                child: const Text('Tambah'),
               ),
             ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Batal',
-                style: TextStyle(color: context.colors.textSecondary)),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (formKey.currentState!.validate()) {
-                final jumlahText = jumlahController.text.replaceAll('.', '');
-                final jumlah = double.tryParse(jumlahText) ?? 0;
-                if (jumlah <= 0) return;
-                final detailTambahan = keteranganController.text.trim();
-                try {
-                  // Disesuaikan dengan struktur log keuangan di database backend Anda
-                  final response =
-                      await ApiService.post('/keuangan/pemasukan', {
-                    'kategori': 'Pemasukan',
-                    'keterangan': 'Top Up',
-                    'total_nominal': jumlah,
-                    'detail': detailTambahan.isNotEmpty
-                        ? {'info': detailTambahan}
-                        : null,
-                  });
-                  if (response['success'] == true) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('Pemasukan berhasil ditambahkan')),
-                      );
-                      Navigator.pop(context);
-                    }
-                    await _loadData();
-                  } else {
-                    throw Exception(response['message'] ?? 'Gagal');
-                  }
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                          content: Text('Gagal: $e'),
-                          backgroundColor: Colors.red),
-                    );
-                    Navigator.pop(context);
-                  }
-                }
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.orange600,
-              foregroundColor: Colors.white,
-              textStyle: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            child: const Text('Tambah'),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
+  // ==========================================
+  // REVISI KODE BERAKHIR DI SINI
+  // ==========================================
 
   Future<void> _showManualExpenseDialog() async {
     final jumlahController = TextEditingController();
     final keteranganController = TextEditingController();
-    String? selectedJenis; // Menyimpan tipe pilihan keterangan dari database
+    String? selectedJenis;
     final formKey = GlobalKey<FormState>();
     return showDialog(
       context: context,
@@ -387,12 +428,10 @@ class _FinancePageState extends State<FinancePage> {
                 if (jumlah <= 0) return;
                 final detailText = keteranganController.text.trim();
                 try {
-                  // Mengirim parameter yang sesuai dengan enum log keuangan database Anda
                   final response =
                       await ApiService.post('/keuangan/pengeluaran', {
                     'kategori': 'Pengeluaran',
-                    'keterangan':
-                        selectedJenis, // 'Pengurangan Budget' atau 'Lainnya'
+                    'keterangan': selectedJenis,
                     'total_nominal': jumlah,
                     'detail': {'catatan': detailText},
                   });
@@ -443,7 +482,8 @@ class _FinancePageState extends State<FinancePage> {
     if (_isLoading) {
       return Scaffold(
         backgroundColor: context.colors.surface,
-        body: const Center(child: CircularProgressIndicator()),
+        body: const Center(
+            child: CircularProgressIndicator(color: AppTheme.orange600)),
       );
     }
     if (_error.isNotEmpty) {
@@ -558,7 +598,7 @@ class _FinancePageState extends State<FinancePage> {
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
+                        color: Colors.black.withValues(alpha: 0.2),
                         blurRadius: 16,
                         offset: const Offset(0, 6))
                   ],
@@ -566,7 +606,7 @@ class _FinancePageState extends State<FinancePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('SALDO BUDGET',
+                    const Text(' TOTAL SALDO ',
                         style: TextStyle(
                             color: AppTheme.slate400,
                             fontSize: 10,
@@ -583,23 +623,24 @@ class _FinancePageState extends State<FinancePage> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    Divider(color: Colors.white.withOpacity(0.1), height: 1),
+                    Divider(
+                        color: Colors.white.withValues(alpha: 0.1), height: 1),
                     const SizedBox(height: 16),
                     Row(
                       children: [
                         Expanded(
                             child: _BalanceItem(
-                                label: 'Pemasukan',
+                                label: 'Total Pemasukan',
                                 amount: totalPemasukan,
                                 format: _formatRp,
                                 isPositive: true)),
                         Container(
                             width: 1,
                             height: 36,
-                            color: Colors.white.withOpacity(0.1)),
+                            color: Colors.white.withValues(alpha: 0.1)),
                         Expanded(
                             child: _BalanceItem(
-                                label: 'Pengeluaran',
+                                label: 'Total Pengeluaran',
                                 amount: totalPengeluaran,
                                 format: _formatRp,
                                 isPositive: false)),
@@ -608,61 +649,11 @@ class _FinancePageState extends State<FinancePage> {
                   ],
                 ),
               ),
-              if (_ringkasan!.isOverbudgetHariIni)
-                Container(
-                  margin:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppTheme.red50,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppTheme.red200),
-                  ),
-                  child: Row(children: [
-                    Icon(Icons.warning_amber_rounded,
-                        color: AppTheme.red600, size: 20),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        '⚠️ Hari ini overbudget sebesar ${_formatRp(_ringkasan!.overbudgetAmount)}',
-                        style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.red700),
-                      ),
-                    ),
-                  ]),
-                ),
-              if (_ringkasan!.isSisaTipis)
-                Container(
-                  margin:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppTheme.orange50,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppTheme.orange200),
-                  ),
-                  child: Row(children: [
-                    Icon(Icons.info_outline_rounded,
-                        color: AppTheme.orange600, size: 20),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        '💡 Sisa budget per hari tinggal ${_formatRp(_ringkasan!.sisaBudgetPerHari)}. Aturlah pengeluaran Anda.',
-                        style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.orange700),
-                      ),
-                    ),
-                  ]),
-                ),
               const SizedBox(height: 20),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: _SummaryChip(
-                    label: 'Sisa Budget per Hari',
+                    label: 'Budget per Hari',
                     value: _formatRp(_ringkasan!.sisaBudgetPerHari),
                     icon: Icons.bar_chart_rounded,
                     color: AppTheme.blue500,
@@ -678,7 +669,7 @@ class _FinancePageState extends State<FinancePage> {
                   border: Border.all(color: context.colors.border),
                   boxShadow: [
                     BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
+                        color: Colors.black.withValues(alpha: 0.04),
                         blurRadius: 10,
                         offset: const Offset(0, 4))
                   ],
@@ -763,8 +754,9 @@ class _FinancePageState extends State<FinancePage> {
                                     show: true,
                                     gradient: LinearGradient(
                                       colors: [
-                                        AppTheme.orange500.withOpacity(0.18),
-                                        AppTheme.orange500.withOpacity(0)
+                                        AppTheme.orange500
+                                            .withValues(alpha: 0.18),
+                                        AppTheme.orange500.withValues(alpha: 0)
                                       ],
                                       begin: Alignment.topCenter,
                                       end: Alignment.bottomCenter,
@@ -773,10 +765,12 @@ class _FinancePageState extends State<FinancePage> {
                                 ),
                               ],
                               minY: 0,
-                              maxY: _grafikData
-                                      .map((e) => e.jumlah)
-                                      .reduce((a, b) => a > b ? a : b) +
-                                  10000,
+                              maxY: _grafikData.isNotEmpty
+                                  ? _grafikData
+                                          .map((e) => e.jumlah)
+                                          .reduce((a, b) => a > b ? a : b) +
+                                      10000
+                                  : 10000,
                             )),
                     ),
                   ],
@@ -792,7 +786,7 @@ class _FinancePageState extends State<FinancePage> {
                   border: Border.all(color: context.colors.border),
                   boxShadow: [
                     BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
+                        color: Colors.black.withValues(alpha: 0.04),
                         blurRadius: 10,
                         offset: const Offset(0, 4))
                   ],
@@ -1004,7 +998,7 @@ class _FinancePageState extends State<FinancePage> {
                             border: Border.all(color: context.colors.border),
                             boxShadow: [
                               BoxShadow(
-                                  color: Colors.black.withOpacity(0.03),
+                                  color: Colors.black.withValues(alpha: 0.03),
                                   blurRadius: 6,
                                   offset: const Offset(0, 2))
                             ],
@@ -1028,7 +1022,9 @@ class _FinancePageState extends State<FinancePage> {
               if (_mutasiLoading)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 20),
-                  child: Center(child: CircularProgressIndicator()),
+                  child: Center(
+                      child:
+                          CircularProgressIndicator(color: AppTheme.orange600)),
                 )
               else if (!_mutasiHasMore && _groupedMutasi.isNotEmpty)
                 Padding(
@@ -1106,14 +1102,12 @@ class _SummaryChip extends StatelessWidget {
   final IconData icon;
   final Color color;
   final Color bg;
-  final bool isWarning;
   const _SummaryChip({
     required this.label,
     required this.value,
     required this.icon,
     required this.color,
     required this.bg,
-    this.isWarning = false,
   });
   @override
   Widget build(BuildContext context) {
@@ -1122,7 +1116,7 @@ class _SummaryChip extends StatelessWidget {
       decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.3))),
+          border: Border.all(color: color.withValues(alpha: 0.3))),
       child: Row(children: [
         Icon(icon, color: color, size: 18),
         const SizedBox(width: 8),
@@ -1137,9 +1131,7 @@ class _SummaryChip extends StatelessWidget {
               style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w900,
-                  color: isWarning
-                      ? AppTheme.red600
-                      : context.colors.textPrimary)),
+                  color: context.colors.textPrimary)),
         ])),
       ]),
     );
@@ -1369,14 +1361,13 @@ class _MutationRow extends StatelessWidget {
     Color categoryColor;
     Color categoryBg;
 
-    // Logika Icon menyesuaikan dengan isi field 'Kategori' database Anda
     switch (transaction.jenisPengeluaran) {
-      case 'Pengeluaran':
+      case 'pengeluaran':
         categoryIcon = Icons.remove_circle_outline_rounded;
         categoryColor = AppTheme.red500;
         categoryBg = AppTheme.red50;
         break;
-      case 'Pemasukan':
+      case 'pemasukan':
         categoryIcon = Icons.add_circle_rounded;
         categoryColor = AppTheme.green600;
         categoryBg = AppTheme.green50;
@@ -1388,8 +1379,7 @@ class _MutationRow extends StatelessWidget {
     }
 
     String prefix = '';
-    final ket = transaction
-        .keterangan; // Berisi Masak, Beli, Top Up, Pengurangan Budget, Lainnya
+    final ket = transaction.keterangan;
     if (ket.isNotEmpty) {
       prefix = '[$ket] ';
     }
@@ -1457,7 +1447,6 @@ class _MutationRow extends StatelessWidget {
   }
 }
 
-// Formatter khusus untuk format angka ribuan (titik otomatis)
 class _CurrencyFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
@@ -1466,7 +1455,6 @@ class _CurrencyFormatter extends TextInputFormatter {
       return newValue.copyWith(text: '');
     }
 
-    // Buang titik yang ada saat user mengetik untuk mendapatkan nilai asli
     String cleanedText = newValue.text.replaceAll('.', '');
     double? value = double.tryParse(cleanedText);
 
@@ -1478,7 +1466,6 @@ class _CurrencyFormatter extends TextInputFormatter {
     String str = value.toInt().toString();
     int length = str.length;
 
-    // Pasang titik per 3 digit
     for (int i = 0; i < length; i++) {
       formatted += str[i];
       if ((length - i - 1) % 3 == 0 && i != length - 1) {

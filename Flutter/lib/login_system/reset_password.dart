@@ -85,7 +85,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                     style: const TextStyle(color: Color(0xFF757575)),
                   ),
                   SizedBox(height: MediaQuery.of(context).size.height * 0.06),
-
                   TextFormField(
                     controller: _passwordController,
                     obscureText: true,
@@ -93,8 +92,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                       if (value == null || value.isEmpty) {
                         return "Masukkan kata sandi baru Anda";
                       }
-                      if (value.length < 6) {
-                        return "Kata sandi minimal harus terdiri dari 6 karakter";
+                      // Regex: Min 8 karakter, huruf besar, huruf kecil, angka, dan simbol
+                      final passwordRegex = RegExp(
+                          r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$');
+                      if (!passwordRegex.hasMatch(value)) {
+                        return 'Sandi min. 8 karakter, huruf besar, kecil, angka & simbol';
                       }
                       return null;
                     },
@@ -110,7 +112,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-
                   TextFormField(
                     controller: _confirmPasswordController,
                     obscureText: true,
@@ -135,7 +136,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                     ),
                   ),
                   SizedBox(height: MediaQuery.of(context).size.height * 0.06),
-
                   ElevatedButton(
                     onPressed: _isLoading ? null : _handleResetPassword,
                     style: ElevatedButton.styleFrom(
