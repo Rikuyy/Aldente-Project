@@ -8,6 +8,7 @@ class RiwayatRekomendasi extends Model
 {
     protected $connection = 'mongodb';
     protected $collection = 'riwayat_rekomendasi';
+    protected $table = 'riwayat_rekomendasi';
 
     protected $fillable = [
         'user_id',

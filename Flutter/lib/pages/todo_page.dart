@@ -317,7 +317,7 @@ class _TodoPageState extends State<TodoPage> {
   void _showDetailResep(Resep resep) {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(resep.title,
             style: TextStyle(
@@ -351,7 +351,7 @@ class _TodoPageState extends State<TodoPage> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: Text('Tutup', style: TextStyle(color: AppTheme.orange600)),
           ),
         ],
@@ -621,32 +621,24 @@ class _TodoPageState extends State<TodoPage> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   // Checkbox bulat
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        todo.isDone = !todo.isDone;
-                        _openBeli.remove(todo.id);
-                        _openMasak.remove(todo.id);
-                      });
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: todo.isDone ? AppTheme.green500 : AppTheme.white,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                            color: todo.isDone
-                                ? AppTheme.green500
-                                : context.colors.textHint,
-                            width: 2),
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: todo.isDone ? AppTheme.green500 : AppTheme.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: todo.isDone
+                            ? AppTheme.green500
+                            : context.colors.textHint,
+                        width: 2,
                       ),
-                      child: todo.isDone
-                          ? const Icon(Icons.check_rounded,
-                              size: 14, color: AppTheme.white)
-                          : null,
                     ),
+                    child: todo.isDone
+                        ? const Icon(Icons.check_rounded,
+                            size: 14, color: AppTheme.white)
+                        : null,
                   ),
                   const SizedBox(width: 12),
 
@@ -743,6 +735,10 @@ class _TodoPageState extends State<TodoPage> {
             todo: todo,
             resep: resep,
             onSaved: (List<Map<String, dynamic>> detail) {
+              if (detail.isEmpty) {
+                setState(() => _openBeli.remove(todo.id));
+                return;
+              }
               setState(() {
                 todo.isDone = true;
                 _openBeli.remove(todo.id);
@@ -760,6 +756,10 @@ class _TodoPageState extends State<TodoPage> {
             todo: todo,
             resep: resep,
             onSaved: (List<Map<String, dynamic>> detail, double total) {
+              if (detail.isEmpty) {
+                setState(() => _openMasak.remove(todo.id));
+                return;
+              }
               setState(() {
                 todo.isDone = true;
                 _openMasak.remove(todo.id);

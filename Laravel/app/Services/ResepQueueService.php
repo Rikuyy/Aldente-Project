@@ -8,6 +8,10 @@ use App\Models\UserResep;
 
 class ResepQueueService
 { 
+    private function getUserResep(User $user): UserResep
+    {
+        return UserResep::firstOrNew(['Id_User' => (string) $user->id]);
+    }
     public function buildQueue(User $user): void
     {
         $favorit = $user->Kategori_Favorit ?? [];
