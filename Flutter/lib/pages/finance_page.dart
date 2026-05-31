@@ -662,8 +662,8 @@ class _FinancePageState extends State<FinancePage> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: _SummaryChip(
-                    label: 'Budget per Hari',
-                    value: _formatRp(_ringkasan!.rataPerHari),
+                    label: 'Sisa Budget per Hari',
+                    value: _formatRp(_ringkasan!.sisaBudgetPerHari),
                     icon: Icons.bar_chart_rounded,
                     color: AppTheme.blue500,
                     bg: AppTheme.blue50),

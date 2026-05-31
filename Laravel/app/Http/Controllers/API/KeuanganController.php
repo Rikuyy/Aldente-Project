@@ -17,58 +17,113 @@ class KeuanganController extends Controller
         try {
             $user     = $request->user();
             $userId   = $user->_id;
-            $bulanQuery = $request->query('bulan', Carbon::now()->format('Y-m'));
-            $parsed     = Carbon::createFromFormat('Y-m', $bulanQuery);
-            $startDate  = $parsed->copy()->startOfMonth()->toDateString();
-            $endDate    = $parsed->copy()->endOfMonth()->toDateString();
-
-            $transaksis = Keuangan::where('Id_User', $userId)
+            
+            // Paksa pakai waktu Asia/Jakarta
+            $today = Carbon::now('Asia/Jakarta');
+            
+            // Ambil SEMUA transaksi pemasukan user
+            $semuaPemasukan = Keuangan::where('Id_User', $userId)
+                ->where('Kategori', 'Pemasukan')
+                ->orderBy('Tanggal', 'asc')
+                ->get();
+            
+            // Filter pemasukan yang MASIH BERLAKU (belum kadaluarsa)
+            $pemasukanAktif = $semuaPemasukan->filter(function($pemasukan) use ($today) {
+                $tanggalPemasukan = Carbon::parse($pemasukan->Tanggal);
+                $tanggalKadaluarsa = $this->getTanggalKadaluarsa($tanggalPemasukan);
+                return $today->lessThan($tanggalKadaluarsa);
+            });
+            
+            // Pakai bulan dari created_at user
+            $bulanQuery = Carbon::parse($user->created_at)->format('Y-m');
+            $parsed = Carbon::createFromFormat('Y-m', $bulanQuery);
+            $startDate = $parsed->copy()->startOfMonth()->toDateString();
+            $endDate = $parsed->copy()->endOfMonth()->toDateString();
+            
+            // ========== PERUBAHAN 1: HAPUS FILTER whereBetween UNTUK PENGELUARAN ==========
+            $totalPengeluaran = (float) Keuangan::where('Id_User', $userId)
+                ->where('Kategori', 'Pengeluaran')
+                ->sum('Total_Nominal');
+            
+            // Tentukan tanggal mulai periode dari created_at user
+            $tanggalMulaiPeriode = Carbon::parse($user->created_at ?? Carbon::now('Asia/Jakarta'));
+            $tanggalKadaluarsaPeriode = $this->getTanggalKadaluarsa($tanggalMulaiPeriode);
+            
+            // Hitung jumlah hari dalam periode (diffInDays tanpa +1)
+            $jumlahHariPeriode = $this->getJumlahHariPeriode($tanggalMulaiPeriode);
+            
+            if ($pemasukanAktif->isEmpty()) {
+                // USER BARU
+                // ========== PERUBAHAN 2: PAKAI TOTAL PEMASUKAN DARI DATABASE ==========
+                $totalPemasukan = (float) Keuangan::where('Id_User', $userId)
+                    ->where('Kategori', 'Pemasukan')
+                    ->sum('Total_Nominal');
+                
+                // Jika belum ada pemasukan di database, fallback ke Budget_Bulanan
+                if ($totalPemasukan == 0) {
+                    $totalPemasukan = (float) ($user->Budget_Bulanan ?? 0);
+                }
+                
+                // Target budget per hari (TETAP)
+                $targetBudgetPerHari = $jumlahHariPeriode > 0 ? round($totalPemasukan / $jumlahHariPeriode) : 0;
+                $saldo = $totalPemasukan - $totalPengeluaran;
+            } else {
+                // USER LAMA
+                $totalPemasukan = 0;
+                $totalBobotHari = 0;
+                foreach ($pemasukanAktif as $pemasukan) {
+                    $nominal = (float) $pemasukan->Total_Nominal;
+                    $tanggalMulai = Carbon::parse($pemasukan->Tanggal);
+                    $jmlHari = $this->getJumlahHariPeriode($tanggalMulai);
+                    $totalPemasukan += $nominal;
+                    $totalBobotHari += $jmlHari;
+                }
+                $targetBudgetPerHari = $totalBobotHari > 0 ? round($totalPemasukan / $totalBobotHari) : 0;
+                $saldo = $totalPemasukan - $totalPengeluaran;
+            }
+            
+            // ========== SISA BUDGET PER HARI (DINAMIS) ==========
+            // Hitung sisa hari dari HARI INI sampai kadaluarsa (termasuk hari ini)
+            $sisaHari = max(1, $today->diffInDays($tanggalKadaluarsaPeriode) + 1);
+            
+            // Sisa budget per hari (berubah setiap hari)
+            $sisaBudgetPerHari = $sisaHari > 0 ? round($saldo / $sisaHari) : 0;
+            $isSisaTipis = $sisaBudgetPerHari < 10000 && $sisaBudgetPerHari > 0;
+            
+            // Prediksi akhir bulan (untuk tampilan)
+            $hariIni = min($today->day, $parsed->daysInMonth);
+            if ($hariIni <= 0) $hariIni = 1;
+            
+            $rataAktual = $hariIni > 0 ? $totalPengeluaran / $hariIni : 0;
+            $prediksiAkhir = round($rataAktual * $parsed->daysInMonth);
+            
+            $isDefisit = $prediksiAkhir > $totalPemasukan;
+            $pesanPrediksi = $isDefisit
+                ? "Diprediksi total pengeluaran mencapai Rp " . number_format($prediksiAkhir, 0, ',', '.') . " (Melebihi total pemasukan)."
+                : "Pengeluaran Anda diprediksi masih aman.";
+            
+            // Komposisi Pengeluaran (untuk grafik, tetap pakai filter bulan)
+            $transaksisBulanIni = Keuangan::where('Id_User', $userId)
                 ->whereBetween('Tanggal', [$startDate, $endDate])
                 ->get();
-
-            // --- Saldo: Budget_Bulanan (saldo awal) + pemasukan bulan ini - pengeluaran bulan ini ---
-            $saldoAwal        = (float) ($user->Budget_Bulanan ?? 0);
-            $totalPemasukan   = (float) $transaksis->where('Kategori', 'Pemasukan')->sum('Total_Nominal');
-            $totalPengeluaran = (float) $transaksis->where('Kategori', 'Pengeluaran')->sum('Total_Nominal');
-            $saldo            = $saldoAwal + $totalPemasukan - $totalPengeluaran;
-
-            // --- Rata-rata per hari: Budget_Bulanan dibagi jumlah hari bulan ---
-            $budgetBulanan  = (float) ($user->Budget_Bulanan ?? 0);
-            $jumlahHari     = $parsed->daysInMonth;
-            $rataPerHari    = $jumlahHari > 0 ? round($budgetBulanan / $jumlahHari) : 0;
-
-            // --- Prediksi akhir bulan (tetap pakai rata-rata aktual pengeluaran) ---
-            $hariIni        = min(Carbon::now()->day, $jumlahHari);
-            if ($hariIni <= 0) $hariIni = 1;
-            $rataAktual     = $totalPengeluaran / $hariIni;
-            $prediksiAkhir  = round($rataAktual * $jumlahHari);
-
-            $isDefisit      = $prediksiAkhir > ($saldoAwal + $totalPemasukan);
-            $pesanPrediksi  = $isDefisit
-                ? "Diprediksi total pengeluaran mencapai Rp " . number_format($prediksiAkhir, 0, ',', '.') . " (Melebihi total pemasukan)."
-                : "Pengeluaran Anda bulan ini diprediksi masih aman.";
-
-            // --- Komposisi: Keterangan "Beli" dan "Masak" dari transaksi Pengeluaran ---
-            $pengeluaranItems = $transaksis->where('Kategori', 'Pengeluaran');
+            
+            $pengeluaranItems = $transaksisBulanIni->where('Kategori', 'Pengeluaran');
             $totalBeli  = (float) $pengeluaranItems->where('Keterangan', 'Beli')->sum('Total_Nominal');
             $totalMasak = (float) $pengeluaranItems->where('Keterangan', 'Masak')->sum('Total_Nominal');
             $totalKomposisi = $totalBeli + $totalMasak;
             $persenBeli  = $totalKomposisi > 0 ? round(($totalBeli  / $totalKomposisi) * 100) : 0;
             $persenMasak = $totalKomposisi > 0 ? round(($totalMasak / $totalKomposisi) * 100) : 0;
-
-            // --- Budget per hari & overbudget hari ini ---
-            $budgetPerHari      = $jumlahHari > 0 ? $budgetBulanan / $jumlahHari : 0;
-            $pengeluaranHariIni = (float) $transaksis
+            
+            // Pengeluaran hari ini
+            $pengeluaranHariIni = (float) Keuangan::where('Id_User', $userId)
                 ->where('Kategori', 'Pengeluaran')
-                ->where('Tanggal', Carbon::now()->toDateString())
+                ->where('Tanggal', $today->toDateString())
                 ->sum('Total_Nominal');
-            $isOverbudgetHariIni = $pengeluaranHariIni > $budgetPerHari;
-            $overbudgetAmount    = $pengeluaranHariIni - $budgetPerHari;
-
-            $sisaHari         = max(0, $jumlahHari - $hariIni);
-            $sisaBudgetPerHari = $sisaHari > 0 ? $saldo / $sisaHari : 0;
-            $isSisaTipis      = $sisaBudgetPerHari < 10000 && $sisaBudgetPerHari > 0;
-
+            
+            // Overbudget hari ini (dibandingkan target tetap)
+            $isOverbudgetHariIni = $pengeluaranHariIni > $targetBudgetPerHari;
+            $overbudgetAmount = $pengeluaranHariIni - $targetBudgetPerHari;
+            
             return response()->json([
                 'success' => true,
                 'message' => 'Ringkasan keuangan berhasil diambil.',
@@ -77,7 +132,7 @@ class KeuanganController extends Controller
                         'saldo'                  => (double) $saldo,
                         'total_pemasukan'        => (double) $totalPemasukan,
                         'total_pengeluaran'      => (double) $totalPengeluaran,
-                        'rata_per_hari'          => (double) $rataPerHari,
+                        'rata_per_hari'          => (double) $targetBudgetPerHari,
                         'prediksi_akhir_bulan'   => (double) $prediksiAkhir,
                         'prediksi_defisit'       => $isDefisit,
                         'pesan_prediksi'         => $pesanPrediksi,
@@ -86,11 +141,11 @@ class KeuanganController extends Controller
                             ['kategori' => 'Beli di Luar',  'jumlah' => (double) $totalBeli,  'persen' => $persenBeli,  'warna' => 'blue'],
                             ['kategori' => 'Masak Sendiri', 'jumlah' => (double) $totalMasak, 'persen' => $persenMasak, 'warna' => 'orange'],
                         ],
-                        'budget_per_hari'        => round($budgetPerHari, 2),
+                        'budget_per_hari'        => (double) $sisaBudgetPerHari,
                         'pengeluaran_hari_ini'   => (double) $pengeluaranHariIni,
                         'is_overbudget_hari_ini' => $isOverbudgetHariIni,
                         'overbudget_amount'      => round($overbudgetAmount, 2),
-                        'sisa_budget_per_hari'   => round($sisaBudgetPerHari, 2),
+                        'sisa_budget_per_hari'   => (double) $sisaBudgetPerHari,
                         'is_sisa_tipis'          => $isSisaTipis,
                     ]
                 ],
@@ -106,13 +161,14 @@ class KeuanganController extends Controller
     public function grafik(Request $request): JsonResponse
     {
         try {
-            $userId     = $request->user()->_id;
-            $bulanQuery = $request->query('bulan', Carbon::now()->format('Y-m'));
+            $user = $request->user();
+            $userId = $user->_id;
+            
+            $bulanQuery = Carbon::parse($user->created_at)->format('Y-m');
             $parsed     = Carbon::createFromFormat('Y-m', $bulanQuery);
             $startDate  = $parsed->copy()->startOfMonth()->toDateString();
             $endDate    = $parsed->copy()->endOfMonth()->toDateString();
 
-            // Tren pengeluaran harian: hanya Kategori "Pengeluaran"
             $transaksis = Keuangan::where('Id_User', $userId)
                 ->where('Kategori', 'Pengeluaran')
                 ->whereBetween('Tanggal', [$startDate, $endDate])
@@ -187,7 +243,6 @@ class KeuanganController extends Controller
                             $item['resep_id']   = '';
                         }
                     } catch (\Exception $e) {
-                        // Id_JadwalMakan bukan format ObjectId valid, skip lookup
                         $item['sesi_makan'] = '';
                         $item['nama_resep'] = '';
                         $item['resep_id']   = '';
@@ -200,7 +255,6 @@ class KeuanganController extends Controller
                 $formatted[] = $item;
             }
 
-            // Group per tanggal (raw date) agar urutan konsisten, lalu paginate per grup
             $allGrouped = collect($formatted)
                 ->groupBy(fn($item) => $item['tanggal'])
                 ->sortKeysDesc()
@@ -237,29 +291,25 @@ class KeuanganController extends Controller
         }
     }
 
-public function tambahPemasukan(Request $request): JsonResponse
+    public function tambahPemasukan(Request $request): JsonResponse
     {
         try {
-            // Disesuaikan dengan payload dari aplikasi Flutter
             $request->validate([
                 'total_nominal' => 'required|numeric|min:1',
-                'detail'        => 'nullable|array', // Menerima JSON/array untuk keterangan tambahan
+                'detail'        => 'nullable|array',
             ]);
 
             $userId = $request->user()->_id;
             $jumlah = (float) $request->total_nominal;
 
-            // Catatan: Kita tidak lagi menambahkan/mengubah $user->Budget_Bulanan di sini 
-            // karena saldo sudah dihitung dinamis (Budget + Pemasukan - Pengeluaran) di ringkasan()
-
             $keuangan = Keuangan::create([
                 'Id_User'       => (string) $userId,
                 'Id_JadwalMakan'=> null,
-                'Tanggal'       => Carbon::now()->toDateString(),
-                'Waktu'         => Carbon::now()->format('H:i:s'),
+                'Tanggal'       => Carbon::now('Asia/Jakarta')->toDateString(),
+                'Waktu'         => Carbon::now('Asia/Jakarta')->format('H:i:s'),
                 'Kategori'      => 'Pemasukan',
-                'Keterangan'    => 'Top Up', // Pastikan sesuai persis dengan Enum database
-                'Detail'        => $request->detail ?? [], // Keterangan tambahan (opsional) masuk ke Detail
+                'Keterangan'    => 'Top Up',
+                'Detail'        => $request->detail ?? [],
                 'Total_Nominal' => $jumlah,
             ]);
 
@@ -279,28 +329,24 @@ public function tambahPemasukan(Request $request): JsonResponse
     public function tambahPengeluaran(Request $request): JsonResponse
     {
         try {
-            // Disesuaikan dengan payload dari aplikasi Flutter
             $request->validate([
                 'total_nominal' => 'required|numeric|min:1',
-                'keterangan'    => 'required|in:Pengurangan Budget,Lainnya', // Validasi sesuai Enum pilihan form
-                'detail'        => 'nullable|array', // Menerima JSON untuk catatan
+                'keterangan'    => 'required|in:Pengurangan Budget,Lainnya',
+                'detail'        => 'nullable|array',
             ]);
 
             $userId     = $request->user()->_id;
             $jumlah     = (float) $request->total_nominal;
             $keterangan = $request->keterangan;
 
-            // Catatan: Kita tidak mengurangi $user->Budget_Bulanan meskipun "Pengurangan Budget"
-            // Karena ini masuk sebagai 'Pengeluaran', otomatis akan mengurangi Saldo secara dinamis di ringkasan()
-
             $keuangan = Keuangan::create([
                 'Id_User'       => (string) $userId,
                 'Id_JadwalMakan'=> null,
-                'Tanggal'       => Carbon::now()->toDateString(),
-                'Waktu'         => Carbon::now()->format('H:i:s'),
+                'Tanggal'       => Carbon::now('Asia/Jakarta')->toDateString(),
+                'Waktu'         => Carbon::now('Asia/Jakarta')->format('H:i:s'),
                 'Kategori'      => 'Pengeluaran',
-                'Keterangan'    => $keterangan, // 'Pengurangan Budget' atau 'Lainnya'
-                'Detail'        => $request->detail ?? [], // Keterangan bebas/catatan masuk ke Detail
+                'Keterangan'    => $keterangan,
+                'Detail'        => $request->detail ?? [],
                 'Total_Nominal' => $jumlah,
             ]);
 
@@ -354,26 +400,59 @@ public function tambahPemasukan(Request $request): JsonResponse
         }
     }
 
+    /**
+     * Hitung tanggal kadaluarsa
+     * - Untuk tanggal 31: paksa ke tanggal 30 bulan depan
+     * - Untuk lainnya: tanggal yang sama di bulan depan
+     */
+    private function getTanggalKadaluarsa(Carbon $tanggalMulai): Carbon
+    {
+        $hari = $tanggalMulai->day;
+        
+        if ($hari == 31) {
+            $tahun = $tanggalMulai->year;
+            $bulan = $tanggalMulai->month + 1;
+            return Carbon::create($tahun, $bulan, 30, 0, 0, 0, 'Asia/Jakarta');
+        }
+        
+        $bulanDepan = $tanggalMulai->copy()->addMonth();
+        $maxHari = $bulanDepan->daysInMonth;
+        
+        if ($hari <= $maxHari) {
+            return $bulanDepan->copy()->day($hari);
+        } else {
+            return $bulanDepan->copy()->endOfMonth();
+        }
+    }
+
+    /**
+     * Hitung jumlah hari dalam periode
+     */
+    private function getJumlahHariPeriode(Carbon $tanggalMulai): int
+    {
+        $tanggalKadaluarsa = $this->getTanggalKadaluarsa($tanggalMulai);
+        return $tanggalMulai->diffInDays($tanggalKadaluarsa);
+    }
+
     private function labelTanggal(string $tanggal): string
     {
         try {
             $tgl = Carbon::parse($tanggal)->startOfDay();
-            $hariIni = Carbon::now()->startOfDay();
+            $hariIni = Carbon::now('Asia/Jakarta')->startOfDay();
 
             if ($tgl->equalTo($hariIni)) return 'Hari ini';
             if ($tgl->equalTo($hariIni->copy()->subDay())) return 'Kemarin';
-            if ($tgl->year === Carbon::now()->year) return $tgl->translatedFormat('j M');
+            if ($tgl->year === Carbon::now('Asia/Jakarta')->year) return $tgl->translatedFormat('j M');
             return $tgl->translatedFormat('j M Y');
         } catch (\Exception $e) {
             return $tanggal;
         }
     }
 
-private function formatKeuangan(Keuangan $keuangan): array
+    private function formatKeuangan(Keuangan $keuangan): array
     {
         $tanggalParsed = Carbon::parse($keuangan->Tanggal);
         
-        // Cek apakah ada catatan bebas di dalam field Detail (JSON)
         $catatanBebas = '';
         if (is_array($keuangan->Detail)) {
             $catatanBebas = $keuangan->Detail['info'] ?? $keuangan->Detail['catatan'] ?? '';
@@ -382,7 +461,6 @@ private function formatKeuangan(Keuangan $keuangan): array
         return [
             '_id'               => (string) $keuangan->_id,
             'judul'             => $keuangan->Keterangan ?? $keuangan->Kategori,
-            // Jika ada catatan bebas, kirim catatan tersebut. Jika tidak, pakai Keterangan Enum-nya.
             'keterangan'        => !empty($catatanBebas) ? $catatanBebas : ($keuangan->Keterangan ?? ''),
             'waktu'             => $keuangan->Waktu,
             'tanggal'           => $keuangan->Tanggal,
