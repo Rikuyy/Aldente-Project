@@ -6,6 +6,7 @@ import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import 'dart:convert';
 import '../services/todo_notifier.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ConsultationPage extends StatefulWidget {
   const ConsultationPage({super.key});
@@ -30,10 +31,76 @@ class _ConsultationPageState extends State<ConsultationPage> {
   num _overBudget = 0;
   bool _isOverBudget = false;
 
+  // Key untuk shared_preferences
+  static const String _keyMessages = 'chat_messages';
+  static const String _keyHistory = 'chat_history';
+
   @override
   void initState() {
     super.initState();
-    _userContext(); // nama method tetap sesuai milikmu
+    _loadSavedMessages();
+    _userContext();
+  }
+
+  Future<void> _saveMessages() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      // Simpan _messages — skip loading & error karena tidak relevan setelah restart
+      final messagesJson = _messages
+          .where((m) =>
+              m.status != MessageStatus.loading &&
+              m.status != MessageStatus.error)
+          .map((m) => jsonEncode(m.toJson()))
+          .toList();
+      await prefs.setStringList(_keyMessages, messagesJson);
+
+      // Simpan _chatHistory (untuk konteks Gemini)
+      final historyJson = _chatHistory.map((h) => jsonEncode(h)).toList();
+      await prefs.setStringList(_keyHistory, historyJson);
+    } catch (e) {
+      debugPrint('❌ Gagal simpan pesan: $e');
+    }
+  }
+
+  Future<void> _loadSavedMessages() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      final messagesRaw = prefs.getStringList(_keyMessages) ?? [];
+      final historyRaw = prefs.getStringList(_keyHistory) ?? [];
+
+      if (messagesRaw.isNotEmpty) {
+        final loaded = messagesRaw
+            .map((s) => ChatMessage.fromJson(jsonDecode(s)))
+            .toList();
+
+        final historyLoaded = historyRaw
+            .map((s) => Map<String, String>.from(jsonDecode(s)))
+            .toList();
+
+        if (mounted) {
+          setState(() {
+            _messages.addAll(loaded);
+            _chatHistory.addAll(historyLoaded);
+          });
+          _scrollToBottom();
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Gagal load pesan: $e');
+    }
+  }
+
+  Future<void> _clearChat() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_keyMessages);
+    await prefs.remove(_keyHistory);
+    setState(() {
+      _messages.clear();
+      _chatHistory.clear();
+    });
+    _addWelcomeMessage();
   }
 
   // Fetch data user login dari API
@@ -56,7 +123,10 @@ class _ConsultationPageState extends State<ConsultationPage> {
       if (!mounted) return;
       setState(() => _isLoadingUser = false);
     }
-    _addWelcomeMessage();
+
+    if (_messages.isEmpty) {
+      _addWelcomeMessage();
+    }
   }
 
   void _addWelcomeMessage() {
@@ -71,6 +141,7 @@ class _ConsultationPageState extends State<ConsultationPage> {
         isUser: false,
       ));
     });
+    _saveMessages(); // simpan welcome message
   }
 
   Future<void> _sendMessage(String text) async {
@@ -150,6 +221,7 @@ class _ConsultationPageState extends State<ConsultationPage> {
       });
     }
 
+    _saveMessages(); // simpan setelah setiap pesan
     _scrollToBottom();
   }
 
@@ -234,6 +306,12 @@ class _ConsultationPageState extends State<ConsultationPage> {
                       ],
                     ),
                   ],
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline,
+                      color: AppTheme.slate400, size: 20),
+                  tooltip: 'Hapus riwayat chat',
+                  onPressed: _clearChat,
                 ),
                 GestureDetector(
                   onTap: () => context.go('/app/profile'),

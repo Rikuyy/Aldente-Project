@@ -49,6 +49,7 @@ def get_recommendations(query: str, top_n: int = 5) -> list:
             if s.strip()
         ]
         results.append({
+            "id": str(row.get("_id", row.name)),
             "title":             row["Title Cleaned"],
             "ingredients":       row["Ingredients Cleaned"],
             "steps":             steps_list,
