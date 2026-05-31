@@ -116,11 +116,14 @@ class DashboardService {
     }
 
     try {
+      // NOTE: Jika rute di file web.php/api.php milikmu ikut ganti jadi /jadwal-harian, ubah url ini!
+      // Disini aku asumsikan endpoint url nya masih '/jadwal-makan'.
       final response = await http.post(
         Uri.parse('$baseUrl/jadwal-makan'),
         headers: _headers(token),
         body: jsonEncode({
           'Id_Resep': resepId,
+          'sesi_ke': sesiKe, // KIRIM SESI_KE KE BACKEND
           'Sesi Makan': sesiLabel,
           'Tanggal': DateTime.now().toIso8601String().split('T')[0]
         }),

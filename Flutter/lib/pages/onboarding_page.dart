@@ -922,9 +922,9 @@ class _StepMealFreq extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const options = [
-      {'val': 2, 'label': '2 kali', 'desc': 'Siang & Malam'},
-      {'val': 3, 'label': '3 kali', 'desc': 'Sarapan, Siang & Malam'},
-      {'val': 4, 'label': '4 kali', 'desc': '3 makan + 1 cemilan'},
+      {'val': 2, 'label': '2 kali'},
+      {'val': 3, 'label': '3 kali'},
+      {'val': 4, 'label': '4 kali'},
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1009,14 +1009,6 @@ class _StepMealFreq extends StatelessWidget {
                                     ? AppTheme.orange700
                                     : context.colors.textPrimary,
                                 letterSpacing: -0.3)),
-                        const SizedBox(height: 2),
-                        Text(opt['desc'] as String,
-                            style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                color: isSel
-                                    ? AppTheme.orange600
-                                    : context.colors.surface)),
                       ])),
                 ]),
               ),

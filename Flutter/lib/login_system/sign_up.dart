@@ -117,7 +117,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    "Lengkapi data Anda untuk mendaftar akun CookMate baru",
+                    "Lengkapi data Anda untuk mendaftar akun CookCash baru",
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Color(0xFF757575)),
                   ),
@@ -209,8 +209,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             if (value == null || value.isEmpty) {
                               return 'Kata sandi tidak boleh kosong';
                             }
-                            if (value.length < 6) {
-                              return 'Kata sandi minimal 6 karakter';
+                            // Regex: Min 8 karakter, huruf besar, huruf kecil, angka, dan simbol
+                            final passwordRegex = RegExp(
+                                r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$');
+                            if (!passwordRegex.hasMatch(value)) {
+                              return 'Sandi min. 8 karakter, huruf besar, kecil, angka & simbol';
                             }
                             return null;
                           },

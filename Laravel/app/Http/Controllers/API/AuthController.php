@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\Rules\Password; // <-- Ditambahkan ini
 use App\Models\User;
 use App\Models\OtpCode;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -23,7 +24,7 @@ class AuthController extends Controller
         $validator = Validator::make($request->all(), [
             'username' => 'required|string|min:3',
             'email'    => 'required|email|unique:users,Email',
-            'password' => 'required|string|min:6|confirmed',
+            'password' => ['required', 'string', 'confirmed', Password::min(8)->mixedCase()->numbers()->symbols()], // <-- Diubah ini
         ]);
 
         if ($validator->fails()) {
@@ -174,15 +175,15 @@ class AuthController extends Controller
         try {
             Mail::send([], [], function ($message) use ($email, $otp) {
                 $message->to($email)
-                        ->subject('CookMate - Verifikasi Kode OTP Anda')
+                        ->subject('CookCash - Verifikasi Kode OTP Anda')
                         ->html("
                         <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;'>
                             <div style='background-color: #FF7643; padding: 24px; text-align: center;'>
-                                <h1 style='color: white; margin: 0; font-size: 26px; letter-spacing: 1px;'>CookMate</h1>
+                                <h1 style='color: white; margin: 0; font-size: 26px; letter-spacing: 1px;'>CookCash</h1>
                             </div>
                             <div style='padding: 30px; background-color: #ffffff;'>
                                 <p style='font-size: 16px; color: #333333; line-height: 1.5;'>Halo,</p>
-                                <p style='font-size: 16px; color: #333333; line-height: 1.5;'>Kami menerima permintaan untuk mereset kata sandi akun CookMate Anda. Silakan gunakan kode OTP di bawah ini untuk melanjutkan proses verifikasi:</p>
+                                <p style='font-size: 16px; color: #333333; line-height: 1.5;'>Kami menerima permintaan untuk mereset kata sandi akun CookCash Anda. Silakan gunakan kode OTP di bawah ini untuk melanjutkan proses verifikasi:</p>
                                 
                                 <div style='text-align: center; margin: 30px 0;'>
                                     <div style='display: inline-block; background-color: #fff3ed; border: 2px dashed #FF7643; border-radius: 12px; padding: 15px 40px;'>
@@ -192,7 +193,7 @@ class AuthController extends Controller
 
                                 <p style='font-size: 14px; color: #757575; text-align: center; font-style: italic;'>Kode ini rahasia dan hanya berlaku selama <b>5 menit</b> demi keamanan akun Anda.</p>
                                 <hr style='border: 0; border-top: 1px solid #eeeeee; margin: 30px 0;'>
-                                <p style='font-size: 12px; color: #999999; line-height: 1.5; text-align: center;'>Jika Anda tidak merasa melakukan permintaan ini, abaikan email ini dengan aman.<br>&copy; 2026 CookMate Team. All Rights Reserved.</p>
+                                <p style='font-size: 12px; color: #999999; line-height: 1.5; text-align: center;'>Jika Anda tidak merasa melakukan permintaan ini, abaikan email ini dengan aman.<br>&copy; 2026 CookCash Team. All Rights Reserved.</p>
                             </div>
                         </div>
                         ");
@@ -258,7 +259,7 @@ class AuthController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'email'    => 'required|email',
-            'password' => 'required|string|min:6|confirmed',
+            'password' => ['required', 'string', 'confirmed', Password::min(8)->mixedCase()->numbers()->symbols()], // <-- Diubah ini
         ]);
 
         if ($validator->fails()) {

@@ -8,17 +8,14 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rule; // Menggunakan Rule class lebih aman untuk MongoDB
+use Illuminate\Validation\Rule; 
+use Illuminate\Validation\Rules\Password; 
 use Illuminate\View\View;
 
 class RegisteredUserController extends Controller
 {
-    /**
-     * Menampilkan halaman registrasi.
-     */
     public function create(): View|RedirectResponse
     {
-        // Proteksi: Hanya boleh ada 1 Admin (Setup pertama kali)
         if (Admin::count() > 0) {
             return redirect()->route('login')->with('status', 'Setup sudah selesai, silakan login.');
         }
@@ -26,16 +23,12 @@ class RegisteredUserController extends Controller
         return view('auth.register');
     }
 
-    /**
-     * Proses pendaftaran admin baru.
-     */
     public function store(Request $request): RedirectResponse
     {
         if (Admin::count() > 0) {
             return redirect()->route('login');
         }
 
-        // REVISI VALIDASI: Menggunakan Rule::unique untuk memaksa koneksi mongodb
         $request->validate([
             'name'  => ['required', 'string', 'max:255'],
             'email' => [
@@ -43,24 +36,29 @@ class RegisteredUserController extends Controller
                 'string', 
                 'email', 
                 'max:255', 
-                Rule::unique('mongodb.admins', 'Email') // Memastikan validator menunjuk ke mongodb
+                Rule::unique('mongodb.admins', 'Email') 
             ],
-            // REVISI PASSWORD: Menghindari Rules\Password::defaults() 
-            // karena sering memicu query SQL tersembunyi
-            'password' => ['required', 'confirmed', 'min:8'], 
+            'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()->symbols()], 
+        ], [
+            'name.required' => 'Nama admin tidak boleh kosong.',
+            'email.required' => 'Email tidak boleh kosong.',
+            'email.unique' => 'Email ini sudah terdaftar sebelumnya.',
+            'password.required' => 'Kata sandi tidak boleh kosong.',
+            'password.confirmed' => 'Konfirmasi kata sandi tidak cocok.',
+            // Pesan simpel:
+            'password.min' => 'Sandi min. 8 karakter, huruf besar, kecil, angka dan simbol.',
+            'password.mixed' => 'Sandi min. 8 karakter, huruf besar, kecil, angka dan simbol.',
+            'password.numbers' => 'Sandi min. 8 karakter, huruf besar, kecil, angka dan simbol.',
+            'password.symbols' => 'Sandi min. 8 karakter, huruf besar, kecil, angka dan simbol.',
         ]);
 
         try {
-            // Simpan data dengan field yang sesuai di MongoDB
             $admin = Admin::create([ 
                 'Username' => $request->name,
-                'Email'    => strtolower($request->email), // Konsistensi huruf kecil
-                'Password' => Hash::make($request->password), // Hash manual
+                'Email'    => strtolower($request->email), 
+                'Password' => Hash::make($request->password), 
             ]);
 
-            // REVISI: Auth::login($admin); DIHAPUS agar tidak langsung masuk login otomatis
-
-            // REVISI: Redirect dialihkan ke halaman login dengan pesan status sukses
             return redirect()->route('login')->with('status', 'Registrasi admin berhasil! Silakan login.'); 
 
         } catch (\Exception $e) {
