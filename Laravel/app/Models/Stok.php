@@ -8,6 +8,7 @@ class Stok extends Model
 {
     protected $connection = 'mongodb';
     protected $collection = 'stok';
+    protected $table = 'stok';
 
     protected $fillable = [
         'Id_User', 
