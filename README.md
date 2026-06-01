@@ -1,127 +1,339 @@
-CookCash : Sistem Rekomendasi Resep dan Pencatatan Budget makan Berbasis Mobile Menggunakan Metode *TF - IDF* & *Cosine Similarity* Untuk Mahasiswa Indekos.
+# CookCash
 
-Oleh    : Kebon Almastrip
+**CookCash** adalah aplikasi rekomendasi resep dan pencatatan budget makan berbasis mobile untuk membantu mahasiswa indekos dalam mengelola kebutuhan makan harian secara lebih praktis, hemat, dan terencana.
 
-Anggota :
+Aplikasi ini menggunakan metode **TF-IDF** dan **Cosine Similarity** untuk memberikan rekomendasi resep berdasarkan input pengguna, serta dilengkapi dengan fitur pencatatan keuangan, inventory bahan makanan, dan jadwal memasak.
 
-•	Rifky Trio Saputra(E31240807/B) - [Ketua, Backend Mobile] - [@Rikuyy]
+---
 
-•	Ratna Dwiyati Ningsih(E31240813/B) - [Backend Web] - [@rnnaaa]
+## Tim Pengembang
 
-•	*Ovi Octa Rama Dhani(E31242213/D) - [Backend Mobile] - [@oviocta]
+**Kebon Almastrip**
 
-•	Muh. Rendi Kurniawan(E31240858/B) - [Frontend Mobile] - [@RerendiKurr05]
+| Nama | NIM/Kelas | Role | GitHub |
+|---|---|---|---|
+| Rifky Trio Saputra | E31240807 / B | Ketua, Backend Mobile | [@Rikuyy](https://github.com/Rikuyy) |
+| Ratna Dwiyati Ningsih | E31240813 / B | Backend Web | [@rnnaaa](https://github.com/rnnaaa) |
+| Ovi Octa Rama Dhani | E31242213 / D | Backend Mobile | [@oviocta](https://github.com/oviocta) |
+| Muh. Rendi Kurniawan | E31240858 / B | Frontend Mobile | [@RerendiKurr05](https://github.com/RerendiKurr05) |
+| Nabil Zivkolin Danendra | E31240615 / B | Frontend Web | [@nabeeldndraa](https://github.com/nabeeldndraa) |
 
-•	Nabil Zivkolin Danendra(E31240615/B) - [Frontend Web] - [@nabeeldndraa]
+---
 
-# Deskripsi
-CookCash adalah aplikasi yang merekomendasikan resep berdasarkan input pengguna dan juga mengintegrasikan pencatatan pengeluaran pengguna. Secara keseluruhan, aplikasi ini berpusat pada Dashboard yang menampilkan ringkasan dompet beserta rekomendasi resep harian. Pengguna dapat berinteraksi melalui Consultation Page, yakni chatbot yang mengimplementasikan Gemini API dan backend Flask (menggunakan model TF-IDF dan Cosine Similarity) untuk mendapatkan saran resep yang spesifik. Di sisi finansial, fitur Keuangan mencatat riwayat pemasukan dan pengeluaran secara detail yang divisualisasikan ke dalam grafik. Selain itu, terdapat fitur Inventory/Stok untuk mencatat ketersediaan bahan makanan secara manual, serta To-Do List (Cook) sebagai jadwal memasak, di mana menunya dapat diatur dan diganti langsung melalui halaman konsultasi maupun rekomendasi dashboard.
+## Deskripsi Project
 
-# Fitur Utama
-1.	Dashboard Cerdas
-Menampilkan ringkasan saldo/dompet pengguna dan rekomendasi resep harian.
-2.	Consultation Page (Chatbot)
- Asisten Cookcash yang merekomendasikan resep masakan berdasarkan input bahan atau keinginan pengguna. Didukung oleh integrasi Gemini API dan model Machine Learning (TF-IDF & Cosine Similarity).
-3.	Manajemen Keuangan 
-Pencatatan pemasukan dan pengeluaran secara detail, dilengkapi dengan grafik visualisasi arus kas.
-4.	Inventory / Stok Bahan
-Fitur pencatatan daftar stok bahan makanan yang dimiliki pengguna secara manual.
-5.	To-Do List (Cook Schedule) 
-Jadwal memasak terencana. Menu dapat ditambahkan atau diubah langsung melalui halaman konsultasi (Chatbot) atau rekomendasi di Dashboard.
+CookCash merupakan aplikasi yang dirancang untuk membantu mahasiswa indekos dalam menentukan menu masakan harian berdasarkan bahan, kebutuhan, dan preferensi pengguna.
 
-#  Arsitektur & Teknologi (Tech Stack)
-•	Mobile/Android : Flutter
-•	Backend API & Web : PHP (Laravel)
-•	Database : MongoDB
-•	Machine Learning API: Python (Flask), Scikit-Learn (TF-IDF, Cosine Similarity)
-•	Third-Party API: Google Gemini API
+Aplikasi ini berpusat pada **Dashboard** yang menampilkan ringkasan saldo atau dompet pengguna serta rekomendasi resep harian. Pengguna juga dapat menggunakan fitur **Consultation Page** untuk berdiskusi dengan chatbot CookCash dalam mencari rekomendasi resep yang lebih spesifik.
 
-# Persiapan & Prasyarat Sistem
-Sebelum menginstal proyek ini, pastikan sistem Anda sudah terinstal perangkat lunak berikut:
-•	[Git](https://git-scm.com/ )
-•	[PHP 8.2](https://www.php.net/ ) & [Composer](https://getcomposer.org/ )
-•	[Flutter SDK](https://docs.flutter.dev/get-started/install )
-•	[Python 3.9+](https://www.python.org/ ) & `pip`
-•	[MongoDB](https://www.mongodb.com/ ) (Lokal atau MongoDB Atlas)
-•	Mendapatkan API Key dari [Google AI Studio (Gemini)](https://aistudio.google.com/ )
+Selain fitur rekomendasi resep, CookCash juga menyediakan fitur **Manajemen Keuangan**, **Inventory Bahan Makanan**, dan **To-Do Cook Schedule** agar pengguna dapat mengatur pengeluaran makan, stok bahan, serta jadwal memasak dengan lebih mudah.
 
-# Langkah - Langkah  Instalasi (Cara Replika Proyek)
-Ikuti langkah-langkah di bawah ini secara berurutan untuk menjalankan proyek CookCash di perangkat lokal Anda.
-1.	Clone Repositori
-Buka terminal/command prompt dan jalankan perintah berikut:
-git clone https://github.com/Rikuyy/Aldente-Project 
-cd CookCash
-(Catatan: Repositori ini menggunakan struktur monorepo yang berisi folder backend-laravel, ml-flask, dan mobile-flutter).
-2.	Konfigurasi Database (MongoDB)
-1)	Pastikan service MongoDB sudah berjalan di komputer Anda.
-2)	Buat database baru dengan nama cookcash_db (bisa menggunakan MongoDB Compass).
-3.	Setup Backend & Web (Laravel)
-1)	Masuk ke direktori backend: 
+---
+
+## Fitur Utama
+
+### 1. Dashboard Cerdas
+
+Menampilkan ringkasan saldo atau dompet pengguna, rekomendasi resep harian, serta informasi penting terkait aktivitas pengguna.
+
+### 2. Consultation Page
+
+Fitur chatbot yang membantu pengguna mendapatkan rekomendasi resep berdasarkan bahan, kebutuhan, atau keinginan pengguna.
+
+Fitur ini didukung oleh:
+
+- Gemini API
+- Flask API
+- TF-IDF
+- Cosine Similarity
+
+### 3. Manajemen Keuangan
+
+Mencatat pemasukan dan pengeluaran pengguna secara detail, terutama untuk kebutuhan makan harian.
+
+Fitur ini juga dilengkapi dengan visualisasi grafik agar pengguna dapat memantau arus keuangan dengan lebih jelas.
+
+### 4. Inventory / Stok Bahan
+
+Membantu pengguna mencatat bahan makanan yang tersedia secara manual, sehingga pengguna dapat mengetahui stok bahan yang dimiliki.
+
+### 5. To-Do Cook Schedule
+
+Fitur jadwal memasak yang memungkinkan pengguna mengatur menu harian. Menu dapat ditambahkan atau diubah melalui halaman konsultasi maupun rekomendasi dari dashboard.
+
+---
+
+## Tech Stack
+
+| Bagian | Teknologi |
+|---|---|
+| Mobile App | Flutter |
+| Backend API & Web | Laravel |
+| Database | MongoDB |
+| Machine Learning API | Python Flask |
+| Machine Learning Method | TF-IDF & Cosine Similarity |
+| Library ML | Scikit-Learn |
+| Third-Party API | Google Gemini API |
+
+---
+
+## Prasyarat Sistem
+
+Sebelum menjalankan project ini, pastikan perangkat sudah memiliki beberapa software berikut:
+
+- [Git](https://git-scm.com/)
+- [PHP 8.2+](https://www.php.net/)
+- [Composer](https://getcomposer.org/)
+- [Flutter SDK](https://docs.flutter.dev/get-started/install)
+- [Python 3.9+](https://www.python.org/)
+- [MongoDB](https://www.mongodb.com/)
+- API Key dari [Google AI Studio](https://aistudio.google.com/)
+
+---
+
+## Cara Instalasi dan Menjalankan Project
+
+### 1. Clone Repository
+
+```bash
+git clone https://github.com/Rikuyy/Aldente-Project.git
+cd Aldente-Project
+```
+
+> Catatan: Repository ini menggunakan struktur monorepo yang berisi folder Laravel, API, dan Flutter.
+
+---
+
+### 2. Konfigurasi Database MongoDB
+
+Pastikan service MongoDB sudah berjalan di perangkat lokal.
+
+Buat database baru dengan nama:
+
+```bash
+cookcash_db
+```
+
+Database dapat dibuat melalui MongoDB Compass atau melalui terminal MongoDB.
+
+---
+
+### 3. Setup Backend Laravel
+
+Masuk ke folder Laravel:
+
+```bash
 cd Laravel
-2)	Instal dependensi PHP : 
+```
 
+Install dependency Laravel:
+
+```bash
 composer install
+```
 
-3)	Salin file environment dan sesuaikan koneksi database MongoDB:
+Copy file environment:
+
+```bash
 cp .env.example .env
+```
 
-Buka file .env dan atur konfigurasi database:
+Untuk Windows PowerShell, gunakan:
 
-Cuplikan kode 
+```bash
+copy .env.example .env
+```
+
+Atur konfigurasi database pada file `.env`:
+
+```env
 DB_CONNECTION=mongodb
 DB_HOST=127.0.0.1
 DB_PORT=27017
 DB_DATABASE=cookcash_db
+```
 
-4)	Kemudian  jalankan server:
+Generate application key:
+
+```bash
+php artisan key:generate
+```
+
+Jalankan server Laravel:
+
+```bash
 php artisan serve
-(Backend akan berjalan di http://localhost:8000)
+```
 
-4. Setup API Machine Learning & Chatbot (Flask)
-1)	Buka terminal baru dan masuk ke direktori Flask:
+Backend Laravel akan berjalan di:
+
+```bash
+http://localhost:8000
+```
+
+---
+
+### 4. Setup API Machine Learning dan Chatbot
+
+Buka terminal baru, lalu masuk ke folder API:
+
+```bash
 cd API
-2)	Buat virtual environment dan aktifkan:
+```
+
+Buat virtual environment:
+
+```bash
 python -m venv venv
-# Untuk Windows:
+```
+
+Aktifkan virtual environment.
+
+Untuk Windows:
+
+```bash
 venv\Scripts\activate
-# Untuk Mac/Linux:
+```
+
+Untuk Mac/Linux:
+
+```bash
 source venv/bin/activate
-3)	Instal dependensi Python:
+```
+
+Install dependency Python:
+
+```bash
 pip install -r requirements.txt
-4)	Konfigurasi Gemini API: Buat file .env di dalam folder ml-flask dan tambahkan API Key Anda:
-Cuplikan kode
+```
+
+Buat file `.env` di dalam folder API, lalu tambahkan Gemini API Key:
+
+```env
 GEMINI_API_KEY=masukkan_api_key_anda_di_sini
-5)	Jalankan server Flask:
+```
+
+Jalankan server Flask:
+
+```bash
 python app.py
-(API ML akan berjalan di http://localhost:5000)
+```
 
-5. Setup Mobile App (Flutter)
-1)	Buka terminal baru dan masuk ke direktori aplikasi mobile:
+API Machine Learning akan berjalan di:
+
+```bash
+http://localhost:5000
+```
+
+---
+
+### 5. Setup Mobile App Flutter
+
+Buka terminal baru, lalu masuk ke folder Flutter:
+
+```bash
 cd Flutter
-2)	Ambil dependensi Flutter:
+```
+
+Ambil dependency Flutter:
+
+```bash
 flutter pub get
-3)	Sesuaikan Base URL API di dalam kode Flutter. Buka file konfigurasi API (CookCash\Flutter\lib\services\api_service.dart) dan pastikan mengarah ke IP lokal komputer Anda (bukan localhost, gunakan IPv4 contoh: 192.168.1.x).
-4)	Jalankan aplikasi di emulator atau perangkat fisik Android:
+```
+
+Sesuaikan Base URL API pada file konfigurasi API, misalnya:
+
+```bash
+Flutter/lib/services/api_service.dart
+```
+
+Pastikan Base URL mengarah ke alamat IP lokal komputer.
+
+Contoh:
+
+```dart
+http://192.168.1.x:8000
+```
+
+> Jangan menggunakan `localhost` jika aplikasi dijalankan melalui emulator atau perangkat fisik Android.
+
+Jalankan aplikasi:
+
+```bash
 flutter run
+```
 
+---
 
+## Struktur Project
 
+```bash
+Aldente-Project/
+├── Laravel/
+│   └── Backend API dan Web Admin
+├── API/
+│   └── Flask API untuk Machine Learning dan Chatbot
+├── Flutter/
+│   └── Aplikasi Mobile CookCash
+└── README.md
+```
 
+---
 
-MIT License
+## Metode Rekomendasi
+
+CookCash menggunakan metode **TF-IDF** dan **Cosine Similarity** untuk mencocokkan input pengguna dengan data resep yang tersedia.
+
+Secara umum, proses rekomendasi dilakukan dengan tahapan berikut:
+
+1. Pengguna memasukkan bahan makanan atau kebutuhan resep.
+2. Sistem mengubah data teks menjadi representasi numerik menggunakan TF-IDF.
+3. Sistem menghitung tingkat kemiripan menggunakan Cosine Similarity.
+4. Resep dengan tingkat kemiripan tertinggi akan ditampilkan sebagai rekomendasi.
+
+---
+
+## Environment Variable
+
+Beberapa konfigurasi penting yang perlu disiapkan:
+
+### Laravel `.env`
+
+```env
+APP_NAME=CookCash
+APP_ENV=local
+APP_DEBUG=true
+APP_URL=http://localhost:8000
+
+DB_CONNECTION=mongodb
+DB_HOST=127.0.0.1
+DB_PORT=27017
+DB_DATABASE=cookcash_db
+```
+
+### Flask API `.env`
+
+```env
+GEMINI_API_KEY=masukkan_api_key_anda_di_sini
+```
+
+---
+
+## Catatan Penggunaan
+
+- Pastikan MongoDB sudah berjalan sebelum menjalankan Laravel.
+- Pastikan server Laravel berjalan sebelum menjalankan aplikasi Flutter.
+- Pastikan server Flask berjalan agar fitur chatbot dan rekomendasi dapat digunakan.
+- Gunakan IP lokal komputer untuk menghubungkan Flutter dengan backend ketika memakai emulator atau perangkat Android.
+
+---
+
+## License
+
+This code is distributed under an [MIT License](LICENSE).
+
+---
+
+## Copyright
 
 Copyright (c) 2026 Kebon Almastrip Team
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
