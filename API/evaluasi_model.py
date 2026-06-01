@@ -7,7 +7,6 @@ import io
 import re
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
-from collections import Counter
 
 # Optional stemming
 try:
@@ -65,19 +64,16 @@ def run_evaluation():
         if df_test is None:
             raise Exception("Tidak dapat membaca file CSV test")
 
-        # Parameters (sama dengan Jupyter)
-        K = 5
-        THRESHOLD = 0.3
+        # Parameters (mengikuti hasil Grid Search terbaik)
+        K = 10
+        THRESHOLD = 0.4
 
-        y_true = []      # kategori asli (untuk laporan per kategori)
-        y_pred = []      # kategori prediksi (voting dari top-K)
         precision_scores = []
         recall_scores = []
         detail_hasil = []
 
         for idx, row in df_test.iterrows():
             query = clean_text(row['Ingredients Cleaned'])
-            target_cat = clean_text(row['Category'])
             if not query:
                 continue
 
@@ -95,34 +91,26 @@ def run_evaluation():
             precision_scores.append(precision)
             recall_scores.append(recall)
 
-            # --- Untuk laporan per kategori: voting dari top-K ---
-            top_cats = [clean_text(df_train['Category'].iloc[i]) for i in top_k_idx]
-            pred_cat = Counter(top_cats).most_common(1)[0][0]
-            if max(top_k_sim) < THRESHOLD:
-                pred_cat = "tidak diketahui"
-
-            y_true.append(target_cat)
-            y_pred.append(pred_cat)
+            # --- AMBIL RESEP TERATAS UNTUK DITAMPILKAN DI TABEL ---
+            top_recipe_title = df_train.iloc[top_k_idx[0]]['Title Cleaned']
+            max_sim = top_k_sim[0]
+            
+            # Status Relevan jika skor kemiripan memenuhi KKM (Threshold)
+            status_rekomendasi = "Relevan" if max_sim >= THRESHOLD else "Tidak Relevan"
 
             detail_hasil.append({
                 "no": len(detail_hasil) + 1,
                 "soal": query[:100],
-                "target": target_cat,
-                "prediksi": pred_cat,
-                "similarity": round(max(top_k_sim) * 100, 2),
-                "status": "Benar" if pred_cat == target_cat else "Salah"
+                "rekomendasi": top_recipe_title,
+                "similarity": round(max_sim * 100, 2),
+                "status": status_rekomendasi
             })
 
         # Rata-rata precision dan recall
         avg_precision = np.mean(precision_scores) * 100
         avg_recall = np.mean(recall_scores) * 100
 
-        # Akurasi klasifikasi (opsional, untuk tabel per kategori)
-        from sklearn.metrics import classification_report, accuracy_score
-        akurasi_klasifikasi = accuracy_score(y_true, y_pred) * 100
-        report = classification_report(y_true, y_pred, output_dict=True, zero_division=0)
-
-        # Siapkan output JSON (struktur tetap kompatibel dengan frontend)
+        # Siapkan output JSON (Fokus Murni Rekomendasi)
         output = {
             "status": "success",
             "konfigurasi": {
@@ -132,29 +120,14 @@ def run_evaluation():
                 "metrik": "Precision@K dan Recall@K (berdasarkan threshold cosine similarity)"
             },
             "ringkasan": {
-                # Ganti "akurasi" dengan Precision@K agar frontend menampilkan metrik yang benar
                 "akurasi": round(avg_precision, 2),
                 "recall": round(avg_recall, 2),
-                "total_data_diproses": len(y_true),
-                "prediksi_benar": sum(1 for a,b in zip(y_true,y_pred) if a==b),
-                "prediksi_salah": sum(1 for a,b in zip(y_true,y_pred) if a!=b)
-            },
-            "per_kategori": {
-                kat: {
-                    "precision": round(metrics['precision'] * 100, 2),
-                    "recall": round(metrics['recall'] * 100, 2),
-                    "f1_score": round(metrics['f1-score'] * 100, 2),
-                    "support": int(metrics['support'])
-                }
-                for kat, metrics in report.items()
-                if kat not in ['accuracy', 'macro avg', 'weighted avg']
+                "total_data_diproses": len(detail_hasil)
             },
             "detail_hasil": detail_hasil,
             "rekomendasi": [
                 f"📊 Precision@{K}: {avg_precision:.2f}% | Recall@{K}: {avg_recall:.2f}% (threshold={THRESHOLD})",
-                "✅ Evaluasi menggunakan logika yang sama dengan Jupyter Notebook.",
-                "💡 Jika precision rendah, coba tingkatkan threshold atau tambah data latih.",
-                "🔁 Jika recall rendah, perbesar K atau gunakan reranking."
+                "✅ Fokus murni pada hasil rekomendasi Content-Based Filtering."
             ]
         }
 

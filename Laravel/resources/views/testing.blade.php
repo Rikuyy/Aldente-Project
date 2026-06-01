@@ -39,7 +39,7 @@
             </div>
         </div>
 
-        {{-- ==================== TAB EVALUASI (Desain baru yang bagus) ==================== --}}
+        {{-- ==================== TAB EVALUASI ==================== --}}
         <div x-show="activeTab === 'evaluasi'" x-transition>
             
             {{-- Panel Kontrol --}}
@@ -47,7 +47,7 @@
                 <div>
                     <h2 class="text-xl font-bold text-white mb-1">
                         <i class="fas fa-flask text-[#FF723A] mr-2"></i>Uji Akurasi Model
-                    
+                    </h2>
                 </div>
                 <button @click="runEvaluasi()" 
                         :disabled="isTesting" 
@@ -78,7 +78,7 @@
             <template x-if="evalResult && evalResult.status === 'success'">
                 <div class="space-y-6">
                     
-                    {{-- Ringkasan Metrik Utama (Precision & Recall) --}}
+                    {{-- Ringkasan Metrik Utama --}}
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div class="bg-gradient-to-br from-neutral-800 to-neutral-900 rounded-2xl border border-neutral-700 p-6 text-center">
                             <i class="fas fa-chart-line text-3xl text-blue-400 mb-3"></i>
@@ -100,64 +100,13 @@
                         </div>
                     </div>
 
-                    {{-- Informasi Konfigurasi --}}
-                    <div class="bg-neutral-800/50 rounded-2xl p-4 border border-neutral-700">
-                        <div class="flex flex-wrap gap-4 text-sm">
-                            <span class="px-3 py-1 bg-neutral-700 rounded-full text-neutral-300"><i class="fas fa-code-branch mr-1"></i> K = <span x-text="evalResult.konfigurasi?.K_value ?? 5"></span></span>
-                            <span class="px-3 py-1 bg-neutral-700 rounded-full text-neutral-300"><i class="fas fa-chart-simple mr-1"></i> Threshold = <span x-text="evalResult.konfigurasi?.similarity_threshold ?? 0.3"></span></span>
-                        </div>
-                    </div>
 
-                    {{-- Performa per Kategori (sama seperti sebelumnya, tetap ditampilkan) --}}
-                    <template x-if="evalResult.per_kategori && Object.keys(evalResult.per_kategori).length > 0">
-                        <div class="bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden">
-                            <div class="p-4 border-b border-neutral-800">
-                                <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                                    <i class="fas fa-list-check text-green-400"></i> Performa per Kategori (Klasifikasi)
-                                </h3>
-                                <p class="text-xs text-neutral-500 mt-1">Precision, Recall, F1-Score berdasarkan voting kategori dari top-K tetangga</p>
-                            </div>
-                            <div class="overflow-x-auto">
-                                <table class="w-full text-left text-sm">
-                                    <thead class="bg-neutral-800/50">
-                                        <tr class="text-neutral-300">
-                                            <th class="px-4 py-3">Kategori</th>
-                                            <th class="px-4 py-3">Precision</th>
-                                            <th class="px-4 py-3">Recall</th>
-                                            <th class="px-4 py-3">F1-Score</th>
-                                            <th class="px-4 py-3">Support</th>
-                                            <th class="px-4 py-3">Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-neutral-800">
-                                        <template x-for="(metrics, kategori) in evalResult.per_kategori" :key="kategori">
-                                            <tr class="hover:bg-neutral-800/20">
-                                                <td class="px-4 py-3 text-white font-medium" x-text="kategori"></td>
-                                                <td class="px-4 py-3" x-text="(metrics.precision ?? 0).toFixed(1) + '%'"></td>
-                                                <td class="px-4 py-3" x-text="(metrics.recall ?? 0).toFixed(1) + '%'"></td>
-                                                <td class="px-4 py-3 font-bold" 
-                                                    :class="(metrics.f1_score ?? 0) >= 80 ? 'text-green-400' : (metrics.f1_score ?? 0) >= 60 ? 'text-yellow-400' : 'text-red-400'"
-                                                    x-text="(metrics.f1_score ?? 0).toFixed(1) + '%'"></td>
-                                                <td class="px-4 py-3 text-neutral-400" x-text="metrics.support ?? 0"></td>
-                                                <td class="px-4 py-3">
-                                                    <span class="px-2 py-1 rounded text-xs font-bold"
-                                                          :class="(metrics.f1_score ?? 0) >= 80 ? 'bg-green-500/10 text-green-400' : (metrics.f1_score ?? 0) >= 60 ? 'bg-yellow-500/10 text-yellow-400' : 'bg-red-500/10 text-red-400'"
-                                                          x-text="(metrics.f1_score ?? 0) >= 80 ? 'Baik' : (metrics.f1_score ?? 0) >= 60 ? 'Cukup' : 'Buruk'"></span>
-                                                </td>
-                                            </tr>
-                                        </template>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </template>
-
-                    {{-- Detail Hasil (tabel) --}}
+                    {{-- Detail Hasil (tabel murni rekomendasi) --}}
                     <template x-if="evalResult.detail_hasil && evalResult.detail_hasil.length > 0">
-                        <div class="bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden">
+                        <div class="bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden mt-6">
                             <div class="p-4 border-b border-neutral-800 flex justify-between items-center">
                                 <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                                    <i class="fas fa-table text-blue-400"></i> Detail Hasil Prediksi
+                                    <i class="fas fa-table text-blue-400"></i> Detail Hasil Rekomendasi
                                 </h3>
                                 <span class="text-sm text-neutral-400">
                                     Total: <span class="text-white font-bold" x-text="safeArrayData.length"></span> data
@@ -169,8 +118,7 @@
                                         <tr>
                                             <th class="px-4 py-3 w-12">#</th>
                                             <th class="px-4 py-3">Input Bahan</th>
-                                            <th class="px-4 py-3">Target</th>
-                                            <th class="px-4 py-3">Prediksi</th>
+                                            <th class="px-4 py-3">Rekomendasi Teratas</th>
                                             <th class="px-4 py-3">Similarity</th>
                                             <th class="px-4 py-3 text-center">Status</th>
                                         </tr>
@@ -180,15 +128,10 @@
                                             <tr class="hover:bg-neutral-800/20">
                                                 <td class="px-4 py-3 text-neutral-500" x-text="item.no"></td>
                                                 <td class="px-4 py-3 text-white max-w-xs truncate" :title="item.soal" x-text="item.soal"></td>
-                                                <td class="px-4 py-3">
-                                                    <span class="px-2 py-1 bg-neutral-800 rounded text-xs" x-text="item.target"></span>
-                                                </td>
-                                                <td class="px-4 py-3 font-bold" 
-                                                    :class="item.status === 'Benar' ? 'text-green-400' : 'text-red-400'"
-                                                    x-text="item.prediksi"></td>
+                                                <td class="px-4 py-3 font-bold text-[#FF723A]" x-text="item.rekomendasi"></td>
                                                 <td class="px-4 py-3 text-neutral-400" x-text="(item.similarity ?? 0).toFixed(1) + '%'"></td>
                                                 <td class="px-4 py-3 text-center">
-                                                    <span :class="item.status === 'Benar' ? 'bg-green-500/10 text-green-400 border-green-500/30' : 'bg-red-500/10 text-red-400 border-red-500/30'"
+                                                    <span :class="item.status === 'Relevan' ? 'bg-green-500/10 text-green-400 border-green-500/30' : 'bg-red-500/10 text-red-400 border-red-500/30'"
                                                           class="px-2 py-1 border rounded text-xs font-bold"
                                                           x-text="item.status"></span>
                                                 </td>
@@ -226,7 +169,7 @@
 
         </div>
 
-        {{-- ==================== TAB API TESTER (TIDAK DIUBAH, SAMA PERSIS DENGAN ASLINYA) ==================== --}}
+        {{-- ==================== TAB API TESTER ==================== --}}
         <div x-show="activeTab === 'api'" x-transition class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div class="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 flex flex-col gap-4">
                 
@@ -291,7 +234,7 @@
         </div>
     </div>
 
-    {{-- ==================== ALPINE.JS (SAMA, hanya menyesuaikan dengan field baru 'recall') ==================== --}}
+    {{-- ==================== ALPINE.JS ==================== --}}
     <script>
         document.addEventListener('alpine:init', () => {
             Alpine.data('testingDashboard', (allRoutes) => ({
@@ -409,7 +352,7 @@
                     }
                 },
 
-                // ============ EVALUASI (sesuai dengan JSON baru) ============
+                // ============ EVALUASI ============
                 async runEvaluasi() {
                     this.isTesting = true;
                     this.evalResult = null;
