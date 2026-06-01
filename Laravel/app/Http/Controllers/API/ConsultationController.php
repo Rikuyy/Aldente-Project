@@ -24,13 +24,11 @@ class ConsultationController extends Controller
         $userContext  = $request->input('context', []);
         $historyInput = $request->input('history', []);
 
-        // --- KONTEKS USER ---
         $user = auth()->user();
         if ($user) {
             $nama        = $user->Username;
             $sisaBudget  = $user->Saldo_Budget ?? 0;
             $totalBudget = $user->Budget_Bulanan ?? 0;
-            // Alergi: ambil dari field user, pastikan array
             $alergiUser  = is_array($user->Alergi) ? $user->Alergi : json_decode($user->Alergi ?? '[]', true) ?? [];
         } else {
             $nama        = "Cookmate";
@@ -69,8 +67,6 @@ FORMAT B — jika user menyebut bahan makanan ATAU nama masakan (contoh: "ada ay
 5. Jangan pernah menjawab dengan kalimat biasa. Selalu JSON.
 PROMPT;
 
-        // --- BANGUN HISTORY ---
-        // Flutter bisa kirim key 'content', 'text', atau 'message' — handle semua kemungkinan
         $history = [];
         foreach ($historyInput as $item) {
             $role = ($item['role'] === 'user') ? Role::USER : Role::MODEL;
@@ -79,8 +75,6 @@ PROMPT;
                 $history[] = Content::parse($text, $role);
             }
         }
-
-        // --- KIRIM KE GEMINI ---
         try {
             $chat = Gemini::generativeModel(model: 'models/gemini-2.5-flash')
                 ->withSystemInstruction(Content::parse($systemPrompt, Role::USER))
@@ -101,7 +95,6 @@ PROMPT;
                     'raw'     => $rawText,
                     'cleaned' => $cleanedText,
                 ]);
-                // Fallback: kembalikan raw text sebagai chat biasa daripada error
                 return response()->json([
                     'success' => true,
                     'intent'  => 'chat',

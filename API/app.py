@@ -142,7 +142,7 @@ def recommend():
         }), 503
 
     try:
-        recommendations = get_recommendations(query_model, allergies=allergies, top_n=5)
+        recommendations = get_recommendations(query_model, allergies=allergies, top_n=10)
         allergy_count = sum(1 for r in recommendations if r.get("has_allergy"))
         return jsonify({
             "success": True,
