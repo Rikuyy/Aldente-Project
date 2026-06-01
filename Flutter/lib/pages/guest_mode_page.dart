@@ -55,7 +55,7 @@ class _GuestModePageState extends State<GuestModePage> {
 
     try {
       final response = await http.post(
-        Uri.parse('${ApiService.baseUrl}/consultation'),
+        Uri.parse('${ApiService.baseUrl}/guest/consultation'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',

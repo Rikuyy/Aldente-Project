@@ -5,6 +5,7 @@ import '../theme/app_theme.dart';
 import '../services/api_service.dart';
 import '../services/auth_services.dart';
 import '../services/todo_notifier.dart';
+import 'package:flutter/services.dart';
 
 // ==================== MODEL ====================
 
@@ -315,47 +316,11 @@ class _TodoPageState extends State<TodoPage> {
   // DIALOG: Detail resep
   // ---------------------------------------------------------------------------
   void _showDetailResep(Resep resep) {
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(resep.title,
-            style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: context.colors.textPrimary)),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Bahan:',
-                  style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: context.colors.textPrimary)),
-              const SizedBox(height: 4),
-              Text(resep.ingredients,
-                  style: TextStyle(color: context.colors.textSecondary)),
-              const SizedBox(height: 12),
-              Text('Langkah:',
-                  style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: context.colors.textPrimary)),
-              const SizedBox(height: 4),
-              Text(resep.steps,
-                  style: TextStyle(color: context.colors.textSecondary)),
-              const SizedBox(height: 8),
-              Text('Kategori: ${resep.category}',
-                  style:
-                      TextStyle(fontSize: 12, color: context.colors.textHint)),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text('Tutup', style: TextStyle(color: AppTheme.orange600)),
-          ),
-        ],
-      ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _TodoResepDetailSheet(resep: resep),
     );
   }
 
@@ -929,6 +894,7 @@ class _BeliFormInlineState extends State<_BeliFormInline> {
                                   horizontal: 8, vertical: 8),
                             ),
                             keyboardType: TextInputType.number,
+                            inputFormatters: [_ThousandsSeparatorFormatter()],
                             onChanged: (_) => _updateItem(idx),
                             validator: (val) =>
                                 val == null || val.trim().isEmpty
@@ -971,7 +937,10 @@ class _BeliFormInlineState extends State<_BeliFormInline> {
                           (i) => {
                                 'nama': _namaControllers[i].text.trim(),
                                 'nominal': double.tryParse(
-                                        _nominalControllers[i].text.trim()) ??
+                                        _nominalControllers[i]
+                                            .text
+                                            .trim()
+                                            .replaceAll('.', '')) ??
                                     0.0,
                               });
                       widget.onSaved(detail);
@@ -1092,6 +1061,7 @@ class _MasakFormInlineState extends State<_MasakFormInline> {
                 prefixText: 'Rp ',
               ),
               keyboardType: TextInputType.number,
+              inputFormatters: [_ThousandsSeparatorFormatter()],
               validator: (value) => (value == null || value.trim().isEmpty)
                   ? 'Isi nominal'
                   : null,
@@ -1112,9 +1082,10 @@ class _MasakFormInlineState extends State<_MasakFormInline> {
                       final nama = _auto
                           ? widget.resep.title
                           : _namaController.text.trim();
-                      final total =
-                          double.tryParse(_nominalController.text.trim()) ??
-                              0.0;
+                      final total = double.tryParse(_nominalController.text
+                              .trim()
+                              .replaceAll('.', '')) ??
+                          0.0;
                       final detail = [
                         {'nama': nama, 'nominal': total}
                       ];
@@ -1132,5 +1103,307 @@ class _MasakFormInlineState extends State<_MasakFormInline> {
         ),
       ),
     );
+  }
+}
+
+class _TodoResepDetailSheet extends StatelessWidget {
+  final Resep resep;
+  const _TodoResepDetailSheet({required this.resep});
+
+  @override
+  Widget build(BuildContext context) {
+    // Parse steps — bisa string dengan \n
+    final List<String> stepsList = resep.steps
+        .split('\n')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.75,
+      minChildSize: 0.4,
+      maxChildSize: 0.95,
+      builder: (_, scrollController) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            children: [
+              // Handle bar
+              const SizedBox(height: 12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppTheme.slate200,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const SizedBox(height: 4),
+
+              // Scrollable content
+              Expanded(
+                child: ListView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+                  children: [
+                    // ── Header ──
+                    Text(
+                      resep.title,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        color: AppTheme.slate700,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (resep.category.isNotEmpty)
+                      IntrinsicWidth(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppTheme.orange100,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.label_outline,
+                                  size: 12, color: AppTheme.orange600),
+                              const SizedBox(width: 4),
+                              Text(
+                                resep.category,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppTheme.orange600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                    const SizedBox(height: 24),
+
+                    // ── Bahan ──
+                    const Row(
+                      children: [
+                        Icon(Icons.kitchen_outlined,
+                            size: 16, color: AppTheme.orange500),
+                        SizedBox(width: 6),
+                        Text(
+                          'Bahan-bahan',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: AppTheme.slate700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppTheme.orange50,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppTheme.orange200),
+                      ),
+                      child: _buildIngredientsList(resep.ingredients),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // ── Langkah ──
+                    Row(
+                      children: [
+                        const Icon(Icons.format_list_numbered_rounded,
+                            size: 16, color: AppTheme.orange500),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Langkah Memasak (${stepsList.length})',
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: AppTheme.slate700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+
+                    if (stepsList.isEmpty)
+                      const Text(
+                        'Langkah memasak tidak tersedia.',
+                        style:
+                            TextStyle(color: AppTheme.slate400, fontSize: 13),
+                      )
+                    else
+                      ...List.generate(stepsList.length, (i) {
+                        final raw = stepsList[i];
+                        final cleaned = raw
+                            .replaceFirst(RegExp(r'^\d+[\)\.]\s*'), '')
+                            .trim();
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                width: 26,
+                                height: 26,
+                                decoration: BoxDecoration(
+                                  color: AppTheme.orange500,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    '${i + 1}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  cleaned.isEmpty ? raw : cleaned,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: AppTheme.slate700,
+                                    height: 1.6,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+
+                    const SizedBox(height: 32),
+
+                    // ── Tombol Tutup ──
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.orange500,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14)),
+                          elevation: 0,
+                        ),
+                        child: const Text(
+                          'Tutup',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w700, fontSize: 15),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildIngredientsList(String raw) {
+    final items =
+        raw.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+
+    // Kalau tidak ada koma, coba split spasi per baris
+    final list = items.length > 1
+        ? items
+        : raw
+            .split('\n')
+            .map((s) => s.trim())
+            .where((s) => s.isNotEmpty)
+            .toList();
+
+    if (list.isEmpty) {
+      return Text(raw,
+          style: const TextStyle(fontSize: 13, color: AppTheme.slate700));
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: list.map((item) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 3),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 6),
+                width: 6,
+                height: 6,
+                decoration: const BoxDecoration(
+                  color: AppTheme.orange500,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  item,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppTheme.slate700,
+                    fontWeight: FontWeight.w500,
+                    height: 1.5,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _ThousandsSeparatorFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    if (newValue.text.isEmpty) return newValue;
+
+    // Hapus semua titik dulu
+    final digits = newValue.text.replaceAll('.', '');
+
+    // Hanya izinkan angka
+    if (!RegExp(r'^\d+$').hasMatch(digits)) return oldValue;
+
+    // Format dengan pemisah ribuan
+    final formatted = _formatRibuan(digits);
+
+    return newValue.copyWith(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
+
+  String _formatRibuan(String digits) {
+    final buffer = StringBuffer();
+    for (int i = 0; i < digits.length; i++) {
+      if (i > 0 && (digits.length - i) % 3 == 0) {
+        buffer.write('.');
+      }
+      buffer.write(digits[i]);
+    }
+    return buffer.toString();
   }
 }

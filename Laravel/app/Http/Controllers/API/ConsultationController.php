@@ -28,7 +28,7 @@ class ConsultationController extends Controller
         $user = auth()->user();
         if ($user) {
             $nama        = $user->Username;
-            $sisaBudget  = $user->wallets()->sum('amount');
+            $sisaBudget  = $user->Saldo_Budget ?? 0;
             $totalBudget = $user->Budget_Bulanan ?? 0;
         } else {
             $nama        = "Cookmate";
