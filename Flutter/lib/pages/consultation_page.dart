@@ -190,6 +190,7 @@ class _ConsultationPageState extends State<ConsultationPage> {
 
       if (intent == 'recommendation') {
         final List recipes = data['recipes'] ?? [];
+        final bool allergyWarning = data['allergy_warning'] ?? false;
         final String replyText =
             data['reply'] ?? 'Ini beberapa resep yang cocok!';
 
@@ -199,6 +200,15 @@ class _ConsultationPageState extends State<ConsultationPage> {
         setState(() {
           _messages.removeLast();
           _messages.add(ChatMessage(text: replyText, isUser: false));
+          // Tambahkan pesan warning alergi jika ada resep yang mengandung bahan alergi
+          if (allergyWarning) {
+            _messages.add(const ChatMessage(
+              text:
+                  '⚠️ Perhatian: Beberapa resep di bawah mengandung bahan yang terdeteksi sebagai alergenmu. Resep tersebut ditandai dengan label merah.',
+              isUser: false,
+              status: MessageStatus.allergyWarning,
+            ));
+          }
           if (recipes.isNotEmpty) {
             _messages.add(ChatMessage.recipes(recipes));
           }
@@ -246,12 +256,9 @@ class _ConsultationPageState extends State<ConsultationPage> {
   }
 
   void _handleGantiJadwal(Map<String, dynamic> result) {
-    print('🔔 _handleGantiJadwal dipanggil: $result');
+    result['redirect_todo'] = true;
     TodoNotifier.instance.gantiJadwal(result);
-    print('🔔 TodoNotifier.gantiJadwal selesai');
-    if (Navigator.of(context).canPop()) {
-      Navigator.of(context).pop();
-    }
+    context.go('/app/todo');
   }
 
   @override
@@ -415,6 +422,36 @@ class _ConsultationPageState extends State<ConsultationPage> {
       );
     }
 
+    if (msg.status == MessageStatus.allergyWarning) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFE4E6),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFFCA5A5)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.warning_amber_rounded,
+                color: Color(0xFFE11D48), size: 16),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                msg.text,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF9F1239),
+                  height: 1.5,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     if (msg.status == MessageStatus.recipes && msg.recipes != null) {
       return _RecipeCards(
         recipes: msg.recipes!,
@@ -549,14 +586,19 @@ class _RecipeCards extends StatelessWidget {
         final totalIngredients = recipe['total_ingredients'] ?? 0;
         final totalSteps = recipe['total_steps'] ?? 0;
         final loves = recipe['loves'] ?? 0;
+        final bool hasAllergy = recipe['has_allergy'] ?? false;
+        final List<dynamic> allergyFound = recipe['allergy_found'] ?? [];
 
         return Container(
           margin: const EdgeInsets.only(top: 10),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: hasAllergy ? const Color(0xFFFFF1F2) : Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppTheme.orange200),
+            border: Border.all(
+              color: hasAllergy ? const Color(0xFFFCA5A5) : AppTheme.orange200,
+              width: hasAllergy ? 1.5 : 1.0,
+            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.04),
@@ -568,32 +610,57 @@ class _RecipeCards extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Info kiri
+              // ── Kolom kiri: label + judul resep ──
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Judul
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        color: AppTheme.slate700,
+                    // Badge alergi
+                    if (hasAllergy) ...[
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFE4E6),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFFFCA5A5)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.warning_amber_rounded,
+                                size: 12, color: Color(0xFFE11D48)),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                'Mengandung: ${allergyFound.join(', ')}',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFFE11D48),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 5),
-                    // Baris info: kategori · bahan · steps · loves
+                    ],
+                    // Baris chips: kategori + bahan + langkah + likes
                     Wrap(
-                      spacing: 8,
+                      spacing: 6,
                       runSpacing: 4,
                       children: [
                         if (category.isNotEmpty)
                           _InfoChip(
                               icon: Icons.label_outline,
                               label: category,
-                              color: AppTheme.orange100,
-                              textColor: AppTheme.orange600),
+                              color: hasAllergy
+                                  ? const Color(0xFFFFE4E6)
+                                  : AppTheme.orange100,
+                              textColor: hasAllergy
+                                  ? const Color(0xFFE11D48)
+                                  : AppTheme.orange600),
                         _InfoChip(
                             icon: Icons.kitchen_outlined,
                             label: '$totalIngredients bahan',
@@ -611,64 +678,96 @@ class _RecipeCards extends StatelessWidget {
                             textColor: const Color(0xFFE11D48)),
                       ],
                     ),
+                    const SizedBox(height: 6),
+                    // Judul resep — lebih besar, di bawah chips
+                    Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: hasAllergy
+                            ? const Color(0xFF9F1239)
+                            : AppTheme.slate700,
+                        height: 1.3,
+                      ),
+                    ),
                   ],
                 ),
               ),
-              const SizedBox(width: 10),
-              // Kanan: badge % cocok + tombol detail + ganti jadwal
+              const SizedBox(width: 12),
+              // ── Kolom kanan: persen BESAR + tombol ──
               Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
+                  // Badge persen — besar & menonjol (Opsi C)
                   Container(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                     decoration: BoxDecoration(
-                      color: AppTheme.orange500,
-                      borderRadius: BorderRadius.circular(20),
+                      color: hasAllergy
+                          ? const Color(0xFFE11D48)
+                          : AppTheme.orange500,
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       '$persen%',
                       style: const TextStyle(
                         fontSize: 12,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w900,
                         color: Colors.white,
+                        letterSpacing: -0.5,
                       ),
                     ),
                   ),
                   const SizedBox(height: 8),
-                  GestureDetector(
-                    onTap: () => _showRecipeDetail(context, recipe),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppTheme.orange50,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: AppTheme.orange200),
+                  // Tombol detail + ganti jadwal berdampingan
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      GestureDetector(
+                        onTap: () => _showRecipeDetail(context, recipe),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: hasAllergy
+                                ? const Color(0xFFFFE4E6)
+                                : AppTheme.orange50,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                                color: hasAllergy
+                                    ? const Color(0xFFFCA5A5)
+                                    : AppTheme.orange200),
+                          ),
+                          child: Icon(
+                            Icons.menu_book_rounded,
+                            size: 18,
+                            color: hasAllergy
+                                ? const Color(0xFFE11D48)
+                                : AppTheme.orange600,
+                          ),
+                        ),
                       ),
-                      child: const Icon(
-                        Icons.menu_book_rounded,
-                        size: 18,
-                        color: AppTheme.orange600,
+                      const SizedBox(width: 6),
+                      // ── Tombol Ganti Jadwal ──
+                      GestureDetector(
+                        onTap: () => _showGantiJadwalSheet(context, recipe),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEFF6FF),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: const Color(0xFFBFDBFE)),
+                          ),
+                          child: const Icon(
+                            Icons.swap_horiz_rounded,
+                            size: 18,
+                            color: Color(0xFF1D4ED8),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  // ── Tombol Ganti Jadwal ──
-                  GestureDetector(
-                    onTap: () => _showGantiJadwalSheet(context, recipe),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEFF6FF),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: const Color(0xFFBFDBFE)),
-                      ),
-                      child: const Icon(
-                        Icons.swap_horiz_rounded,
-                        size: 18,
-                        color: Color(0xFF1D4ED8),
-                      ),
-                    ),
+                    ],
                   ),
                 ],
               ),

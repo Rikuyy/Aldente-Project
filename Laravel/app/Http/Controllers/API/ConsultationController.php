@@ -30,14 +30,18 @@ class ConsultationController extends Controller
             $nama        = $user->Username;
             $sisaBudget  = $user->Saldo_Budget ?? 0;
             $totalBudget = $user->Budget_Bulanan ?? 0;
+            // Alergi: ambil dari field user, pastikan array
+            $alergiUser  = is_array($user->Alergi) ? $user->Alergi : json_decode($user->Alergi ?? '[]', true) ?? [];
         } else {
             $nama        = "Cookmate";
             $sisaBudget  = $userContext['sisaBudget']  ?? 0;
             $totalBudget = $userContext['totalBudget'] ?? 0;
+            $alergiUser  = $userContext['alergi'] ?? [];
         }
 
         $persen     = $totalBudget > 0 ? round(($sisaBudget / $totalBudget) * 100) : 0;
         $statusUser = $user ? 'Terautentikasi' : 'Guest/Tamu';
+        $alergiStr  = !empty($alergiUser) ? implode(', ', $alergiUser) : 'tidak ada';
 
         // --- SYSTEM PROMPT ---
         $systemPrompt = <<<PROMPT
@@ -48,6 +52,7 @@ KONTEKS USER SAAT INI:
 - Status: {$statusUser}
 - Nama: {$nama}
 - Sisa Budget: Rp {$sisaBudget} dari Rp {$totalBudget} ({$persen}%)
+- Alergi: {$alergiStr}
 
 ATURAN WAJIB — KAMU HARUS SELALU MENGIKUTI INI:
 1. Respons kamu HANYA boleh berupa JSON murni. DILARANG ada teks, kalimat, atau karakter apapun di luar JSON.
@@ -131,6 +136,7 @@ PROMPT;
                     'Title_Cleaned'       => $parsed['Title_Cleaned']       ?? '',
                     'Ingredients_Cleaned' => $parsed['Ingredients_Cleaned'] ?? [],
                     'Category'            => $parsed['Category']            ?? '',
+                    'allergies'           => $alergiUser,
                 ];
 
                 $flaskUrl      = rtrim(env('FLASK_API_URL'), '/') . '/api';
@@ -141,11 +147,12 @@ PROMPT;
                     $resepRekomendasi = $flaskData['recommendations'] ?? [];
 
                     return response()->json([
-                        'success'  => true,
-                        'intent'   => 'recommendation',
-                        'reply'    => 'Ini beberapa resep yang cocok dengan bahanmu!',
-                        'recipes'  => $resepRekomendasi,
-                        'is_guest' => !$user,
+                        'success'         => true,
+                        'intent'          => 'recommendation',
+                        'reply'           => 'Ini beberapa resep yang cocok dengan bahanmu!',
+                        'recipes'         => $resepRekomendasi,
+                        'allergy_warning' => $flaskData['allergy_warning'] ?? false,
+                        'is_guest'        => !$user,
                     ]);
                 }
 

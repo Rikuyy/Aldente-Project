@@ -4,10 +4,7 @@ import numpy as np
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from sklearn.metrics.pairwise import cosine_similarity
-
-# ---------------------------------------------------------------------------
-# Inisialisasi Aplikasi
-# ---------------------------------------------------------------------------
+ 
 app = Flask(__name__)
 CORS(app)
 
@@ -32,14 +29,33 @@ except Exception as e:
 
 
 # ---------------------------------------------------------------------------
-# Fungsi Rekomendasi
+#  Rekomendasi
 # ---------------------------------------------------------------------------
-def get_recommendations(query: str, top_n: int = 5) -> list:
+def check_allergy(ingredients_str: str, allergies: list) -> list:
+    """
+    Cek apakah string bahan mengandung salah satu item alergi.
+    Return list alergi yang ditemukan (kosong = aman).
+    """
+    if not allergies:
+        return []
+    ingredients_lower = ingredients_str.lower()
+    return [a for a in allergies if a.lower() in ingredients_lower]
+
+
+def get_recommendations(query: str, allergies: list = None, top_n: int = 5) -> list:
+    if allergies is None:
+        allergies = []
+
     query_vec = tfidf.transform([query])
     scores = cosine_similarity(query_vec, tfidf_matrix).flatten()
-    top_indices = scores.argsort()[::-1][:top_n]
 
-    results = []
+    # Ambil lebih banyak kandidat agar setelah difilter tetap ada cukup resep aman
+    candidate_n = max(top_n * 4, 20)
+    top_indices = scores.argsort()[::-1][:candidate_n]
+
+    safe_results    = []
+    allergy_results = []
+
     for idx in top_indices:
         row = df_recipes.iloc[idx]
         raw_steps = str(row.get("Steps", ""))
@@ -48,8 +64,11 @@ def get_recommendations(query: str, top_n: int = 5) -> list:
             for s in raw_steps.replace("\\n", "\n").split("\n")
             if s.strip()
         ]
-        results.append({
-            "id": str(row.get("_id", row.name)),
+        ingredients_str = str(row.get("Ingredients Cleaned", ""))
+        found_allergies = check_allergy(ingredients_str, allergies)
+
+        recipe = {
+            "id":                str(row.get("_id", row.name)),
             "title":             row["Title Cleaned"],
             "ingredients":       row["Ingredients Cleaned"],
             "steps":             steps_list,
@@ -58,8 +77,23 @@ def get_recommendations(query: str, top_n: int = 5) -> list:
             "loves":             int(row.get("Loves", 0)),
             "category":          row["Category"],
             "score":             round(float(scores[idx]), 4),
-        })
-    return results
+            "has_allergy":       len(found_allergies) > 0,
+            "allergy_found":     found_allergies,
+        }
+
+        if found_allergies:
+            allergy_results.append(recipe)
+        else:
+            safe_results.append(recipe)
+
+        if len(safe_results) >= top_n:
+            break
+
+    combined = safe_results[:top_n]
+    if len(combined) < top_n:
+        combined += allergy_results[: top_n - len(combined)]
+
+    return combined
 
 
 # ---------------------------------------------------------------------------
@@ -78,17 +112,20 @@ def recommend():
     title = str(data.get("Title_Cleaned", "")).strip()
     ingredients = data.get("Ingredients_Cleaned", [])
     category = str(data.get("Category", "")).strip()
+    allergies = data.get("allergies", [])
+
+    if not isinstance(allergies, list):
+        allergies = []
+    allergies = [str(a).strip() for a in allergies if str(a).strip()]
 
     if isinstance(ingredients, str):
         ingredients = [i.strip() for i in ingredients.split(",") if i.strip()]
-
-    # Bangun query tunggal untuk model
+ 
     ingredients_str = " ".join(ingredients).strip()
     query_model = " ".join(filter(None, [title, ingredients_str, category])).strip()
 
     logger.info(f"Query model: '{query_model}'")
-
-    # Validasi query tidak kosong
+ 
     if not query_model:
         return jsonify({
             "success": False,
@@ -106,11 +143,14 @@ def recommend():
         }), 503
 
     try:
-        recommendations = get_recommendations(query_model, top_n=5)
+        recommendations = get_recommendations(query_model, allergies=allergies, top_n=5)
+        allergy_count = sum(1 for r in recommendations if r.get("has_allergy"))
         return jsonify({
             "success": True,
             "query_used": query_model,
             "recommendations": recommendations,
+            "allergy_warning": allergy_count > 0,
+            "allergy_count": allergy_count,
         }), 200
 
     except Exception as e:

@@ -89,10 +89,11 @@ class _TodoPageState extends State<TodoPage> {
     _initToken();
     TodoNotifier.instance.addListener(_onGantiJadwalFromConsultation);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Re-apply tanpa notif — notif hanya tampil sekali saat pertama ganti
       final applied = TodoNotifier.instance.getAppliedSwaps();
       if (applied.isNotEmpty && mounted) {
         for (final data in applied) {
-          _applyGantiJadwal(data);
+          _applyGantiJadwal(data, showNotif: false);
         }
       }
     });
@@ -109,7 +110,7 @@ class _TodoPageState extends State<TodoPage> {
   void _onGantiJadwalFromConsultation() {
     final allPending = TodoNotifier.instance.consumeAllPending();
     for (final data in allPending) {
-      if (mounted) _applyGantiJadwal(data);
+      if (mounted) _applyGantiJadwal(data, showNotif: true);
     }
   }
 
@@ -124,11 +125,11 @@ class _TodoPageState extends State<TodoPage> {
   // ---------------------------------------------------------------------------
   Future<void> _loadTodos() async {
     if (TodoNotifier.instance.todosLoaded && _todos.isNotEmpty) {
-      // _todos sudah ada — langsung re-apply applied swaps
+      // _todos sudah ada — re-apply tanpa notif
       final applied = TodoNotifier.instance.getAppliedSwaps();
       if (applied.isNotEmpty) {
         for (final data in applied) {
-          _applyGantiJadwal(data);
+          _applyGantiJadwal(data, showNotif: false);
         }
       }
       return;
@@ -182,12 +183,15 @@ class _TodoPageState extends State<TodoPage> {
         // + consume pending baru yang masuk sebelum load selesai
         final applied = TodoNotifier.instance.getAppliedSwaps();
         final pending = TodoNotifier.instance.consumeAllPending();
-        final allToApply = [...applied, ...pending];
-        if (allToApply.isNotEmpty) {
+        if (applied.isNotEmpty || pending.isNotEmpty) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
-              for (final data in allToApply) {
-                _applyGantiJadwal(data);
+              for (final data in applied) {
+                _applyGantiJadwal(data,
+                    showNotif: false); // sudah pernah ditampilkan
+              }
+              for (final data in pending) {
+                _applyGantiJadwal(data, showNotif: true); // baru pertama kali
               }
             }
           });
@@ -262,7 +266,7 @@ class _TodoPageState extends State<TodoPage> {
   // Terapkan hasil penggantian resep dari ConsultationPage ke local state.
   // Tidak ada API call — perubahan hanya di memori.
   // Saat user centang, resep baru inilah yang dikirim ke server.
-  void _applyGantiJadwal(Map<String, dynamic> result) {
+  void _applyGantiJadwal(Map<String, dynamic> result, {bool showNotif = true}) {
     final int sesiKe = result['sesi_ke'] as int;
     final Map resepBaru = result['resep'] as Map;
 
@@ -288,6 +292,8 @@ class _TodoPageState extends State<TodoPage> {
       // Update resep map agar detail dialog juga ikut berubah
       _resepMap[resepObj.id] = resepObj;
     });
+
+    if (!showNotif) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
