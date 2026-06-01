@@ -23,7 +23,6 @@ class _ConsultationPageState extends State<ConsultationPage> {
   bool _isLoading = false;
   bool _isLoadingUser = true;
 
-  // Data user — diisi dari API
   String _nama = 'Cookmate';
   String _inisial = 'C';
   num _sisaBudget = 0;
@@ -307,12 +306,6 @@ class _ConsultationPageState extends State<ConsultationPage> {
                     ),
                   ],
                 ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline,
-                      color: AppTheme.slate400, size: 20),
-                  tooltip: 'Hapus riwayat chat',
-                  onPressed: _clearChat,
-                ),
                 GestureDetector(
                   onTap: () => context.go('/app/profile'),
                   child: Container(
@@ -366,8 +359,6 @@ class _ConsultationPageState extends State<ConsultationPage> {
               },
             ),
           ),
-
-          _buildQuickChips(),
           _buildInputBar(),
         ],
       ),
@@ -432,124 +423,105 @@ class _ConsultationPageState extends State<ConsultationPage> {
     );
   }
 
-  Widget _buildQuickChips() {
-    final chips = [
-      {
-        'label': '🍳 Lihat Rekomendasi Masak',
-        'message':
-            'Berikan rekomendasi masakan dari stok bahan yang aku punya sekarang',
-        'color': AppTheme.orange50,
-        'textColor': const Color(0xFF9A3412),
-        'borderColor': AppTheme.orange200,
-      },
-      {
-        'label': '💰 Cek Budget Hari Ini',
-        'message':
-            'Cek budget harian aku dan berikan saran apakah sebaiknya masak atau beli makan',
-        'color': AppTheme.blue50,
-        'textColor': AppTheme.blue700,
-        'borderColor': AppTheme.blue100,
-      },
-      {
-        'label': '📦 Info Stok Saya',
-        'message':
-            'Tampilkan stok bahan yang aku punya dan apa yang bisa dimasak dari bahan tersebut',
-        'color': AppTheme.green50,
-        'textColor': AppTheme.green600,
-        'borderColor': const Color(0xFFBBF7D0),
-      },
-    ];
-
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.only(left: 16, right: 16, top: 12),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: chips.map((chip) {
-            return Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: _QuickChip(
-                label: chip['label'] as String,
-                color: chip['color'] as Color,
-                textColor: chip['textColor'] as Color,
-                borderColor: chip['borderColor'] as Color,
-                onTap: () => _sendMessage(chip['message'] as String),
-              ),
-            );
-          }).toList(),
-        ),
-      ),
-    );
-  }
-
   Widget _buildInputBar() {
     return Container(
-      color: Colors.white,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20), // ← rounded 2 sisi atas
+          topRight: Radius.circular(20),
+        ),
+      ),
       padding: EdgeInsets.only(
         left: 16,
         right: 16,
         top: 12,
         bottom: MediaQuery.of(context).padding.bottom + 12,
       ),
-      child: Container(
-        padding: const EdgeInsets.only(left: 20, right: 6, top: 4, bottom: 4),
-        decoration: BoxDecoration(
-          color: AppTheme.slate100.withOpacity(0.8),
-          borderRadius: BorderRadius.circular(50),
-          border: Border.all(color: AppTheme.slate200, width: 2),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _textController,
-                onSubmitted: _sendMessage,
-                textInputAction: TextInputAction.send,
-                decoration: const InputDecoration(
-                  hintText: 'Ketik pertanyaan...',
-                  hintStyle: TextStyle(
-                      color: AppTheme.slate400, fontWeight: FontWeight.w500),
-                  border: InputBorder.none,
-                ),
+      child: Row(
+        children: [
+          // Input bar
+          Expanded(
+            child: Container(
+              padding:
+                  const EdgeInsets.only(left: 20, right: 6, top: 4, bottom: 4),
+              decoration: BoxDecoration(
+                color: AppTheme.slate100.withOpacity(0.8),
+                borderRadius: BorderRadius.circular(50),
+                border: Border.all(color: AppTheme.slate200, width: 2),
+              ),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: _clearChat,
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppTheme.slate100,
+                        shape: BoxShape.circle,
+                        border:
+                            Border.all(color: AppTheme.slate200, width: 1.5),
+                      ),
+                      child: const Icon(
+                        Icons.delete_outline_rounded,
+                        color: AppTheme.slate400,
+                        size: 18,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: _textController,
+                      onSubmitted: _sendMessage,
+                      textInputAction: TextInputAction.send,
+                      decoration: const InputDecoration(
+                        hintText: 'Ketik pertanyaan...',
+                        hintStyle: TextStyle(
+                            color: AppTheme.slate400,
+                            fontWeight: FontWeight.w500),
+                        border: InputBorder.none,
+                      ),
+                    ),
+                  ),
+                  // Tombol kirim
+                  GestureDetector(
+                    onTap: () => _sendMessage(_textController.text),
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color:
+                            _isLoading ? AppTheme.slate300 : AppTheme.orange500,
+                        shape: BoxShape.circle,
+                        boxShadow: _isLoading
+                            ? []
+                            : [
+                                BoxShadow(
+                                  color: AppTheme.orange500.withOpacity(0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                      ),
+                      child: Icon(
+                        _isLoading
+                            ? Icons.hourglass_empty_rounded
+                            : Icons.send_rounded,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            GestureDetector(
-              onTap: () => _sendMessage(_textController.text),
-              child: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: _isLoading ? AppTheme.slate300 : AppTheme.orange500,
-                  shape: BoxShape.circle,
-                  boxShadow: _isLoading
-                      ? []
-                      : [
-                          BoxShadow(
-                            color: AppTheme.orange500.withOpacity(0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                ),
-                child: Icon(
-                  _isLoading
-                      ? Icons.hourglass_empty_rounded
-                      : Icons.send_rounded,
-                  color: Colors.white,
-                  size: 18,
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
-
-// ─────────────────────────────────────────
-// Kartu Resep — ringkas + tombol detail + ganti jadwal
-// ─────────────────────────────────────────
 
 class _RecipeCards extends StatelessWidget {
   final List recipes;

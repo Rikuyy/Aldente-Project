@@ -16,11 +16,15 @@ class ResepQueueService
     {
         $favorit = $user->Kategori_Favorit ?? [];
         $alergi  = $user->Alergi ?? [];
+        
  
-        $reseps = Resep::whereIn('Category', $favorit)
-            ->whereNotIn('Category', $alergi)
-            ->orderBy('Title Cleaned', 'asc')
-            ->pluck('id')
+        $query = Resep::whereIn('Category', $favorit);
+        foreach ($alergi as $bahan) {
+            $query->where('Ingredients Cleaned', 'not regex', new \MongoDB\BSON\Regex($bahan, 'i'));
+        }
+ 
+        $reseps = $query->pluck('id')
+            ->shuffle()
             ->toArray();
  
         $userResep = $this->getUserResep($user);

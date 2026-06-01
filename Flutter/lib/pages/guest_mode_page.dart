@@ -20,6 +20,9 @@ class _GuestModePageState extends State<GuestModePage> {
   bool _isLoading = false;
   int _botMessageCount = 0;
 
+  // Simpan cooking_tips per index pesan bot
+  final Map<int, List<String>> _cookingTipsMap = {};
+
   @override
   void initState() {
     super.initState();
@@ -73,14 +76,22 @@ class _GuestModePageState extends State<GuestModePage> {
       );
 
       final data = jsonDecode(response.body);
+      final intent = data['intent'] ?? 'chat';
       final botReply = data['reply'] ?? 'Maaf, aku tidak bisa menjawab itu.';
+      final cookingTips = intent == 'guest_chat'
+          ? List<String>.from(data['cooking_tips'] ?? [])
+          : <String>[];
 
       _botMessageCount++;
       final showCTA = _shouldShowCTA();
 
       setState(() {
         _messages.removeLast(); // hapus loading
+        final msgIndex = _messages.length;
         _messages.add(ChatMessage(text: botReply, isUser: false));
+        if (cookingTips.isNotEmpty) {
+          _cookingTipsMap[msgIndex] = cookingTips;
+        }
         if (showCTA) {
           _messages.add(ChatMessage(
             text: 'Butuh rekomendasi lebih akurat? Yuk login!',
@@ -247,6 +258,7 @@ class _GuestModePageState extends State<GuestModePage> {
                 final isBot = !msg.isUser;
                 final isCTA = isBot &&
                     msg.text.contains('Butuh rekomendasi lebih akurat?');
+                final tips = _cookingTipsMap[index] ?? [];
 
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12),
@@ -273,6 +285,44 @@ class _GuestModePageState extends State<GuestModePage> {
                                   fontSize: 14,
                                 ),
                               ),
+                              if (tips.isNotEmpty) ...[
+                                const SizedBox(height: 10),
+                                const Text(
+                                  '💡 Tips:',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppTheme.orange600,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                ...tips.map(
+                                  (tip) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 4),
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Text('• ',
+                                            style: TextStyle(
+                                                color: AppTheme.orange500,
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 13)),
+                                        Expanded(
+                                          child: Text(
+                                            tip,
+                                            style: const TextStyle(
+                                              color: AppTheme.slate600,
+                                              fontSize: 12.5,
+                                              height: 1.4,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
                               if (isCTA) ...[
                                 const SizedBox(height: 12),
                                 _buildLoginCTA(context),
