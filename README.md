@@ -1,4 +1,4 @@
-*CookCash : Sistem Rekomendasi Resep dan Pencatatan Budget makan Berbasis Mobile Menggunakan Metode TF - IDF & Cosine Similarity Untuk Mahasiswa Indekos.*
+CookCash : Sistem Rekomendasi Resep dan Pencatatan Budget makan Berbasis Mobile Menggunakan Metode *TF - IDF* & *Cosine Similarity* Untuk Mahasiswa Indekos.
 
 Oleh    : Kebon Almastrip
 
