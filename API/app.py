@@ -42,14 +42,13 @@ def check_allergy(ingredients_str: str, allergies: list) -> list:
     return [a for a in allergies if a.lower() in ingredients_lower]
 
 
-def get_recommendations(query: str, allergies: list = None, top_n: int = 5) -> list:
+def get_recommendations(query: str, allergies: list = None, top_n: int = 10) -> list:
     if allergies is None:
         allergies = []
 
     query_vec = tfidf.transform([query])
     scores = cosine_similarity(query_vec, tfidf_matrix).flatten()
-
-    # Ambil lebih banyak kandidat agar setelah difilter tetap ada cukup resep aman
+ 
     candidate_n = max(top_n * 4, 20)
     top_indices = scores.argsort()[::-1][:candidate_n]
 
