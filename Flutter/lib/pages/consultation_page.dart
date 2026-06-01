@@ -27,8 +27,6 @@ class _ConsultationPageState extends State<ConsultationPage> {
   String _inisial = 'C';
   num _sisaBudget = 0;
   num _totalBudget = 0;
-  num _overBudget = 0;
-  bool _isOverBudget = false;
 
   // Key untuk shared_preferences
   static const String _keyMessages = 'chat_messages';
@@ -54,7 +52,6 @@ class _ConsultationPageState extends State<ConsultationPage> {
           .toList();
       await prefs.setStringList(_keyMessages, messagesJson);
 
-      // Simpan _chatHistory (untuk konteks Gemini)
       final historyJson = _chatHistory.map((h) => jsonEncode(h)).toList();
       await prefs.setStringList(_keyHistory, historyJson);
     } catch (e) {
@@ -118,9 +115,7 @@ class _ConsultationPageState extends State<ConsultationPage> {
         _nama = userData['Username'] ?? userData['name'] ?? 'Cookmate';
         _totalBudget =
             budgetData['total_budget'] ?? userData['Budget_Bulanan'] ?? 0;
-        _sisaBudget = budgetData['sisa_budget'] ?? 0;
-        _overBudget = budgetData['over_budget'] ?? 0;
-        _isOverBudget = budgetData['is_over_budget'] ?? false;
+        _sisaBudget = budgetData['Saldo_Budget'] ?? 0;
         _inisial = _nama.isNotEmpty ? _nama[0].toUpperCase() : 'C';
         _isLoadingUser = false;
       });
@@ -135,18 +130,14 @@ class _ConsultationPageState extends State<ConsultationPage> {
   }
 
   void _addWelcomeMessage() {
-    final budgetInfo = _isOverBudget
-        ? '⚠️ Budget bulan ini sudah terlampaui Rp $_overBudget dari Rp $_totalBudget.'
-        : 'Sisa budget bulan ini: Rp $_sisaBudget dari Rp $_totalBudget.';
     setState(() {
       _messages.add(ChatMessage(
         text: 'Halo $_nama! 👋\n\n'
-            '$budgetInfo\n\n'
             'Mau masak apa hari ini, atau perlu saran hemat?',
         isUser: false,
       ));
     });
-    _saveMessages(); // simpan welcome message
+    _saveMessages();
   }
 
   Future<void> _sendMessage(String text) async {
@@ -200,7 +191,6 @@ class _ConsultationPageState extends State<ConsultationPage> {
         setState(() {
           _messages.removeLast();
           _messages.add(ChatMessage(text: replyText, isUser: false));
-          // Tambahkan pesan warning alergi jika ada resep yang mengandung bahan alergi
           if (allergyWarning) {
             _messages.add(const ChatMessage(
               text:
@@ -474,7 +464,7 @@ class _ConsultationPageState extends State<ConsultationPage> {
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20), // ← rounded 2 sisi atas
+          topLeft: Radius.circular(20),
           topRight: Radius.circular(20),
         ),
       ),
@@ -610,7 +600,6 @@ class _RecipeCards extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // ── Kolom kiri: label + judul resep ──
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -646,7 +635,6 @@ class _RecipeCards extends StatelessWidget {
                         ),
                       ),
                     ],
-                    // Baris chips: kategori + bahan + langkah + likes
                     Wrap(
                       spacing: 6,
                       runSpacing: 4,
@@ -679,7 +667,6 @@ class _RecipeCards extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 6),
-                    // Judul resep — lebih besar, di bawah chips
                     Text(
                       title,
                       maxLines: 2,
@@ -697,7 +684,6 @@ class _RecipeCards extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              // ── Kolom kanan: persen BESAR + tombol ──
               Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -750,7 +736,6 @@ class _RecipeCards extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 6),
-                      // ── Tombol Ganti Jadwal ──
                       GestureDetector(
                         onTap: () => _showGantiJadwalSheet(context, recipe),
                         child: Container(
@@ -800,10 +785,6 @@ class _RecipeCards extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────
-// Info chip kecil di kartu
-// ─────────────────────────────────────────
-
 class _InfoChip extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -838,10 +819,6 @@ class _InfoChip extends StatelessWidget {
     );
   }
 }
-
-// ─────────────────────────────────────────
-// Bottom Sheet — Detail Resep Lengkap
-// ─────────────────────────────────────────
 
 class _RecipeDetailSheet extends StatelessWidget {
   final Map recipe;
@@ -976,7 +953,6 @@ class _RecipeDetailSheet extends StatelessWidget {
                       )
                     else
                       ...List.generate(stepsList.length, (i) {
-                        // Bersihkan prefix "1)" atau "1." yang sudah ada
                         final raw = stepsList[i];
                         final cleaned = raw
                             .replaceFirst(RegExp(r'^\d+[\)\.]\s*'), '')
@@ -1019,7 +995,6 @@ class _RecipeDetailSheet extends StatelessWidget {
   }
 
   Widget _buildIngredientsList(String raw) {
-    // Pisahkan bahan berdasarkan koma, tampilkan tiap bahan sebagai baris
     final items =
         raw.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
 
@@ -1059,10 +1034,6 @@ class _RecipeDetailSheet extends StatelessWidget {
     );
   }
 }
-
-// ─────────────────────────────────────────
-// Step tile bernomor
-// ─────────────────────────────────────────
 
 class _StepTile extends StatelessWidget {
   final int number;
@@ -1124,9 +1095,6 @@ class _StepTile extends StatelessWidget {
     );
   }
 }
-// ─────────────────────────────────────────
-// Section title
-// ─────────────────────────────────────────
 
 class _SectionTitle extends StatelessWidget {
   final IconData icon;
@@ -1151,10 +1119,6 @@ class _SectionTitle extends StatelessWidget {
     );
   }
 }
-
-// ─────────────────────────────────────────
-// Widget pendukung
-// ─────────────────────────────────────────
 
 class _BotMessage extends StatelessWidget {
   final Widget child;
@@ -1274,10 +1238,6 @@ class _QuickChip extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────
-// Bottom Sheet — Ganti Jadwal Makan
-// ─────────────────────────────────────────
-
 class _GantiJadwalSheet extends StatefulWidget {
   final Map recipe; // resep dari hasil rekomendasi chatbot
 
@@ -1291,13 +1251,10 @@ class _GantiJadwalSheetState extends State<_GantiJadwalSheet> {
   bool _isLoading = true;
   String? _errorMsg;
 
-  /// Daftar sesi hari ini dari API generate
   List<Map<String, dynamic>> _sesiList = [];
 
-  /// Indeks sesi yang dipilih user
   int? _selectedIndex;
 
-  /// Sedang proses konfirmasi
   bool _isConfirming = false;
 
   @override
@@ -1345,9 +1302,6 @@ class _GantiJadwalSheetState extends State<_GantiJadwalSheet> {
     final sesi = _sesiList[_selectedIndex!];
     print('🔵 widget.recipe keys: ${widget.recipe.keys.toList()}');
     print('🔵 widget.recipe: ${widget.recipe}');
-    // Tampilkan dialog konfirmasi sebelum benar-benar mengganti.
-    // useRootNavigator: false wajib agar pop dari dialog tidak
-    // "menular" ke showModalBottomSheet yang menunggu di atasnya.
     final ok = await showDialog<bool>(
       context: context,
       useRootNavigator: false,
@@ -1419,11 +1373,6 @@ class _GantiJadwalSheetState extends State<_GantiJadwalSheet> {
     if (ok != true || !mounted) return;
 
     setState(() => _isConfirming = true);
-
-    // Tutup bottom sheet sambil membawa data pengganti ke TodoPage.
-    // Gunakan fallback key untuk kompatibilitas format API konsultasi
-    // (yang bisa mengembalikan 'Ingredients Cleaned' / 'Steps' alih-alih
-    // 'ingredients' / 'steps').
     if (!mounted) return;
     Navigator.of(context).pop({
       'sesi_ke': sesi['sesi_ke'] as int,
