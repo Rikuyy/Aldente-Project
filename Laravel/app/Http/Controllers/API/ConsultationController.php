@@ -28,7 +28,7 @@ class ConsultationController extends Controller
         $user = auth()->user();
         if ($user) {
             $nama        = $user->Username;
-            $sisaBudget  = $user->Saldo_Budget;
+            $sisaBudget  = $user->Saldo_Budget ?? 0;
             $totalBudget = $user->Budget_Bulanan ?? 0;
         } else {
             $nama        = "Cookmate";
@@ -40,32 +40,7 @@ class ConsultationController extends Controller
         $statusUser = $user ? 'Terautentikasi' : 'Guest/Tamu';
 
         // --- SYSTEM PROMPT ---
-        if (!$user) {
-            // Guest mode: Format C — Gemini langsung balas dengan tips masakan, tanpa Flask
-            $systemPrompt = <<<PROMPT
-Kamu adalah ChefBot, asisten memasak dari aplikasi CookCash.
-Kamu ramah, singkat, dan selalu berbahasa Indonesia casual (boleh pakai "sih", "dong", "nih").
-
-KONTEKS USER SAAT INI:
-- Status: Tamu (belum login)
-- Nama: {$nama}
-
-ATURAN WAJIB — KAMU HARUS SELALU MENGIKUTI INI:
-1. Respons kamu HANYA boleh berupa JSON murni. DILARANG ada teks atau karakter apapun di luar JSON.
-2. DILARANG menggunakan markdown, code block, atau tag ```json```.
-3. Untuk SEMUA jenis pesan (obrolan, sapaan, pertanyaan masakan, sebut bahan, sebut nama masakan), SELALU gunakan FORMAT C berikut:
-
-FORMAT C — satu-satunya format untuk guest:
-{"intent":"guest_chat","reply":"balasan casual 2-3 kalimat, boleh menyebut resep atau bahan secara ringkas","cooking_tips":["tips masakan pendek 1","tips masakan pendek 2","tips masakan pendek 3"]}
-
-ATURAN FORMAT C:
-- "reply": jawab pertanyaan user secara langsung dan helpful. Jika user tanya resep atau bahan, berikan gambaran singkat cara masak atau bahan yang dibutuhkan.
-- "cooking_tips": selalu isi 3 tips singkat yang RELEVAN dengan topik yang dibicarakan user (bukan tips generik). Jika user tanya ayam geprek, tips harus soal ayam geprek. Jika obrolan umum, tips soal hemat belanja / memasak sehari-hari.
-- Jangan pernah gunakan Format A atau Format B. Selalu Format C.
-PROMPT;
-        } else {
-            // Authenticated user: Format A (chat) + Format B (recommendation via Flask)
-            $systemPrompt = <<<PROMPT
+        $systemPrompt = <<<PROMPT
 Kamu adalah ChefBot, asisten memasak hemat dari aplikasi CookCash.
 Kamu ramah, singkat, dan selalu berbahasa Indonesia casual (boleh pakai "sih", "dong", "nih").
 
@@ -87,11 +62,10 @@ FORMAT B — jika user menyebut bahan makanan ATAU nama masakan (contoh: "ada ay
 
 4. "aku mau ayam geprek" → WAJIB pakai FORMAT B karena menyebut nama masakan.
 5. Jangan pernah menjawab dengan kalimat biasa. Selalu JSON.
-6. WAJIB panggil user dengan nama mereka di dalam "reply". 
-   Nama user adalah: {$nama}. 
-   DILARANG menyebut "Cookmate" atau nama lain selain nama user
 PROMPT;
-        }
+
+        // --- BANGUN HISTORY ---
+        // Flutter bisa kirim key 'content', 'text', atau 'message' — handle semua kemungkinan
         $history = [];
         foreach ($historyInput as $item) {
             $role = ($item['role'] === 'user') ? Role::USER : Role::MODEL;
@@ -101,6 +75,7 @@ PROMPT;
             }
         }
 
+        // --- KIRIM KE GEMINI ---
         try {
             $chat = Gemini::generativeModel(model: 'models/gemini-2.5-flash')
                 ->withSystemInstruction(Content::parse($systemPrompt, Role::USER))
@@ -194,16 +169,7 @@ PROMPT;
             }
         }
 
-        if ($parsed['intent'] === 'guest_chat') {
-            return response()->json([
-                'success'      => true,
-                'intent'       => 'guest_chat',
-                'reply'        => $parsed['reply']        ?? 'Maaf, aku tidak punya jawaban nih.',
-                'cooking_tips' => $parsed['cooking_tips'] ?? [],
-            ]);
-        }
-
-        
+        Log::warning('ChefBot: Intent tidak dikenal.', ['parsed' => $parsed]);
         return response()->json([
             'success' => false,
             'message' => 'Intent tidak dikenali oleh sistem.',

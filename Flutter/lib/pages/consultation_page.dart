@@ -105,6 +105,12 @@ class _ConsultationPageState extends State<ConsultationPage> {
   // Fetch data user login dari API
   Future<void> _userContext() async {
     try {
+      final token = await ApiService.getToken();
+      if (token == null) {
+        if (mounted) setState(() => _isLoadingUser = false);
+        if (_messages.isEmpty) _addWelcomeMessage();
+        return;
+      }
       final userData = await ApiService.get('/me');
       final budgetData = await ApiService.get('/budget/balance');
       if (!mounted) return;
@@ -160,11 +166,11 @@ class _ConsultationPageState extends State<ConsultationPage> {
     try {
       final token = await ApiService.getToken();
       final response = await http.post(
-        Uri.parse('${ApiService.baseUrl}/consultation'),
+        Uri.parse('${ApiService.baseUrl}/consultation/send'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          if (token != null) 'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer ${token ?? ""}',
         },
         body: jsonEncode({
           'message': trimmed,
@@ -175,7 +181,10 @@ class _ConsultationPageState extends State<ConsultationPage> {
           },
         }),
       );
-
+      if (response.statusCode != 200) {
+        debugPrint('ERROR ${response.statusCode}: ${response.body}');
+        throw Exception('Server error: ${response.statusCode}');
+      }
       final data = jsonDecode(response.body);
       final intent = data['intent'] ?? 'chat';
 
@@ -440,6 +449,24 @@ class _ConsultationPageState extends State<ConsultationPage> {
       ),
       child: Row(
         children: [
+          GestureDetector(
+            onTap: _clearChat,
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppTheme.slate100,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppTheme.slate200, width: 1.5),
+              ),
+              child: const Icon(
+                Icons.delete_outline_rounded,
+                color: AppTheme.slate400,
+                size: 18,
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 8),
           // Input bar
           Expanded(
             child: Container(
@@ -452,25 +479,6 @@ class _ConsultationPageState extends State<ConsultationPage> {
               ),
               child: Row(
                 children: [
-                  GestureDetector(
-                    onTap: _clearChat,
-                    child: Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: AppTheme.slate100,
-                        shape: BoxShape.circle,
-                        border:
-                            Border.all(color: AppTheme.slate200, width: 1.5),
-                      ),
-                      child: const Icon(
-                        Icons.delete_outline_rounded,
-                        color: AppTheme.slate400,
-                        size: 18,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(width: 8),
                   Expanded(
                     child: TextField(
                       controller: _textController,
@@ -1734,10 +1742,6 @@ class _GantiJadwalSheetState extends State<_GantiJadwalSheet> {
     );
   }
 }
-
-// ─────────────────────────────────────────
-// Row kecil di dialog konfirmasi
-// ─────────────────────────────────────────
 
 class _ConfirmRow extends StatelessWidget {
   final String label;

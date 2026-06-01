@@ -13,6 +13,7 @@ use App\Http\Controllers\API\BudgetController;
 use App\Http\Controllers\ResepController;
 use App\Http\Controllers\ChatbotController; 
 use App\Http\Controllers\API\TodoCookController;
+use App\Http\Controllers\API\GuestController;
 use Illuminate\Support\Facades\Password;
  
 Route::prefix('auth')->group(function () {
@@ -29,7 +30,7 @@ Route::prefix('auth')->group(function () {
     });
 });
  
-Route::post('/consultation', [ConsultationController::class, 'send']);  // guest dan konsultasi belum login tetap bisa akses (menggunakan JWT opsional, untuk dapat konteks lebih kaya jika login)
+Route::post('/guest/consultation', [GuestController::class, 'send']);
  
 // Consultation Page
 Route::middleware('auth:api')->group(function () {
