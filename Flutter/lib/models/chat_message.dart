@@ -1,4 +1,4 @@
-enum MessageStatus { normal, loading, error, recipes }
+enum MessageStatus { normal, loading, error, recipes, allergyWarning }
 
 class ChatMessage {
   final String text;
