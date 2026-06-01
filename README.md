@@ -220,7 +220,7 @@ pip install -r requirements.txt
 Buat file `.env` di dalam folder API, lalu tambahkan Gemini API Key:
 
 ```env
-GEMINI_API_KEY=masukkan_api_key_anda_di_sini
+GEMINI_API_KEY=
 ```
 
 Jalankan server Flask:
