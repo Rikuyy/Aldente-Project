@@ -1,6 +1,8 @@
 CookCash : Sistem Rekomendasi Resep dan Pencatatan Budget makan Berbasis Mobile Menggunakan Metode TF - IDF & Cosine Similarity Untuk Mahasiswa Indekos.  
-Oleh Kebon Almastrip
+
+Oleh    : Kebon Almastrip
 Anggota :
+
 •	Rifky Trio Saputra(E31240807/B) - [Ketua, Backend Mobile] - [@Rikuyy]
 •	Ratna Dwiyati Ningsih(E31240813/B) - [Backend Web] - [@rnnaaa]
 •	*Ovi Octa Rama Dhani(E31242213/D) - [Backend Mobile] - [@oviocta]
