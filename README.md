@@ -324,7 +324,7 @@ DB_DATABASE=cookcash_db
 ### Flask API `.env`
 
 ```env
-GEMINI_API_KEY=masukkan_api_key_anda_di_sini
+GEMINI_API_KEY=
 ```
 
 ---
