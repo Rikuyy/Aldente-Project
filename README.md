@@ -30,6 +30,16 @@ Selain fitur rekomendasi resep, CookCash juga menyediakan fitur **Manajemen Keua
 
 ---
 
+## Gambaran Umum Sistem
+
+Gambar berikut menunjukkan arsitektur umum sistem CookCash.
+
+<p align="center">
+  <img src="assets/images/overall-system.png" alt="Overall System CookCash" width="700">
+</p>
+
+---
+
 ## Fitur Utama
 
 ### 1. Dashboard Cerdas
